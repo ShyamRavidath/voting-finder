@@ -4,693 +4,169 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vote America 2028</title>
-
-  <!-- React + ReactDOM (UMD) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Babel for JSX in browser -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <style>
-    /* Helps Leaflet labels look clean */
-    .state-label { background: transparent; border: none; }
-  </style>
 </head>
-
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState } = React;
 
-    // Simple inline SVG icon components (Lucide-like)
     const MapPin = ({ className = "w-6 h-6" }) => (
       <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     );
 
-    const Navigation = ({ className = "w-6 h-6" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M13 7l5 5m0 0l-5 5m5-5H6" />
-      </svg>
-    );
+    function App() {
+      const [currentPage, setCurrentPage] = useState('home');
+      const [activeTool, setActiveTool] = useState('booths');
 
-    const Clock = ({ className = "w-4 h-4" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    );
-
-    const Search = ({ className = "w-5 h-5" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    );
-
-    const Loader = ({ className = "w-6 h-6" }) => (
-      <svg className={`${className} animate-spin`} fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-    );
-
-    const TrendingUp = ({ className = "w-5 h-5" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-      </svg>
-    );
-
-    const Award = ({ className = "w-7 h-7" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-      </svg>
-    );
-
-    const Users = ({ className = "w-5 h-5" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-      </svg>
-    );
-
-    function PollingBoothFinder() {
-      const [userLocation, setUserLocation] = useState(null);
-      const [loading, setLoading] = useState(false);
-      const [searchQuery, setSearchQuery] = useState("");
-      const [selectedBooth, setSelectedBooth] = useState(null);
-      const [activeTab, setActiveTab] = useState("booths");
-      const [selectedYear, setSelectedYear] = useState(2024);
-      const [hoveredState, setHoveredState] = useState(null);
-      const [mapInstance, setMapInstance] = useState(null);
-
-      const candidates2028 = {
-        republican: [
-          { name: "Ron DeSantis", role: "Florida Governor", probability: "High" },
-          { name: "Nikki Haley", role: "Former UN Ambassador", probability: "High" },
-          { name: "Vivek Ramaswamy", role: "Entrepreneur", probability: "Medium" },
-          { name: "Mike Pence", role: "Former VP", probability: "Medium" }
-        ],
-        democratic: [
-          { name: "Gavin Newsom", role: "California Governor", probability: "High" },
-          { name: "Gretchen Whitmer", role: "Michigan Governor", probability: "High" },
-          { name: "Josh Shapiro", role: "Pennsylvania Governor", probability: "Medium" },
-          { name: "Pete Buttigieg", role: "Transportation Secretary", probability: "Medium" }
-        ],
-        prediction: {
-          likelyWinner: "Republican",
-          confidence: "Moderate",
-          reasoning: "Historical midterm patterns and economic trends favor opposition party"
-        }
-      };
-
-      const electionHistory = [
-        {
-          year: 2024,
-          winner: "Donald Trump",
-          party: "Republican",
-          electoral: 312,
-          popular: "77.3M (49.9%)",
-          opponent: "Kamala Harris",
-          opponentElectoral: 226,
-          states: "Won key swing states including Pennsylvania, Georgia, Michigan"
-        },
-        {
-          year: 2020,
-          winner: "Joe Biden",
-          party: "Democratic",
-          electoral: 306,
-          popular: "81.3M (51.3%)",
-          opponent: "Donald Trump",
-          opponentElectoral: 232,
-          states: "Flipped Arizona, Georgia, Michigan, Pennsylvania, Wisconsin"
-        },
-        {
-          year: 2016,
-          winner: "Donald Trump",
-          party: "Republican",
-          electoral: 304,
-          popular: "63.0M (46.1%)",
-          opponent: "Hillary Clinton",
-          opponentElectoral: 227,
-          states: "Won Michigan, Pennsylvania, Wisconsin"
-        }
-      ];
-
-      const stateResults = {
-        2024: {
-          red: ["AL","AK","AR","FL","ID","IN","IA","KS","KY","LA","MS","MO","MT","NE","ND","OH","OK","SC","SD","TN","TX","UT","WV","WY","NC","GA","PA","MI","WI","AZ","NV"],
-          blue: ["CA","CO","CT","DE","HI","IL","ME","MD","MA","MN","NH","NJ","NM","NY","OR","RI","VT","VA","WA","DC"]
-        },
-        2020: {
-          red: ["AL","AK","AR","FL","ID","IN","IA","KS","KY","LA","MS","MO","MT","NE","ND","OH","OK","SC","SD","TN","TX","UT","WV","WY","NC"],
-          blue: ["CA","CO","CT","DE","HI","IL","ME","MD","MA","MN","NH","NJ","NM","NY","OR","RI","VT","VA","WA","DC","AZ","GA","MI","NV","PA","WI"]
-        },
-        2016: {
-          red: ["AL","AK","AR","FL","ID","IN","IA","KS","KY","LA","MS","MO","MT","NE","ND","OH","OK","SC","SD","TN","TX","UT","WV","WY","NC","GA","MI","PA","WI","AZ"],
-          blue: ["CA","CO","CT","DE","HI","IL","ME","MD","MA","MN","NH","NJ","NM","NY","OR","RI","VT","VA","WA","DC","NV"]
-        }
-      };
-
-      const pollingBooths = [
-        {
-          id: 1,
-          name: "Lincoln High School",
-          address: "742 SE Cesar E Chavez Blvd, Portland, OR 97214",
-          hours: "7:00 AM - 8:00 PM",
-          lat: 45.5168,
-          lng: -122.6229,
-          waitTime: "5-10 min"
-        },
-        {
-          id: 2,
-          name: "Community Center East",
-          address: "1234 SE Hawthorne Blvd, Portland, OR 97214",
-          hours: "7:00 AM - 8:00 PM",
-          lat: 45.5122,
-          lng: -122.6545,
-          waitTime: "15-20 min"
-        },
-        {
-          id: 3,
-          name: "Portland Public Library - Central",
-          address: "801 SW 10th Ave, Portland, OR 97205",
-          hours: "8:00 AM - 8:00 PM",
-          lat: 45.5190,
-          lng: -122.6820,
-          waitTime: "< 5 min"
-        },
-        {
-          id: 4,
-          name: "Roosevelt Community Hall",
-          address: "4515 NE 67th Ave, Portland, OR 97218",
-          hours: "7:00 AM - 8:00 PM",
-          lat: 45.5428,
-          lng: -122.5945,
-          waitTime: "10-15 min"
-        }
-      ];
-
-      const getUserLocation = () => {
-        setLoading(true);
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
-              setLoading(false);
-            },
-            (error) => {
-              console.error("Error getting location:", error);
-              setUserLocation({ lat: 45.5152, lng: -122.6784 }); // fallback (Portland)
-              setLoading(false);
-            }
-          );
-        } else {
-          setUserLocation({ lat: 45.5152, lng: -122.6784 });
-          setLoading(false);
-        }
-      };
-
-      useEffect(() => {
-        getUserLocation();
-      }, []);
-
-      useEffect(() => {
-        if (activeTab === "map" && typeof L !== "undefined") {
-          const mapContainer = document.getElementById("electoral-map");
-
-          if (mapContainer && !mapInstance) {
-            const map = L.map("electoral-map").setView([37.8, -96], 4);
-
-            L.tileLayer(
-              "https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=29163bba3ffc4d2687672973c887ffe6",
-              { attribution: "© Geoapify", maxZoom: 20 }
-            ).addTo(map);
-
-            setMapInstance(map);
-
-            const stateCenter = {
-              AL:[32.806671,-86.79113], AK:[61.370716,-152.404419], AZ:[33.729759,-111.431221],
-              AR:[34.969704,-92.373123], CA:[36.116203,-119.681564], CO:[39.059811,-105.311104],
-              CT:[41.597782,-72.755371], DE:[39.318523,-75.507141], FL:[27.766279,-81.686783],
-              GA:[33.040619,-83.643074], HI:[21.094318,-157.498337], ID:[44.240459,-114.478828],
-              IL:[40.349457,-88.986137], IN:[39.849426,-86.258278], IA:[42.011539,-93.210526],
-              KS:[38.5266,-96.726486], KY:[37.66814,-84.670067], LA:[31.169546,-91.867805],
-              ME:[44.693947,-69.381927], MD:[39.063946,-76.802101], MA:[42.230171,-71.530106],
-              MI:[43.326618,-84.536095], MN:[45.694454,-93.900192], MS:[32.741646,-89.678696],
-              MO:[38.456085,-92.288368], MT:[46.921925,-110.454353], NE:[41.12537,-98.268082],
-              NV:[38.313515,-117.055374], NH:[43.452492,-71.563896], NJ:[40.298904,-74.521011],
-              NM:[34.840515,-106.248482], NY:[42.165726,-74.948051], NC:[35.630066,-79.806419],
-              ND:[47.528912,-99.784012], OH:[40.388783,-82.764915], OK:[35.565342,-96.928917],
-              OR:[44.572021,-122.070938], PA:[40.590752,-77.209755], RI:[41.680893,-71.51178],
-              SC:[33.856892,-80.945007], SD:[44.299782,-99.438828], TN:[35.747845,-86.692345],
-              TX:[31.054487,-97.563461], UT:[40.150032,-111.862434], VT:[44.045876,-72.710686],
-              VA:[37.769337,-78.169968], WA:[47.400902,-121.490494], WV:[38.491226,-80.954453],
-              WI:[44.268543,-89.616508], WY:[42.755966,-107.30249], DC:[38.897438,-77.026817]
-            };
-
-            const currentResults = stateResults[selectedYear];
-
-            Object.keys(stateCenter).forEach((stateCode) => {
-              const isRed = currentResults.red.includes(stateCode);
-              const color = isRed ? "#DC2626" : "#2563EB";
-
-              const circle = L.circle(stateCenter[stateCode], {
-                color: "white",
-                fillColor: color,
-                fillOpacity: 0.7,
-                radius: 50000,
-                weight: 2
-              }).addTo(map);
-
-              circle.on("mouseover", function () {
-                this.setStyle({ fillOpacity: 0.9, radius: 60000 });
-                setHoveredState(stateCode);
-              });
-
-              circle.on("mouseout", function () {
-                this.setStyle({ fillOpacity: 0.7, radius: 50000 });
-                setHoveredState(null);
-              });
-
-              L.marker(stateCenter[stateCode], {
-                icon: L.divIcon({
-                  className: "state-label",
-                  html: `<div style="color:white;font-weight:bold;font-size:10px;text-shadow:1px 1px 2px black;">${stateCode}</div>`,
-                  iconSize: [30, 20]
-                })
-              }).addTo(map);
-            });
-          }
-        }
-      }, [activeTab, selectedYear, mapInstance]);
-
-      const calculateDistance = (lat1, lng1, lat2, lng2) => {
-        const R = 3959; // miles
-        const dLat = ((lat2 - lat1) * Math.PI) / 180;
-        const dLng = ((lng2 - lng1) * Math.PI) / 180;
-        const a =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos((lat1 * Math.PI) / 180) *
-            Math.cos((lat2 * Math.PI) / 180) *
-            Math.sin(dLng / 2) *
-            Math.sin(dLng / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return (R * c).toFixed(1);
-      };
-
-      const sortedBooths = userLocation
-        ? pollingBooths
-            .map((booth) => ({
-              ...booth,
-              distance: calculateDistance(userLocation.lat, userLocation.lng, booth.lat, booth.lng)
-            }))
-            .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance))
-            .filter(
-              (booth) =>
-                searchQuery === "" ||
-                booth.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                booth.address.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-        : [];
-
-      const getDirections = (booth) => {
-        const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(booth.address)}`;
-        window.open(url, "_blank");
-      };
-
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-blue-50">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-red-600 via-purple-600 to-blue-600 text-white shadow-lg">
-            <div className="max-w-6xl mx-auto px-4 py-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-                    <MapPin />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold">Vote America 2028</h1>
-                    <p className="text-white/90 text-sm">Your complete election guide</p>
-                  </div>
+      const ToolsSection = () => (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl shadow-md p-2 flex gap-2">
+            {['booths', 'elections', 'map'].map((tool) => (
+              <button 
+                key={tool}
+                onClick={() => setActiveTool(tool)}
+                className={`flex-1 py-2 rounded-xl font-bold capitalize transition-all ${activeTool === tool ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'}`}
+              >
+                {tool === 'elections' ? '2028 Race' : tool}
+              </button>
+            ))}
+          </div>
+          
+          <div className="bg-white p-8 rounded-3xl shadow-lg border border-slate-100 min-h-[300px]">
+            {activeTool === 'booths' && (
+              <div className="text-center py-10">
+                <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MapPin className="text-purple-600" />
                 </div>
-                <button
-                  onClick={getUserLocation}
-                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all duration-200 hover:scale-105"
-                  disabled={loading}
-                  title="Refresh location"
-                >
-                  {loading ? <Loader /> : <Navigation />}
-                </button>
+                <h3 className="text-xl font-bold text-slate-800">Polling Booth Finder</h3>
+                <p className="text-gray-500 mt-2">Enter your zip code to find the nearest location.</p>
+                <input type="text" placeholder="Zip Code" className="mt-4 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500" />
               </div>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="max-w-6xl mx-auto px-4 -mt-6">
-            <div className="bg-white rounded-2xl shadow-xl p-2 border border-gray-100 flex gap-2">
-              <button
-                onClick={() => setActiveTab("booths")}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                  activeTab === "booths"
-                    ? "bg-gradient-to-r from-red-600 to-blue-600 text-white shadow-md"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                <MapPin className="w-5 h-5 inline mr-2" />
-                Polling Booths
-              </button>
-              <button
-                onClick={() => setActiveTab("elections")}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                  activeTab === "elections"
-                    ? "bg-gradient-to-r from-red-600 to-blue-600 text-white shadow-md"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                <TrendingUp className="w-5 h-5 inline mr-2" />
-                2028 Race
-              </button>
-              <button
-                onClick={() => setActiveTab("map")}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                  activeTab === "map"
-                    ? "bg-gradient-to-r from-red-600 to-blue-600 text-white shadow-md"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                <Users className="w-5 h-5 inline mr-2" />
-                Electoral Map
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="max-w-6xl mx-auto px-4 py-6">
-            {activeTab === "booths" && (
-              <>
-                <div className="mb-6">
-                  <div className="bg-white rounded-2xl shadow-xl p-4 border border-gray-100">
-                    <div className="relative">
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="Search by name or address..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader className="w-8 h-8 text-purple-600" />
-                    </div>
-                  ) : sortedBooths.length === 0 ? (
-                    <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-                      <p className="text-gray-500">No polling booths found</p>
-                    </div>
-                  ) : (
-                    sortedBooths.map((booth, index) => (
-                      <div
-                        key={booth.id}
-                        className={`bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-2 ${
-                          selectedBooth === booth.id ? "border-purple-500 scale-[1.02]" : "border-transparent"
-                        }`}
-                        onClick={() => setSelectedBooth(booth.id)}
-                      >
-                        <div className="p-6">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-2">
-                                {index === 0 && (
-                                  <span className="bg-gradient-to-r from-green-400 to-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                    NEAREST
-                                  </span>
-                                )}
-                                <h3 className="text-xl font-bold text-gray-800">{booth.name}</h3>
-                              </div>
-                              <p className="text-gray-600 mb-1">{booth.address}</p>
-                              <div className="flex items-center space-x-4 text-sm text-gray-500 mt-3">
-                                <div className="flex items-center space-x-1">
-                                  <Clock />
-                                  <span>{booth.hours}</span>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                  <MapPin className="w-4 h-4 text-purple-600" />
-                                  <span className="font-semibold text-purple-600">{booth.distance} mi</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                            <div className="flex items-center space-x-2">
-                              <div
-                                className={`w-3 h-3 rounded-full ${
-                                  booth.waitTime.includes("<")
-                                    ? "bg-green-500"
-                                    : booth.waitTime.includes("5-10")
-                                    ? "bg-yellow-500"
-                                    : "bg-orange-500"
-                                }`}
-                              ></div>
-                              <span className="text-sm text-gray-600">Wait: {booth.waitTime}</span>
-                            </div>
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                getDirections(booth);
-                              }}
-                              className="bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-700 hover:to-blue-700 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-md"
-                            >
-                              Directions
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </>
             )}
-
-            {activeTab === "elections" && (
-              <div className="space-y-6">
-                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl shadow-xl p-6 border-2 border-purple-200">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <TrendingUp className="w-8 h-8 text-purple-600" />
-                    <h2 className="text-2xl font-bold text-gray-800">2028 Predictions</h2>
+            
+            {activeTool === 'elections' && (
+              <div className="animate-in fade-in duration-500">
+                <h2 className="text-2xl font-bold text-slate-800 mb-6">2028 Presidential Candidates</h2>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-red-50 p-6 rounded-2xl border border-red-100">
+                    <span className="text-xs font-bold uppercase tracking-wider text-red-600">Republican Party</span>
+                    <ul className="mt-4 space-y-2 font-bold text-slate-700">
+                      <li>• Ron DeSantis</li>
+                      <li>• Nikki Haley</li>
+                    </ul>
                   </div>
-
-                  <div
-                    className={`rounded-xl p-5 mb-4 border-2 ${
-                      candidates2028.prediction.likelyWinner === "Republican"
-                        ? "bg-red-50 border-red-300"
-                        : "bg-blue-50 border-blue-300"
-                    }`}
-                  >
-                    <h3 className="text-lg font-bold text-gray-800 mb-2">Predicted Winner</h3>
-                    <p
-                      className={`text-2xl font-bold mb-2 ${
-                        candidates2028.prediction.likelyWinner === "Republican" ? "text-red-700" : "text-blue-700"
-                      }`}
-                    >
-                      {candidates2028.prediction.likelyWinner} Party
-                    </p>
-                    <p className="text-gray-700">Confidence: {candidates2028.prediction.confidence}</p>
-                    <p className="text-sm text-gray-600 mt-2">{candidates2028.prediction.reasoning}</p>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="bg-red-50 rounded-xl p-5 border-2 border-red-200">
-                      <h3 className="text-xl font-bold text-red-700 mb-3">Republican Candidates</h3>
-                      <div className="space-y-3">
-                        {candidates2028.republican.map((candidate, i) => (
-                          <div key={i} className="bg-white rounded-lg p-4">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="font-bold text-gray-800">{candidate.name}</p>
-                                <p className="text-sm text-gray-600">{candidate.role}</p>
-                              </div>
-                              <span
-                                className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                  candidate.probability === "High"
-                                    ? "bg-red-200 text-red-800"
-                                    : "bg-red-100 text-red-600"
-                                }`}
-                              >
-                                {candidate.probability}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="bg-blue-50 rounded-xl p-5 border-2 border-blue-200">
-                      <h3 className="text-xl font-bold text-blue-700 mb-3">Democratic Candidates</h3>
-                      <div className="space-y-3">
-                        {candidates2028.democratic.map((candidate, i) => (
-                          <div key={i} className="bg-white rounded-lg p-4">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="font-bold text-gray-800">{candidate.name}</p>
-                                <p className="text-sm text-gray-600">{candidate.role}</p>
-                              </div>
-                              <span
-                                className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                  candidate.probability === "High"
-                                    ? "bg-blue-200 text-blue-800"
-                                    : "bg-blue-100 text-blue-600"
-                                }`}
-                              >
-                                {candidate.probability}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                    <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Democratic Party</span>
+                    <ul className="mt-4 space-y-2 font-bold text-slate-700">
+                      <li>• Gavin Newsom</li>
+                      <li>• Gretchen Whitmer</li>
+                    </ul>
                   </div>
                 </div>
-
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center space-x-2">
-                  <Award />
-                  <span>Past Elections</span>
-                </h2>
-
-                {electionHistory.map((election) => (
-                  <div
-                    key={election.year}
-                    className={`rounded-2xl shadow-xl p-6 border-2 ${
-                      election.party === "Republican"
-                        ? "bg-gradient-to-br from-red-50 to-red-100 border-red-300"
-                        : "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-3xl font-bold text-gray-800">{election.year}</h3>
-                      <span
-                        className={`px-4 py-2 rounded-full font-bold text-white ${
-                          election.party === "Republican" ? "bg-red-600" : "bg-blue-600"
-                        }`}
-                      >
-                        {election.party}
-                      </span>
-                    </div>
-
-                    <div className="bg-white rounded-xl p-5 mb-3">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <p className="text-sm text-gray-500">Winner</p>
-                          <p className="text-2xl font-bold text-gray-800">{election.winner}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-500">Electoral</p>
-                          <p className="text-3xl font-bold text-green-600">{election.electoral}</p>
-                        </div>
-                      </div>
-                      <p className="text-gray-600">Popular: {election.popular}</p>
-                    </div>
-
-                    <div className="bg-white/50 rounded-xl p-4">
-                      <p className="text-gray-700 mb-1">
-                        Defeated: {election.opponent} ({election.opponentElectoral} votes)
-                      </p>
-                      <p className="text-gray-600 text-sm">{election.states}</p>
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
 
-            {activeTab === "map" && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">Interactive Electoral Map</h2>
-
-                  <div className="flex gap-2 mb-6">
-                    {[2024, 2020, 2016].map((year) => (
-                      <button
-                        key={year}
-                        onClick={() => {
-                          setSelectedYear(year);
-                          setMapInstance(null);
-                        }}
-                        className={`px-6 py-3 rounded-xl font-bold transition-all ${
-                          selectedYear === year
-                            ? "bg-gradient-to-r from-red-600 to-blue-600 text-white shadow-lg"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                      >
-                        {year}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="bg-gray-50 rounded-xl p-6 mb-6">
-                    <div
-                      id="electoral-map"
-                      style={{ height: "500px", width: "100%", borderRadius: "12px" }}
-                    ></div>
-
-                    {hoveredState && (
-                      <div className="text-center mt-4 p-3 bg-white rounded-lg shadow-md">
-                        <p className="font-bold text-lg">{hoveredState}</p>
-                        <p
-                          className={`text-sm ${
-                            stateResults[selectedYear].red.includes(hoveredState) ? "text-red-600" : "text-blue-600"
-                          }`}
-                        >
-                          {stateResults[selectedYear].red.includes(hoveredState) ? "Republican" : "Democratic"}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-red-50 rounded-xl p-4 border-2 border-red-300">
-                      <p className="text-sm text-red-600 font-semibold">Republican</p>
-                      <p className="text-3xl font-bold text-red-700">{stateResults[selectedYear].red.length}</p>
-                    </div>
-                    <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-300">
-                      <p className="text-sm text-blue-600 font-semibold">Democratic</p>
-                      <p className="text-3xl font-bold text-blue-700">{stateResults[selectedYear].blue.length}</p>
-                    </div>
-                  </div>
-                </div>
+            {activeTool === 'map' && (
+              <div className="h-64 bg-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200">
+                <span className="font-medium">Interactive Electoral Map</span>
+                <span className="text-sm">Module initializing...</span>
               </div>
             )}
           </div>
         </div>
       );
+
+      return (
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+          <nav className="bg-white border-b sticky top-0 z-50">
+            <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
+              <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setCurrentPage('home')}>
+                <div className="bg-red-600 p-1.5 rounded-lg"><MapPin className="w-6 h-6 text-white" /></div>
+                <span className="font-black text-xl tracking-tighter">VOTE2028</span>
+              </div>
+              <div className="hidden md:flex space-x-6 font-bold text-slate-500">
+                {['home', 'why', 'goal', 'tools'].map(page => (
+                  <button key={page} onClick={() => setCurrentPage(page)} className={`capitalize transition-colors hover:text-blue-600 ${currentPage === page ? 'text-blue-600' : ''}`}>
+                    {page}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setCurrentPage('signup')} className="bg-slate-900 text-white px-6 py-2 rounded-full font-bold hover:bg-slate-800 transition">
+                Sign Up
+              </button>
+            </div>
+          </nav>
+
+          <main className="max-w-4xl mx-auto px-4 py-12">
+            {currentPage === 'home' && (
+              <div className="text-center py-10 space-y-8">
+                <h1 className="text-6xl md:text-8xl font-black leading-tight tracking-tight">
+                  Your Vote is <br/>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-blue-600">Your Voice.</span>
+                </h1>
+                <p className="text-xl text-slate-500 max-w-xl mx-auto leading-relaxed">
+                  Join 50,000+ young voters getting ready to shape the future of America in the 2028 election.
+                </p>
+                <button onClick={() => setCurrentPage('tools')} className="bg-blue-600 text-white px-10 py-5 rounded-2xl text-xl font-black shadow-xl hover:bg-blue-700 transition-all transform hover:-translate-y-1">
+                  Explore Tools
+                </button>
+              </div>
+            )}
+
+            {currentPage === 'why' && (
+              <div className="max-w-2xl mx-auto space-y-6">
+                <h2 className="text-4xl font-black text-slate-900">Why This Matters</h2>
+                <p className="text-lg text-slate-600 leading-relaxed">
+                  Engagement in local and national elections is the cornerstone of democracy. 
+                  We believe that by providing clear, nonpartisan data, we can bridge the gap 
+                  between young citizens and the ballot box.
+                </p>
+              </div>
+            )}
+
+            {currentPage === 'goal' && (
+              <div className="bg-white p-10 rounded-3xl shadow-sm border border-slate-200 space-y-6">
+                <h2 className="text-4xl font-black text-slate-900">Our Goal</h2>
+                <div className="space-y-4 text-slate-600 text-lg leading-relaxed">
+                  <p>
+                    <strong>Vote4U</strong> is addressing the issue of low young adult voter turnout throughout the United States. 
+                    Despite young adults being a critical demographic, they often lack engagement due to a lack of resources and confidence.
+                  </p>
+                  <p>
+                    Our mission is to provide accessible, nonpartisan civic information. We want to ensure that 18-22 year olds 
+                    never miss a registration deadline or feel unprepared when researching candidates.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {currentPage === 'tools' && <ToolsSection />}
+
+            {currentPage === 'signup' && (
+              <div className="max-w-md mx-auto bg-white p-10 rounded-3xl shadow-2xl border border-slate-100">
+                <h2 className="text-3xl font-black mb-6 text-center">Get Updates</h2>
+                <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                  <input type="text" placeholder="Full Name" className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <input type="email" placeholder="Email Address" className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <button className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-lg hover:bg-blue-700 transition">Start My Journey</button>
+                </form>
+              </div>
+            )}
+          </main>
+        </div>
+      );
     }
 
-    // React 18 mount
     const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<PollingBoothFinder />);
+    root.render(<App />);
   </script>
 </body>
 </html>
