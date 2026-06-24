@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vote America 2028</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    #map-container { height: 600px; width: 100%; border-radius: 1rem; z-index: 1; }
+    .leaflet-container { background: #f8fafc; border-radius: 1rem; }
+    .fade-in { animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    @keyframes fadeIn { 
+      from { opacity: 0; transform: translateY(20px); } 
+      to { opacity: 1; transform: translateY(0); } 
+    }
+    .slide-in { animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .gradient-text { background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .news-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .news-card:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    // Full 50 State Data Set
+    const STATE_DATA = [
+      { name: "Alabama", lat: 32.8, lng: -86.7, party: "red", ev: 9 }, { name: "Alaska", lat: 61.3, lng: -152.4, party: "red", ev: 3 },
+      { name: "Arizona", lat: 33.7, lng: -111.4, party: "gray", ev: 11 }, { name: "Arkansas", lat: 34.9, lng: -92.3, party: "red", ev: 6 },
+      { name: "California", lat: 36.1, lng: -119.6, party: "blue", ev: 54 }, { name: "Colorado", lat: 39.0, lng: -105.3, party: "blue", ev: 10 },
+      { name: "Connecticut", lat: 41.5, lng: -72.7, party: "blue", ev: 7 }, { name: "Delaware", lat: 39.3, lng: -75.5, party: "blue", ev: 3 },
+      { name: "Florida", lat: 27.7, lng: -81.6, party: "red", ev: 30 }, { name: "Georgia", lat: 33.0, lng: -83.6, party: "gray", ev: 16 },
+      { name: "Hawaii", lat: 21.0, lng: -157.8, party: "blue", ev: 4 }, { name: "Idaho", lat: 44.2, lng: -114.4, party: "red", ev: 4 },
+      { name: "Illinois", lat: 40.3, lng: -88.9, party: "blue", ev: 19 }, { name: "Indiana", lat: 39.8, lng: -86.2, party: "red", ev: 11 },
+      { name: "Iowa", lat: 42.0, lng: -93.2, party: "red", ev: 6 }, { name: "Kansas", lat: 38.5, lng: -96.7, party: "red", ev: 6 },
+      { name: "Kentucky", lat: 37.6, lng: -84.6, party: "red", ev: 8 }, { name: "Louisiana", lat: 31.1, lng: -91.8, party: "red", ev: 8 },
+      { name: "Maine", lat: 44.6, lng: -69.3, party: "blue", ev: 4 }, { name: "Maryland", lat: 39.0, lng: -76.8, party: "blue", ev: 10 },
+      { name: "Massachusetts", lat: 42.2, lng: -71.5, party: "blue", ev: 11 }, { name: "Michigan", lat: 43.3, lng: -84.5, party: "gray", ev: 15 },
+      { name: "Minnesota", lat: 45.6, lng: -93.9, party: "blue", ev: 10 }, { name: "Mississippi", lat: 32.7, lng: -89.6, party: "red", ev: 6 },
+      { name: "Missouri", lat: 38.4, lng: -92.2, party: "red", ev: 10 }, { name: "Montana", lat: 46.9, lng: -110.4, party: "red", ev: 4 },
+      { name: "Nebraska", lat: 41.1, lng: -98.2, party: "red", ev: 5 }, { name: "Nevada", lat: 38.3, lng: -117.0, party: "gray", ev: 6 },
+      { name: "New Hampshire", lat: 43.4, lng: -71.5, party: "blue", ev: 4 }, { name: "New Jersey", lat: 40.2, lng: -74.5, party: "blue", ev: 14 },
+      { name: "New Mexico", lat: 34.8, lng: -106.2, party: "blue", ev: 5 }, { name: "New York", lat: 42.1, lng: -74.9, party: "blue", ev: 28 },
+      { name: "North Carolina", lat: 35.6, lng: -79.8, party: "gray", ev: 16 }, { name: "North Dakota", lat: 47.5, lng: -99.7, party: "red", ev: 3 },
+      { name: "Ohio", lat: 40.3, lng: -82.7, party: "red", ev: 17 }, { name: "Oklahoma", lat: 35.5, lng: -96.9, party: "red", ev: 7 },
+      { name: "Oregon", lat: 44.5, lng: -122.1, party: "blue", ev: 8 }, { name: "Pennsylvania", lat: 40.5, lng: -77.2, party: "gray", ev: 19 },
+      { name: "Rhode Island", lat: 41.6, lng: -71.5, party: "blue", ev: 4 }, { name: "South Carolina", lat: 33.8, lng: -80.9, party: "red", ev: 9 },
+      { name: "South Dakota", lat: 44.2, lng: -99.4, party: "red", ev: 3 }, { name: "Tennessee", lat: 35.7, lng: -86.6, party: "red", ev: 11 },
+      { name: "Texas", lat: 31.0, lng: -97.5, party: "red", ev: 40 }, { name: "Utah", lat: 40.1, lng: -111.8, party: "red", ev: 6 },
+      { name: "Vermont", lat: 44.0, lng: -72.7, party: "blue", ev: 3 }, { name: "Virginia", lat: 37.7, lng: -78.1, party: "blue", ev: 13 },
+      { name: "Washington", lat: 47.4, lng: -121.4, party: "blue", ev: 12 }, { name: "West Virginia", lat: 38.4, lng: -80.9, party: "red", ev: 4 },
+      { name: "Wisconsin", lat: 44.2, lng: -89.6, party: "gray", ev: 10 }, { name: "Wyoming", lat: 42.7, lng: -107.3, party: "red", ev: 3 }
+    ];
+
+    // Helper function to determine party affiliation based on candidate name
+    const getCandidateParty = (title, description, candidateName) => {
+      const name = (candidateName || title || '').toLowerCase();
+      const text = (title + ' ' + description).toLowerCase();
+      
+      const democrats = ['newsom', 'whitmer', 'ocasio-cortez', 'aoc', 'buttigieg', 'harris', 'booker', 'warren', 'sanders'];
+      const republicans = ['vance', 'youngkin', 'hawley', 'desantis', 'scott', 'trump', 'pence', 'haley'];
+      
+      if (democrats.some(d => name.includes(d) || text.includes(d))) return 'Democrat';
+      if (republicans.some(r => name.includes(r) || text.includes(r))) return 'Republican';
+      return null;
+    };
+
+    // Helper function to extract candidate name from article
+    const extractCandidateName = (title, description) => {
+      const text = (title + ' ' + description).toLowerCase();
+      const candidates = [
+        'Gavin Newsom', 'Gretchen Whitmer', 'Alexandria Ocasio-Cortez', 'AOC', 
+        'Pete Buttigieg', 'JD Vance', 'Glenn Youngkin', 'Josh Hawley', 
+        'Ron DeSantis', 'Tim Scott'
+      ];
+      
+      for (const candidate of candidates) {
+        if (text.includes(candidate.toLowerCase())) {
+          return candidate === 'AOC' ? 'A. Ocasio-Cortez' : candidate;
+        }
+      }
+      return null;
+    };
+
+    // Helper function to format time ago
+    const getTimeAgo = (dateString) => {
+      if (!dateString) return 'Recently';
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      
+      if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+      if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+      if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+      return date.toLocaleDateString();
+    };
+
+
+    const App = () => {
+      const [currentPage, setCurrentPage] = useState('home');
+      const [activeTool, setActiveTool] = useState('booths');
+      const [aboutTab, setAboutTab] = useState('why');
+      const [zip, setZip] = useState('');
+      const [results, setResults] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const [mapInstance, setMapInstance] = useState(null);
+      const [mapMarkers, setMapMarkers] = useState([]);
+      // IMPORTANT: For production, remove the default API key below and use the UI configuration instead
+      // API keys should never be committed to version control
+      const [apiKey, setApiKey] = useState(() => {
+        const stored = localStorage.getItem('googleCivicApiKey');
+        if (stored) return stored;
+        // Default API key for local testing only - REMOVE BEFORE DEPLOYING/SHARING
+        return 'AIzaSyACys7qgWBfOggU7Ez_LKNpsKLWsYcB3cM';
+      });
+      const [showApiKeyConfig, setShowApiKeyConfig] = useState(false);
+      const [usingRealData, setUsingRealData] = useState(false);
+      const [newsApiKey] = useState(() => {
+        const stored = localStorage.getItem('newsApiKey');
+        if (stored) return stored;
+        return '7f82c748c21c47fd8412305bd5e24342';
+      });
+      const [newsArticles, setNewsArticles] = useState([]);
+      const [newsLoading, setNewsLoading] = useState(false);
+      const mapRef = useRef(null);
+      const pollingMarkersRef = useRef([]);
+
+      // Development warning about API key
+      useEffect(() => {
+        if (apiKey && apiKey === 'AIzaSyACys7qgWBfOggU7Ez_LKNpsKLWsYcB3cM') {
+          console.warn('⚠️ API Key Security Notice: Default API key is in use. For production, remove hardcoded key and use the UI configuration.');
+        }
+      }, []);
+
+      // Fetch real news from NewsAPI
+      const fetchElectionNews = async (forceRefresh = false) => {
+        const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
+        const lastUpdated = parseInt(localStorage.getItem('newsLastUpdated') || '0');
+        const cachedArticles = localStorage.getItem('newsArticles');
+        const now = Date.now();
+        
+        if (!forceRefresh && lastUpdated > 0 && (now - lastUpdated) < TWO_WEEKS && cachedArticles) {
+          console.log('Using cached news (last updated less than 2 weeks ago)');
+          if (newsArticles.length === 0 && cachedArticles) {
+            setNewsArticles(JSON.parse(cachedArticles));
+          }
+          return;
+        }
+
+        if (!newsApiKey) {
+          console.warn('NewsAPI key not configured');
+          return;
+        }
+
+        setNewsLoading(true);
+        
+        try {
+          const queries = [
+            '2028 election OR 2028 presidential race',
+            '(Gavin Newsom OR Gretchen Whitmer OR AOC) AND 2028',
+            '(JD Vance OR Glenn Youngkin) AND 2028'
+          ];
+
+          const allArticles = [];
+          
+          for (const query of queries.slice(0, 2)) {
+            try {
+              // NewsAPI free tier has CORS restrictions - use a CORS proxy
+              const apiUrl = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&language=en&pageSize=10&apiKey=${newsApiKey}`;
+              
+              // Try multiple CORS proxy options
+              let response, proxyData, data;
+              let lastError = null;
+              
+              // Try allorigins.win first
+              try {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+                response = await fetch(proxyUrl);
+                
+                if (response.ok) {
+                  proxyData = await response.json();
+                  data = JSON.parse(proxyData.contents);
+                } else {
+                  throw new Error(`Proxy error: ${response.status}`);
+                }
+              } catch (e) {
+                lastError = e;
+                console.warn('AllOrigins proxy failed, trying alternative...', e);
+                
+                // Fallback: Try corsproxy.io
+                try {
+                  const altProxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+                  response = await fetch(altProxyUrl);
+                  
+                  if (response.ok) {
+                    data = await response.json();
+                  } else {
+                    throw new Error(`Alternative proxy error: ${response.status}`);
+                  }
+                } catch (e2) {
+                  console.error('All proxy methods failed:', e2);
+                  throw new Error(`CORS proxy failed: ${e.message || e2.message}. NewsAPI requires a backend proxy for browser access.`);
+                }
+              }
+              
+              // Check for NewsAPI errors
+              if (data.status === 'error') {
+                if (data.code === 'apiKeyInvalid' || data.code === 'apiKeyMissing') {
+                  throw new Error('Invalid or missing NewsAPI key');
+                } else if (data.code === 'rateLimited') {
+                  console.warn('NewsAPI rate limit reached');
+                  break;
+                }
+                throw new Error(data.message || 'NewsAPI error');
+              }
+              
+              if (data.status === 'ok' && data.articles) {
+                data.articles.forEach(article => {
+                  if (article.title && article.description && !article.title.includes('[Removed]')) {
+                    const candidate = extractCandidateName(article.title, article.description);
+                    const party = getCandidateParty(article.title, article.description, candidate);
+                    
+                    if (candidate || party || article.title.toLowerCase().includes('2028')) {
+                      allArticles.push({
+                        id: article.url || Math.random().toString(),
+                        candidate: candidate || '2028 Election',
+                        title: article.title,
+                        excerpt: article.description || article.title.substring(0, 150) + '...',
+                        date: article.publishedAt,
+                        timeAgo: getTimeAgo(article.publishedAt),
+                        source: article.source?.name || 'News Source',
+                        url: article.url,
+                        category: party ? 'Campaign' : 'General',
+                        party: party,
+                        imageUrl: article.urlToImage
+                      });
+                    }
+                  }
+                });
+              }
+              
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch (error) {
+              console.error(`Error fetching news for query "${query}":`, error);
+            }
+          }
+
+          const uniqueArticles = [];
+          const seenUrls = new Set();
+          
+          allArticles
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .forEach(article => {
+              if (!seenUrls.has(article.url) && uniqueArticles.length < 15) {
+                seenUrls.add(article.url);
+                uniqueArticles.push(article);
+              }
+            });
+
+          if (uniqueArticles.length > 0) {
+            setNewsArticles(uniqueArticles);
+            localStorage.setItem('newsArticles', JSON.stringify(uniqueArticles));
+            localStorage.setItem('newsLastUpdated', now.toString());
+            console.log(`Loaded ${uniqueArticles.length} real news articles`);
+          } else {
+            const cached = localStorage.getItem('newsArticles');
+            if (cached) {
+              setNewsArticles(JSON.parse(cached));
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching election news:', error);
+          
+          // Show user-friendly error message
+          const errorMessage = error.message || 'Unknown error';
+          console.error('NewsAPI Error Details:', errorMessage);
+          
+          // Try to load cached articles
+          const cached = localStorage.getItem('newsArticles');
+          if (cached) {
+            try {
+              setNewsArticles(JSON.parse(cached));
+              console.log('Loaded cached articles due to API error');
+            } catch (e) {
+              console.error('Error loading cached articles:', e);
+            }
+          }
+          
+          // Store error for display
+          if (!cached || JSON.parse(cached).length === 0) {
+            setNewsArticles([{
+              id: 'error',
+              candidate: 'Error',
+              title: 'Unable to fetch news',
+              excerpt: `Error: ${errorMessage}. This may be due to CORS restrictions or API limits. NewsAPI free tier requires a backend proxy for production use.`,
+              date: new Date().toISOString(),
+              timeAgo: 'Just now',
+              source: 'System',
+              url: null,
+              category: 'Error',
+              party: null,
+              isError: true
+            }]);
+          }
+        } finally {
+          setNewsLoading(false);
+        }
+      };
+
+      // Load news on mount and when visiting news page
+      useEffect(() => {
+        const cached = localStorage.getItem('newsArticles');
+        if (cached) {
+          try {
+            setNewsArticles(JSON.parse(cached));
+          } catch (e) {
+            console.error('Error loading cached news:', e);
+          }
+        }
+        
+        if (currentPage === 'news') {
+          fetchElectionNews();
+        }
+      }, [currentPage]);
+
+      const tally = useMemo(() => {
+        return STATE_DATA.reduce((acc, s) => {
+          if (s.party === 'blue') acc.blue += s.ev;
+          else if (s.party === 'red') acc.red += s.ev;
+          else acc.swing += s.ev;
+          return acc;
+        }, { blue: 0, red: 0, swing: 0 });
+      }, []);
+
+      // Clean up map when switching tabs or tools
+      useEffect(() => {
+        if (mapRef.current && (currentPage !== 'tools' || activeTool !== 'map')) {
+          if (mapRef.current) {
+            mapRef.current.remove();
+            mapRef.current = null;
+          }
+          setMapInstance(null);
+          setMapMarkers([]);
+          pollingMarkersRef.current = [];
+        }
+      }, [currentPage, activeTool]);
+
+      // Initialize electoral map
+      useEffect(() => {
+        if (currentPage === 'tools' && activeTool === 'map' && !mapRef.current) {
+          const container = document.getElementById('map-container');
+          if (container && !container._leaflet_id) {
+            const map = L.map('map-container').setView([37.8, -96], 4);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+              attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            const markers = [];
+            STATE_DATA.forEach(s => {
+              const color = s.party === 'blue' ? '#2563eb' : s.party === 'red' ? '#dc2626' : '#64748b';
+              const marker = L.circleMarker([s.lat, s.lng], {
+                radius: 8,
+                fillColor: color,
+                color: '#fff',
+                weight: 2,
+                fillOpacity: 0.85
+              }).addTo(map).bindPopup(`<div class="font-semibold">${s.name}</div><div class="text-sm text-gray-600">${s.ev} Electoral Votes</div>`);
+              markers.push(marker);
+            });
+            
+            mapRef.current = map;
+            setMapInstance(map);
+            setMapMarkers(markers);
+          }
+        }
+      }, [currentPage, activeTool]);
+
+      // Add polling locations to map when results change and map is active
+      useEffect(() => {
+        // Small delay to ensure map is initialized if we just switched tabs
+        const timeoutId = setTimeout(() => {
+          if (mapRef.current && activeTool === 'map' && results.length > 0 && results[0].lat) {
+            // Remove existing polling markers
+            pollingMarkersRef.current.forEach(marker => {
+              if (marker && mapRef.current) {
+                mapRef.current.removeLayer(marker);
+              }
+            });
+            pollingMarkersRef.current = [];
+
+            // Center map on first polling location
+            mapRef.current.setView([results[0].lat, results[0].lng], 12);
+
+            // Add new polling location markers
+            results.forEach(loc => {
+              if (loc.lat && loc.lng) {
+                let markerColor;
+                if (loc.isReal && !loc.isEstimated) {
+                  markerColor = '#10b981'; // Green for official
+                } else if (loc.isReal && loc.isEstimated) {
+                  markerColor = '#3b82f6'; // Blue for real locations (estimated polling places)
+                } else {
+                  markerColor = '#f59e0b'; // Amber for sample/estimated
+                }
+                
+                const marker = L.marker([loc.lat, loc.lng], {
+                  icon: L.divIcon({
+                    className: 'polling-marker',
+                    html: `<div style="background: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                  })
+                });
+                
+                let popupContent = `<div class="font-semibold ${loc.isReal && !loc.isEstimated ? 'text-green-700' : loc.isReal && loc.isEstimated ? 'text-blue-700' : 'text-amber-700'}">${loc.name}</div><div class="text-sm text-gray-600">${loc.addr}</div><div class="text-xs mt-1">${loc.type}`;
+                if (loc.isReal && !loc.isEstimated) {
+                  popupContent += ` <span class="font-semibold text-green-600">(Official)</span>`;
+                } else if (loc.isReal && loc.isEstimated) {
+                  popupContent += ` <span class="font-semibold text-blue-600">(Real Location)</span>`;
+                } else {
+                  popupContent += ` <span class="font-semibold text-amber-600">(Estimated)</span>`;
+                }
+                popupContent += `</div>`;
+                if (loc.hours) {
+                  popupContent += `<div class="text-xs text-gray-500 mt-2"><strong>Hours:</strong> ${loc.hours}</div>`;
+                }
+                popupContent += `</div>`;
+                
+                marker.bindPopup(popupContent);
+                marker.addTo(mapRef.current);
+                pollingMarkersRef.current.push(marker);
+              }
+            });
+          }
+        }, 100);
+
+        return () => clearTimeout(timeoutId);
+      }, [results, activeTool, currentPage]);
+
+      // Generate nearby polling locations based on zip code
+      // Find real nearby locations commonly used as polling places using Nominatim (OpenStreetMap)
+      // Helper function to create timeout promise
+      const timeoutPromise = (ms) => new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), ms)
+      );
+
+      const findRealPollingLocations = async (lat, lng, city, state) => {
+        const startTime = Date.now();
+        const allLocations = [];
+        
+        try {
+          // Use Nominatim reverse geocoding + search - more reliable than Overpass
+          // Strategy: Search for specific location types near the coordinates
+          const locationTypes = [
+            { type: 'library', query: 'library', amenity: 'library' },
+            { type: 'community_center', query: 'community center', amenity: 'community_centre' },
+            { type: 'townhall', query: 'town hall', amenity: 'townhall' },
+            { type: 'school', query: 'school', amenity: 'school' }
+          ];
+
+          // Use sequential requests to respect Nominatim rate limits (1 req/sec)
+          // Limit to 3 location types for faster results
+          for (let i = 0; i < Math.min(locationTypes.length, 3); i++) {
+            const locType = locationTypes[i];
+            
+            try {
+              // Wait 1 second between requests (Nominatim rate limit)
+              if (i > 0) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+              
+              // Use tighter bounding box for better, faster results
+              const bbox = `${lng-0.03},${lat-0.03},${lng+0.03},${lat+0.03}`;
+              const searchUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locType.query + ' ' + city + ' ' + state)}&format=json&limit=3&addressdetails=1&bounded=1&viewbox=${bbox}&dedupe=1`;
+              
+              const response = await Promise.race([
+                fetch(searchUrl, {
+                  headers: { 
+                    'User-Agent': 'Vote4U-PollingFinder/1.0',
+                    'Accept-Language': 'en'
+                  }
+                }),
+                timeoutPromise(5000) // 5 second timeout per request
+              ]);
+              
+              if (response.ok) {
+                const data = await response.json();
+                
+                data.forEach(place => {
+                  const placeLat = parseFloat(place.lat);
+                  const placeLng = parseFloat(place.lon);
+                  
+                  // Calculate distance in km
+                  const R = 6371; // Earth's radius in km
+                  const dLat = (placeLat - lat) * Math.PI / 180;
+                  const dLon = (placeLng - lng) * Math.PI / 180;
+                  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                            Math.cos(lat * Math.PI / 180) * Math.cos(placeLat * Math.PI / 180) *
+                            Math.sin(dLon/2) * Math.sin(dLon/2);
+                  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                  const distance = R * c;
+                  
+                  // Only include locations within 10km
+                  if (distance < 10) {
+                    const address = place.address || {};
+                    const addressParts = [];
+                    
+                    // Build proper address
+                    if (address.house_number) addressParts.push(address.house_number);
+                    if (address.road || address.street) {
+                      addressParts.push(address.road || address.street);
+                    }
+                    if (address.city || address.town || address.village || address.municipality) {
+                      addressParts.push(address.city || address.town || address.village || address.municipality);
+                    }
+                    if (state) addressParts.push(state);
+                    if (address.postcode) addressParts.push(address.postcode);
+                    
+                    // Use display_name as fallback if address parts are missing
+                    let fullAddress;
+                    if (addressParts.length >= 2) {
+                      fullAddress = addressParts.join(', ');
+                    } else {
+                      // Parse display_name to get a better address
+                      const displayParts = place.display_name.split(',');
+                      if (displayParts.length > 1) {
+                        fullAddress = displayParts.slice(0, 3).join(', ').trim();
+                      } else {
+                        fullAddress = place.display_name;
+                      }
+                    }
+                    
+                    // Get a clean name
+                    const name = place.name || place.display_name.split(',')[0] || locType.query;
+                    
+                    let locationType = 'Likely Polling Place';
+                    if (locType.type === 'library') locationType = 'Likely Polling Place';
+                    else if (locType.type === 'community_center' || locType.type === 'townhall') locationType = 'Likely Early Voting';
+                    else if (locType.type === 'school') locationType = 'Likely Polling Place';
+                    
+                    allLocations.push({
+                      name: name,
+                      addr: fullAddress,
+                      type: locationType,
+                      lat: placeLat,
+                      lng: placeLng,
+                      distance: distance,
+                      isReal: true,
+                      isEstimated: true
+                    });
+                  }
+                });
+              }
+            } catch (e) {
+              console.warn(`Failed to fetch ${locType.query}:`, e.message);
+              // Continue with next location type
+            }
+          }
+          
+          // Remove duplicates and limit to 4 locations, sorted by distance
+          const uniqueLocations = [];
+          const seenNames = new Set();
+          const seenAddresses = new Set();
+          
+          allLocations
+            .sort((a, b) => {
+              // Sort by distance (if available) or calculate it
+              const distA = a.distance || Math.sqrt(Math.pow((a.lat - lat) * 111, 2) + Math.pow((a.lng - lng) * 111 * Math.cos(lat * Math.PI / 180), 2));
+              const distB = b.distance || Math.sqrt(Math.pow((b.lat - lat) * 111, 2) + Math.pow((b.lng - lng) * 111 * Math.cos(lat * Math.PI / 180), 2));
+              return distA - distB;
+            })
+            .forEach(loc => {
+              // Use both name and address to avoid duplicates
+              const nameKey = loc.name.toLowerCase().trim();
+              const addrKey = loc.addr.toLowerCase().trim();
+              
+              if (!seenNames.has(nameKey) && !seenAddresses.has(addrKey) && uniqueLocations.length < 4) {
+                seenNames.add(nameKey);
+                seenAddresses.add(addrKey);
+                uniqueLocations.push(loc);
+              }
+            });
+          
+          const elapsed = Date.now() - startTime;
+          console.log(`Found ${uniqueLocations.length} real locations in ${elapsed}ms`);
+          
+          return uniqueLocations.length > 0 ? uniqueLocations : null;
+        } catch (error) {
+          console.error('Error finding real locations:', error);
+          return null;
+        }
+      };
+
+      // Generate sample polling locations (fallback when all APIs fail)
+      const generateSampleLocations = (lat, lng, city, state) => {
+        return [
+          { name: `${city} Public Library`, addr: `${Math.floor(Math.random() * 900 + 100)} Main St, ${city}, ${state}`, type: "Estimated Location", lat: lat + (Math.random() * 0.1 - 0.05), lng: lng + (Math.random() * 0.1 - 0.05), isSample: true },
+          { name: `${city} Community Center`, addr: `${Math.floor(Math.random() * 900 + 100)} Park Ave, ${city}, ${state}`, type: "Estimated Location", lat: lat + (Math.random() * 0.1 - 0.05), lng: lng + (Math.random() * 0.1 - 0.05), isSample: true },
+          { name: `${city} High School`, addr: `${Math.floor(Math.random() * 900 + 100)} School Dr, ${city}, ${state}`, type: "Estimated Location", lat: lat + (Math.random() * 0.1 - 0.05), lng: lng + (Math.random() * 0.1 - 0.05), isSample: true },
+          { name: `${city} Recreation Center`, addr: `${Math.floor(Math.random() * 900 + 100)} Recreation Way, ${city}, ${state}`, type: "Estimated Location", lat: lat + (Math.random() * 0.1 - 0.05), lng: lng + (Math.random() * 0.1 - 0.05), isSample: true }
+        ];
+      };
+
+      // Fetch real polling locations from Google Civic Information API
+      const fetchRealPollingLocations = async (address, lat, lng) => {
+        if (!apiKey) {
+          throw new Error('API key not configured');
+        }
+
+        try {
+          // Get available elections first
+          const electionsRes = await fetch(`https://www.googleapis.com/civicinfo/v2/elections?key=${apiKey}`);
+          const electionsData = await electionsRes.json();
+          
+          console.log('Available elections:', electionsData);
+          
+          // Try multiple election IDs - start with most recent general elections
+          const electionIdsToTry = ['2000']; // General election ID
+          
+          // Add any upcoming elections from the elections list
+          if (electionsData.elections && Array.isArray(electionsData.elections)) {
+            const upcomingElections = electionsData.elections
+              .filter(e => e.electionDay && new Date(e.electionDay) >= new Date())
+              .sort((a, b) => new Date(a.electionDay) - new Date(b.electionDay))
+              .slice(0, 3)
+              .map(e => e.id);
+            electionIdsToTry.unshift(...upcomingElections);
+          }
+
+          // Try each election ID
+          for (const electionId of electionIdsToTry) {
+            try {
+              const voterInfoUrl = `https://www.googleapis.com/civicinfo/v2/voterinfo?address=${encodeURIComponent(address)}&key=${apiKey}&electionId=${electionId}`;
+              console.log(`Trying election ID ${electionId}...`);
+              
+              const voterInfoRes = await fetch(voterInfoUrl);
+              const voterInfo = await voterInfoRes.json();
+              
+              console.log(`API Response for election ${electionId}:`, voterInfo);
+
+              if (voterInfo.error) {
+                console.warn(`Error for election ${electionId}:`, voterInfo.error);
+                continue; // Try next election
+              }
+
+              const locations = parsePollingLocations(voterInfo, lat, lng);
+              if (locations.length > 0) {
+                console.log(`Found ${locations.length} polling locations for election ${electionId}`);
+                return locations;
+              }
+            } catch (e) {
+              console.warn(`Failed to fetch for election ${electionId}:`, e);
+              continue;
+            }
+          }
+
+          // If no election-specific data, try without election ID (should return most recent)
+          try {
+            console.log('Trying without election ID...');
+            const generalRes = await fetch(`https://www.googleapis.com/civicinfo/v2/voterinfo?address=${encodeURIComponent(address)}&key=${apiKey}`);
+            const generalData = await generalRes.json();
+            console.log('General API Response:', generalData);
+            
+            if (!generalData.error) {
+              const locations = parsePollingLocations(generalData, lat, lng);
+              if (locations.length > 0) {
+                return locations;
+              }
+            }
+          } catch (e) {
+            console.warn('General query failed:', e);
+          }
+
+          // If we get here, no polling locations were found
+          console.warn('No polling locations found in API response. This is normal if election data is not yet available.');
+          throw new Error('No polling locations available yet. Polling locations are typically released 2 months before election day.');
+          
+        } catch (error) {
+          console.error('Error fetching polling locations:', error);
+          throw error;
+        }
+      };
+
+      // Helper function to parse polling locations from API response
+      const parsePollingLocations = (voterInfo, defaultLat, defaultLng) => {
+        const locations = [];
+        
+        // Add polling locations
+        if (voterInfo.pollingLocations && Array.isArray(voterInfo.pollingLocations) && voterInfo.pollingLocations.length > 0) {
+          voterInfo.pollingLocations.forEach(loc => {
+            if (loc.address && loc.address.line1) {
+              const addressParts = [
+                loc.address.line1,
+                loc.address.line2,
+                loc.address.city,
+                loc.address.state,
+                loc.address.zip
+              ].filter(Boolean);
+              const addressStr = addressParts.join(', ');
+              
+              locations.push({
+                name: loc.address.locationName || loc.name || 'Polling Location',
+                addr: addressStr,
+                type: 'Polling Place',
+                lat: loc.latitude || (defaultLat + (Math.random() * 0.03 - 0.015)),
+                lng: loc.longitude || (defaultLng + (Math.random() * 0.03 - 0.015)),
+                isReal: true,
+                hours: loc.pollingHours || loc.hours || null
+              });
+            }
+          });
+        }
+
+        // Add early voting sites
+        if (voterInfo.earlyVoteSites && Array.isArray(voterInfo.earlyVoteSites) && voterInfo.earlyVoteSites.length > 0) {
+          voterInfo.earlyVoteSites.forEach(loc => {
+            if (loc.address && loc.address.line1) {
+              const addressParts = [
+                loc.address.line1,
+                loc.address.line2,
+                loc.address.city,
+                loc.address.state,
+                loc.address.zip
+              ].filter(Boolean);
+              const addressStr = addressParts.join(', ');
+              
+              locations.push({
+                name: loc.address.locationName || loc.name || 'Early Voting Site',
+                addr: addressStr,
+                type: 'Early Voting',
+                lat: loc.latitude || (defaultLat + (Math.random() * 0.03 - 0.015)),
+                lng: loc.longitude || (defaultLng + (Math.random() * 0.03 - 0.015)),
+                isReal: true,
+                hours: loc.pollingHours || loc.hours || loc.startDate || null
+              });
+            }
+          });
+        }
+
+        return locations;
+      };
+
+      const searchZip = async (e) => {
+        e.preventDefault();
+        if (zip.length < 5) return;
+        setLoading(true);
+        setUsingRealData(false);
+        
+        // Overall timeout - don't let this hang forever
+        const overallTimeout = setTimeout(() => {
+          if (loading) {
+            setLoading(false);
+            setResults([{ 
+              name: "Search Timeout", 
+              addr: "The search took too long. This may be due to slow network or API issues. Please try again.", 
+              type: "Error" 
+            }]);
+          }
+        }, 15000); // 15 second max
+        
+        try {
+          // Get location from zip code (with timeout)
+          const zipPromise = fetch(`https://api.zippopotam.us/us/${zip}`);
+          const zipTimeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Zip code lookup timeout')), 5000)
+          );
+          
+          const res = await Promise.race([zipPromise, zipTimeout]);
+          if (!res.ok) throw new Error('Invalid zip code');
+          const data = await res.json();
+          const place = data.places[0];
+          const city = place['place name'];
+          const state = place['state'];
+          const lat = parseFloat(place.latitude);
+          const lng = parseFloat(place.longitude);
+          const address = `${city}, ${state} ${zip}`;
+
+          // Try multiple approaches to find polling locations
+          let locations = [];
+          let apiErrorMessage = null;
+          let dataSource = 'sample';
+          
+          // Approach 1: Try Google Civic Information API (official polling places) - with timeout
+          if (apiKey) {
+            try {
+              const civicPromise = fetchRealPollingLocations(address, lat, lng);
+              const civicTimeout = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Civic API timeout')), 8000)
+              );
+              
+              locations = await Promise.race([civicPromise, civicTimeout]);
+              
+              if (locations.length > 0) {
+                setUsingRealData(true);
+                dataSource = 'official';
+                console.log('Successfully fetched official polling locations:', locations);
+              } else {
+                throw new Error('API returned no polling locations');
+              }
+            } catch (apiError) {
+              console.warn('Google Civic API error:', apiError);
+              apiErrorMessage = apiError.message;
+            }
+          }
+
+          // Approach 2: If official API fails, try finding real nearby locations (libraries, schools, etc.)
+          if (locations.length === 0) {
+            console.log('Attempting to find real nearby locations commonly used as polling places...');
+            try {
+              // Add timeout to prevent hanging
+              const realLocationsPromise = findRealPollingLocations(lat, lng, city, state);
+              const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Location search timeout')), 10000)
+              );
+              
+              const realLocations = await Promise.race([realLocationsPromise, timeoutPromise]);
+              
+              if (realLocations && realLocations.length > 0) {
+                locations = realLocations;
+                setUsingRealData(true);
+                dataSource = 'estimated';
+                console.log('Found real nearby locations:', locations);
+              }
+            } catch (timeoutError) {
+              console.warn('Location search timed out or failed:', timeoutError);
+            }
+          }
+
+          // Approach 3: Final fallback - use estimated sample locations
+          if (locations.length === 0) {
+            locations = generateSampleLocations(lat, lng, city, state);
+            setUsingRealData(false);
+            dataSource = 'sample';
+            console.log('Using sample locations as final fallback');
+          }
+
+          clearTimeout(overallTimeout);
+          setResults(locations);
+
+          // Center map on location
+          if (mapRef.current && activeTool === 'map') {
+            mapRef.current.setView([lat, lng], 12);
+          }
+        } catch (err) {
+          clearTimeout(overallTimeout);
+          setResults([{ 
+            name: "Search Error", 
+            addr: err.message || "Please try a valid US Zip Code or check your connection.", 
+            type: "Error" 
+          }]);
+          setUsingRealData(false);
+        }
+        setLoading(false);
+      };
+
+      const saveApiKey = () => {
+        localStorage.setItem('googleCivicApiKey', apiKey);
+        setShowApiKeyConfig(false);
+        // Show success message
+        alert('API key saved! Real polling locations will now be used.');
+      };
+
+      const handleToolSwitch = (tool) => {
+        setActiveTool(tool);
+      };
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 text-slate-900">
+          <nav className="px-6 py-4 flex justify-between items-center bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50 shadow-sm">
+            <h1 className="text-2xl font-bold tracking-tight cursor-pointer bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent" onClick={() => setCurrentPage('home')}>Vote4U</h1>
+            <div className="flex gap-8 font-medium text-slate-600">
+              <button onClick={() => setCurrentPage('home')} className={`transition hover:text-blue-600 ${currentPage === 'home' ? 'text-blue-600 font-semibold' : ''}`}>Home</button>
+              <button onClick={() => setCurrentPage('about')} className={`transition hover:text-blue-600 ${currentPage === 'about' ? 'text-blue-600 font-semibold' : ''}`}>About</button>
+              <button onClick={() => setCurrentPage('tools')} className={`transition hover:text-blue-600 ${currentPage === 'tools' ? 'text-blue-600 font-semibold' : ''}`}>Tools</button>
+              <button onClick={() => setCurrentPage('news')} className={`transition hover:text-blue-600 ${currentPage === 'news' ? 'text-blue-600 font-semibold' : ''}`}>News</button>
+            </div>
+          </nav>
+
+          <main className="max-w-6xl mx-auto px-6 py-12 space-y-12">
+            {currentPage === 'home' && (
+              <div className="text-center py-24 space-y-8 fade-in">
+                <h2 className="text-7xl font-bold leading-tight tracking-tight">
+                  Ready for <br/>
+                  <span className="text-red-600">November</span> <span className="text-blue-600">2028?</span>
+                </h2>
+                <p className="text-slate-600 text-xl max-w-2xl mx-auto leading-relaxed font-light">
+                  The next generation of leadership starts with your vote. Access nonpartisan tools, real-time election news, and polling locations to make your voice heard.
+                </p>
+                <div className="flex gap-4 justify-center pt-4">
+                  <button onClick={() => setCurrentPage('tools')} className="bg-blue-600 text-white px-10 py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    Get Started
+                  </button>
+                  <button onClick={() => setCurrentPage('about')} className="bg-white border-2 border-slate-200 text-slate-900 px-10 py-4 rounded-xl font-semibold text-lg hover:bg-slate-50 hover:border-slate-300 transition-all">
+                    Learn More
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {currentPage === 'about' && (
+              <div className="space-y-10 fade-in max-w-4xl mx-auto">
+                <div className="text-center mb-8">
+                  <h1 className="text-5xl font-bold mb-4">About Vote4U</h1>
+                  <p className="text-slate-600 text-lg">Empowering the next generation of voters</p>
+                </div>
+
+                <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit mx-auto gap-2 mb-8">
+                  {['why', 'goal', 'what'].map(t => (
+                    <button 
+                      key={t} 
+                      onClick={() => setAboutTab(t)} 
+                      className={`px-8 py-3 rounded-xl font-semibold transition-all capitalize ${
+                        aboutTab === t 
+                          ? 'bg-white text-blue-600 shadow-md' 
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {t === 'why' ? 'Why' : t === 'goal' ? 'Our Goal' : 'What'}
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="bg-white p-12 rounded-3xl shadow-lg border border-slate-100 min-h-[400px]">
+                  {aboutTab === 'why' && (
+                    <div className="space-y-6 fade-in">
+                      <h2 className="text-4xl font-bold text-slate-900">Why This Matters</h2>
+                      <div className="space-y-4 text-slate-700 leading-relaxed text-lg">
+                        <p>
+                          Voting is one of the most crucial civil liberties granted in the United States. It embodies the freedom to improve the future of society for the betterment of the public as a whole.
+                        </p>
+                        <p>
+                          Suffrage allows American citizens to retain the freedoms stated in the Constitution and its amendments—a gift many globally are restricted from. Voting is more than simply checking a box on a piece of paper; it is the ability to influence and change the political landscape that shapes our daily lives.
+                        </p>
+                        <p className="pt-4 border-t border-slate-200 italic text-slate-600">
+                          Every vote cast is a voice heard, every voice heard is a future shaped.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {aboutTab === 'goal' && (
+                    <div className="space-y-6 fade-in">
+                      <h2 className="text-4xl font-bold text-slate-900">Our Goal</h2>
+                      <div className="space-y-5 text-slate-700 leading-relaxed text-lg">
+                        <p>
+                          Vote4U is addressing the issue of low young adult voter turnout throughout the United States, from the local to the national levels. Despite young adults being a critical and crucial demographic when it comes to shaping our world today, this demographic often shares a lack of engagement with voting and participation in government activities.
+                        </p>
+                        <p>
+                          This app works to solve the lack of accessible, nonpartisan civic information. The main reason why people ages 18-22 do not vote is due to the lack of resources, knowledge, and confidence needed to actually participate and vote. From things like forgetting registration deadlines to not knowing how to research candidates, the upcoming young adults in today's world need support in order to close this gap.
+                        </p>
+                        <p>
+                          The people most impacted by this issue are either young or first-time voters, or people new to the US voting system. We are focusing on helping individuals who have not received accessible civic information and education.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {aboutTab === 'what' && (
+                    <div className="space-y-6 fade-in">
+                      <h2 className="text-4xl font-bold text-slate-900">What Is Voting?</h2>
+                      <div className="space-y-4 text-slate-700 leading-relaxed text-lg">
+                        <p>
+                          Voting is the foundation of democracy—the process through which citizens have a direct say in shaping their communities, states, and nation. It happens at many levels: local elections decide school boards and city councils; state elections influence governors and legislatures; and federal elections select leaders who represent the country on a global stage.
+                        </p>
+                        <p>
+                          Every ballot cast, whether for a city measure or the presidency, is a step toward ensuring that every voice is heard and every opinion counts. From municipal decisions that affect your neighborhood parks to national policies that shape our economic future, your vote is your most powerful tool as a citizen.
+                        </p>
+                        <p className="pt-4 border-t border-slate-200 text-blue-600 font-semibold">
+                          Ready to make your voice heard? Start by finding your polling location and staying informed.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {currentPage === 'tools' && (
+              <div className="space-y-8 fade-in">
+                <div className="text-center mb-8">
+                  <h1 className="text-5xl font-bold mb-3">Election Tools</h1>
+                  <p className="text-slate-600 text-lg">Access real-time electoral data and polling information</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-6 bg-white p-8 rounded-2xl shadow-md border border-slate-100">
+                  <div className="text-center">
+                    <p className="text-xs font-bold uppercase text-blue-600 tracking-wider mb-2">Democrat</p>
+                    <p className="text-5xl font-bold text-blue-600">{tally.blue}</p>
+                    <p className="text-xs text-slate-500 mt-1">Electoral Votes</p>
+                  </div>
+                  <div className="text-center border-x border-slate-200">
+                    <p className="text-xs font-bold uppercase text-slate-500 tracking-wider mb-2">Swing States</p>
+                    <p className="text-5xl font-bold text-slate-600">{tally.swing}</p>
+                    <p className="text-xs text-slate-500 mt-1">Electoral Votes</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-bold uppercase text-red-600 tracking-wider mb-2">Republican</p>
+                    <p className="text-5xl font-bold text-red-600">{tally.red}</p>
+                    <p className="text-xs text-slate-500 mt-1">Electoral Votes</p>
+                  </div>
+                </div>
+
+                <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit mx-auto gap-2">
+                  <button 
+                    onClick={() => handleToolSwitch('booths')} 
+                    className={`px-8 py-3 rounded-xl font-semibold transition-all ${
+                      activeTool === 'booths' 
+                        ? 'bg-white text-blue-600 shadow-md' 
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Locate Booths
+                  </button>
+                  <button 
+                    onClick={() => handleToolSwitch('map')} 
+                    className={`px-8 py-3 rounded-xl font-semibold transition-all ${
+                      activeTool === 'map' 
+                        ? 'bg-white text-blue-600 shadow-md' 
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Electoral Map
+                  </button>
+                </div>
+
+                <div className="bg-white p-8 rounded-3xl shadow-lg border border-slate-100 min-h-[600px]">
+                  {activeTool === 'booths' ? (
+                    <div className="max-w-2xl mx-auto space-y-8">
+                      <div className="text-center mb-6">
+                        <h3 className="text-2xl font-bold mb-2">Find Your Polling Location</h3>
+                        <p className="text-slate-600 mb-3">Enter your zip code to find the nearest polling booths and early voting locations</p>
+                        {!apiKey && (
+                          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-left">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className="text-sm font-semibold text-amber-800 mb-1">📌 Using Sample Data</p>
+                                <p className="text-xs text-amber-700">Configure an API key to get real polling locations from official sources.</p>
+                              </div>
+                              <button 
+                                onClick={() => setShowApiKeyConfig(!showApiKeyConfig)}
+                                className="ml-4 text-xs font-semibold text-amber-700 hover:text-amber-900 underline"
+                              >
+                                {showApiKeyConfig ? 'Hide' : 'Configure'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {apiKey && (
+                          <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
+                            <p className="text-xs font-semibold text-green-800">✓ Real polling location data enabled</p>
+                          </div>
+                        )}
+                        {showApiKeyConfig && (
+                          <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-6 mb-4 text-left space-y-4">
+                            <div>
+                              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                Google Civic Information API Key
+                              </label>
+                              <input
+                                type="password"
+                                value={apiKey}
+                                onChange={e => setApiKey(e.target.value)}
+                                placeholder="Enter your API key"
+                                className="w-full bg-white border-2 border-slate-200 p-3 rounded-lg font-mono text-sm outline-none focus:border-blue-500"
+                              />
+                              <div className="flex gap-2 mt-3">
+                                <button
+                                  onClick={saveApiKey}
+                                  className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition"
+                                >
+                                  Save API Key
+                                </button>
+                                {apiKey && (
+                                  <button
+                                    onClick={() => {
+                                      setApiKey('');
+                                      localStorage.removeItem('googleCivicApiKey');
+                                      setShowApiKeyConfig(false);
+                                    }}
+                                    className="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg font-semibold text-sm hover:bg-slate-300 transition"
+                                  >
+                                    Clear
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="pt-3 border-t border-slate-200">
+                              <p className="text-xs font-semibold text-slate-700 mb-2">How to get an API key:</p>
+                              <ol className="text-xs text-slate-600 space-y-1 ml-4 list-decimal">
+                                <li>Visit <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a></li>
+                                <li>Create a new project or select an existing one</li>
+                                <li>Enable the "Civic Information API"</li>
+                                <li>Create credentials (API key)</li>
+                                <li>Copy and paste the key above</li>
+                              </ol>
+                              <p className="text-xs text-slate-500 mt-2">
+                                Free tier: 25,000 requests/day. API key is stored locally in your browser.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <form onSubmit={searchZip} className="flex gap-3">
+                        <input 
+                          value={zip} 
+                          onChange={e => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))} 
+                          placeholder="Enter Zip Code (e.g., 90210)" 
+                          className="flex-1 bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-medium outline-none focus:border-blue-500 focus:bg-white transition" 
+                          maxLength="5"
+                        />
+                        <button 
+                          type="submit"
+                          className="bg-blue-600 text-white px-8 rounded-xl font-semibold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" 
+                          disabled={zip.length < 5 || loading}
+                        >
+                          {loading ? 'Searching...' : 'Find'}
+                        </button>
+                      </form>
+                      <div className="space-y-4">
+                        {loading && (
+                          <div className="text-center py-8">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+                            <p className="font-semibold text-blue-600">Verifying Local Precincts...</p>
+                          </div>
+                        )}
+                        {!loading && results.length > 0 && (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="font-bold text-lg text-slate-900">Nearby Polling Locations</h4>
+                              {usingRealData ? (
+                                <span className="text-xs font-semibold text-green-700 bg-green-50 px-3 py-1 rounded-full">✓ Official Data</span>
+                              ) : (
+                                <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-3 py-1 rounded-full">⚠ Sample Data</span>
+                              )}
+                            </div>
+                            {results.length > 0 && results[0]?.isEstimated && results[0]?.isReal && (
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                                <p className="text-xs text-blue-800">
+                                  <strong>ℹ️ Real Locations Found:</strong> These are actual nearby locations (libraries, schools, community centers) commonly used as polling places. These are not officially confirmed polling locations for 2028 - official locations are typically released 2 months before election day.
+                                </p>
+                              </div>
+                            )}
+                            {results.length > 0 && results[0] && !results[0].isReal && (
+                              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                                <p className="text-xs text-amber-800">
+                                  <strong>Note:</strong> These are estimated locations. {apiKey 
+                                    ? 'Official polling location data is not yet available. This is normal - polling locations are typically only available 2 months before election day. The 2028 election data has not been released yet.' 
+                                    : 'Configure a Google Civic Information API key above to fetch real polling locations when available. Polling locations are typically released 2 months before election day.'}
+                                </p>
+                                {apiKey && (
+                                  <p className="text-xs text-amber-700 mt-2">
+                                    💡 <strong>Tip:</strong> Check your browser console (F12) for detailed API response information.
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            {results.map((r, i) => (
+                              <div key={i} className={`p-6 border-2 rounded-2xl fade-in transition-all cursor-pointer ${
+                                r.isReal 
+                                  ? 'border-green-200 bg-green-50/50 hover:border-green-300 hover:bg-green-50' 
+                                  : 'border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-white'
+                              }`}>
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
+                                      r.type === 'Polling Place' 
+                                        ? 'text-blue-600 bg-blue-50' 
+                                        : r.type === 'Early Voting'
+                                        ? 'text-purple-600 bg-purple-50'
+                                        : 'text-slate-600 bg-slate-100'
+                                    }`}>
+                                      {r.type}
+                                    </span>
+                                    {r.isReal && !r.isEstimated && (
+                                      <span className="text-xs text-green-700 font-semibold">✓ Official</span>
+                                    )}
+                                    {r.isReal && r.isEstimated && (
+                                      <span className="text-xs text-blue-700 font-semibold">✓ Real Location</span>
+                                    )}
+                                    {r.isSample && (
+                                      <span className="text-xs text-amber-700 font-semibold">Estimated</span>
+                                    )}
+                                  </div>
+                                  {r.lat && r.lng && (
+                                    <button 
+                                      onClick={() => {
+                                        setActiveTool('map');
+                                        setTimeout(() => {
+                                          if (mapRef.current) {
+                                            mapRef.current.setView([r.lat, r.lng], 15);
+                                          }
+                                        }, 100);
+                                      }}
+                                      className="text-xs font-semibold text-blue-600 hover:text-blue-700 whitespace-nowrap"
+                                    >
+                                      View on Map →
+                                    </button>
+                                  )}
+                                </div>
+                                <h4 className="font-bold text-xl text-slate-900 mb-1">{r.name}</h4>
+                                <p className="text-sm text-slate-600 mb-2">{r.addr}</p>
+                                {r.hours && (
+                                  <p className="text-xs text-slate-500 mt-2">
+                                    <strong>Hours:</strong> {r.hours}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 h-full">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-2xl font-bold">Electoral College Projection</h3>
+                          <p className="text-slate-600 mt-1">Current state-by-state electoral vote allocation</p>
+                        </div>
+                        {zip && (
+                          <form onSubmit={searchZip} className="flex gap-2">
+                            <input 
+                              value={zip} 
+                              onChange={e => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))} 
+                              placeholder="Zip Code" 
+                              className="w-32 bg-slate-50 border-2 border-slate-200 p-2 rounded-lg font-medium outline-none focus:border-blue-500 text-sm" 
+                              maxLength="5"
+                            />
+                            <button 
+                              type="submit"
+                              className="bg-blue-600 text-white px-4 rounded-lg font-semibold hover:bg-blue-700 transition text-sm"
+                              disabled={zip.length < 5 || loading}
+                            >
+                              Find
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                      <div id="map-container" className="border border-slate-200"></div>
+                      {zip && results.length > 0 && results[0] && (
+                        <div className={`mt-4 p-4 border rounded-xl ${
+                          results[0].isReal && !results[0].isEstimated
+                            ? 'bg-green-50 border-green-200' 
+                            : results[0].isReal && results[0].isEstimated
+                            ? 'bg-blue-50 border-blue-200'
+                            : 'bg-amber-50 border-amber-200'
+                        }`}>
+                          <p className={`text-sm font-medium ${
+                            results[0].isReal && !results[0].isEstimated
+                              ? 'text-green-800' 
+                              : results[0].isReal && results[0].isEstimated
+                              ? 'text-blue-800'
+                              : 'text-amber-800'
+                          }`}>
+                            <span className="font-bold">
+                              {results[0].isReal && !results[0].isEstimated 
+                                ? 'Green markers = Official polling locations'
+                                : results[0].isReal && results[0].isEstimated
+                                ? 'Blue markers = Real locations (commonly used as polling places)'
+                                : 'Orange markers = Estimated locations'}
+                            </span>
+                            . Click markers for details.
+                            {results[0].isEstimated && (
+                              <span className="block mt-1 text-xs">
+                                Official 2028 polling locations will be released closer to election day.
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {currentPage === 'news' && (
+              <div className="space-y-8 fade-in">
+                <div className="text-center mb-10">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex-1">
+                      <h1 className="text-5xl font-bold mb-2">2028 Election News</h1>
+                      <p className="text-slate-600 text-lg">Latest updates on top prospects and key developments</p>
+                      {newsArticles.length > 0 && localStorage.getItem('newsLastUpdated') && (
+                        <p className="text-xs text-slate-500 mt-2">
+                          Last updated: {getTimeAgo(new Date(parseInt(localStorage.getItem('newsLastUpdated'))))}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => fetchElectionNews(true)}
+                      disabled={newsLoading}
+                      className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                      {newsLoading ? 'Loading...' : '🔄 Refresh'}
+                    </button>
+                  </div>
+                </div>
+
+                {newsLoading && newsArticles.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                    <p className="font-semibold text-blue-600">Fetching latest election news...</p>
+                  </div>
+                )}
+
+                {newsArticles.length === 0 && !newsLoading && (
+                  <div className="text-center py-12 bg-slate-50 rounded-2xl">
+                    <p className="text-slate-600 mb-4">No news articles found. Try refreshing or check your NewsAPI key configuration.</p>
+                    <p className="text-xs text-slate-500 mb-4">
+                      Note: NewsAPI free tier has CORS restrictions. Check browser console (F12) for details.
+                    </p>
+                    <button
+                      onClick={() => fetchElectionNews(true)}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                )}
+
+                {newsArticles.length > 0 && newsArticles[0]?.isError && (
+                  <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-6">
+                    <h3 className="font-bold text-amber-900 mb-2">⚠️ News Fetching Issue</h3>
+                    <p className="text-sm text-amber-800 mb-4">{newsArticles[0].excerpt}</p>
+                    <div className="text-xs text-amber-700 space-y-2">
+                      <p><strong>Possible solutions:</strong></p>
+                      <ul className="list-disc list-inside ml-2 space-y-1">
+                        <li>NewsAPI free tier blocks direct browser requests (CORS)</li>
+                        <li>For production, use a backend proxy or NewsAPI paid tier</li>
+                        <li>Check browser console (F12) for detailed error messages</li>
+                        <li>Verify your NewsAPI key is correct</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid gap-6">
+                  {newsArticles.map((article, i) => (
+                    <div 
+                      key={article.id} 
+                      className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md news-card fade-in"
+                      style={{ animationDelay: `${i * 0.1}s` }}
+                    >
+                      <div className="flex items-start justify-between gap-6">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3 flex-wrap">
+                            {article.party && (
+                              <span className={`text-xs font-bold uppercase px-3 py-1 rounded-full ${
+                                article.party === 'Democrat' 
+                                  ? 'bg-blue-100 text-blue-700' 
+                                  : article.party === 'Republican'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-slate-100 text-slate-700'
+                              }`}>
+                                {article.party}
+                              </span>
+                            )}
+                            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{article.category}</span>
+                            <span className="text-xs text-slate-400">•</span>
+                            <span className="text-xs text-slate-400">{article.timeAgo || article.date}</span>
+                          </div>
+                          <h3 className={`text-2xl font-bold mb-2 transition ${
+                            article.isError 
+                              ? 'text-amber-900' 
+                              : article.url 
+                                ? 'text-slate-900 hover:text-blue-600' 
+                                : 'text-slate-900'
+                          }`}>
+                            {article.url && !article.isError ? (
+                              <a href={article.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                {article.title}
+                              </a>
+                            ) : (
+                              article.title
+                            )}
+                          </h3>
+                          <p className="text-slate-600 leading-relaxed mb-4">
+                            {article.excerpt}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="font-semibold text-slate-900">{article.candidate}</span>
+                            <span className="text-slate-400">•</span>
+                            <span className="text-slate-500">{article.source}</span>
+                            {article.url && (
+                              <>
+                                <span className="text-slate-400">•</span>
+                                <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 font-semibold">
+                                  Read more →
+                                </a>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="text-center pt-8 border-t border-slate-200">
+                  <p className="text-slate-500 text-sm">
+                    News is automatically refreshed every 2 weeks. Click "Refresh" to get the latest updates now.
+                    <br />
+                    <span className="text-xs mt-2 block">Powered by NewsAPI • Articles open in new tab</span>
+                  </p>
+                </div>
+              </div>
+            )}
+          </main>
+
+          <footer className="mt-20 py-12 border-t border-slate-200 bg-white/50">
+            <div className="max-w-6xl mx-auto px-6 text-center">
+              <p className="text-slate-600 text-sm">
+                © 2024 Vote4U. Nonpartisan civic engagement platform.
+              </p>
+            </div>
+          </footer>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>

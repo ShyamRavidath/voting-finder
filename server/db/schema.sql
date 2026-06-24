@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS news_cache (
+  id SERIAL PRIMARY KEY,
+  query_key TEXT NOT NULL UNIQUE,
+  articles JSONB NOT NULL,
+  cached_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS polling_cache (
+  id SERIAL PRIMARY KEY,
+  zip_code CHAR(5) NOT NULL UNIQUE,
+  locations JSONB NOT NULL,
+  data_source VARCHAR(20) NOT NULL,
+  cached_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL
+);
