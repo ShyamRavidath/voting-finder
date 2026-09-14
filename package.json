@@ -7,9 +7,17 @@
     "dev:client": "cd client && npm run dev",
     "dev:server": "cd server && node --watch index.js",
     "build": "cd client && npm run build",
-    "install:all": "npm install && cd client && npm install && cd ../server && npm install"
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "test": "npm test --prefix server && npm run test:e2e",
+    "test:e2e": "playwright test",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
