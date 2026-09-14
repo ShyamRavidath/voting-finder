@@ -1,62 +1,63 @@
+const { fetchWithTimeout } = require('../lib/fetchWithTimeout');
+
 const CIVIC_BASE = 'https://www.googleapis.com/civicinfo/v2';
 
-function parseLocations(voterInfo, defaultLat, defaultLng) {
+function parseLocations(voterInfo) {
   const locations = [];
-  const offset = () => Math.random() * 0.03 - 0.015;
 
-  const addLocs = (arr, defaultType) => {
+  const addLocs = (arr, type) => {
     (arr || []).forEach((loc) => {
       if (!loc.address?.line1) return;
       const parts = [loc.address.line1, loc.address.line2, loc.address.city, loc.address.state, loc.address.zip].filter(Boolean);
       locations.push({
-        name: loc.address.locationName || loc.name || defaultType,
+        name: loc.address.locationName || loc.name || type,
         addr: parts.join(', '),
-        type: defaultType,
-        lat: loc.latitude || defaultLat + offset(),
-        lng: loc.longitude || defaultLng + offset(),
+        type,
+        // Only use coordinates the API actually provides — never invent them
+        lat: loc.latitude ?? null,
+        lng: loc.longitude ?? null,
         isReal: true,
-        hours: loc.pollingHours || loc.hours || loc.startDate || null,
+        hours: loc.pollingHours || null,
       });
     });
   };
 
   addLocs(voterInfo.pollingLocations, 'Polling Place');
   addLocs(voterInfo.earlyVoteSites, 'Early Voting');
+  addLocs(voterInfo.dropOffLocations, 'Ballot Drop-off');
   return locations;
 }
 
-async function fetchOfficialLocations(address, lat, lng, apiKey) {
-  const electionsRes = await fetch(`${CIVIC_BASE}/elections?key=${apiKey}`);
-  const electionsData = await electionsRes.json();
-
-  const idsToTry = ['2000'];
-  if (Array.isArray(electionsData.elections)) {
-    const upcoming = electionsData.elections
-      .filter((e) => e.electionDay && new Date(e.electionDay) >= new Date())
-      .sort((a, b) => new Date(a.electionDay) - new Date(b.electionDay))
-      .slice(0, 3)
-      .map((e) => e.id);
-    idsToTry.unshift(...upcoming);
-  }
-
-  for (const id of idsToTry) {
-    const res = await fetch(
-      `${CIVIC_BASE}/voterinfo?address=${encodeURIComponent(address)}&key=${apiKey}&electionId=${id}`
-    );
-    const data = await res.json();
-    if (data.error) continue;
-    const locs = parseLocations(data, lat, lng);
-    if (locs.length > 0) return locs;
-  }
-
-  const res = await fetch(`${CIVIC_BASE}/voterinfo?address=${encodeURIComponent(address)}&key=${apiKey}`);
-  const data = await res.json();
-  if (!data.error) {
-    const locs = parseLocations(data, lat, lng);
-    if (locs.length > 0) return locs;
-  }
-
-  throw new Error('No polling locations available yet from official sources.');
+async function civicGet(path, apiKey) {
+  const res = await fetchWithTimeout(`${CIVIC_BASE}${path}${path.includes('?') ? '&' : '?'}key=${apiKey}`, {}, 6000);
+  return res.json();
 }
 
-module.exports = { fetchOfficialLocations };
+// Official locations only exist for elections Google's Voting Information Project has data for,
+// typically a few weeks before election day.
+async function fetchOfficialLocations(address, stateAbbr, apiKey) {
+  const electionsData = await civicGet('/elections', apiKey);
+  const today = new Date().toISOString().slice(0, 10);
+  const stateDivision = `ocd-division/country:us/state:${stateAbbr.toLowerCase()}`;
+
+  const relevant = (electionsData.elections || [])
+    .filter((e) => e.id !== '2000') // Google's "VIP Test Election" returns fake test data
+    .filter((e) => e.electionDay >= today)
+    .filter((e) => e.ocdDivisionId === 'ocd-division/country:us' || e.ocdDivisionId?.startsWith(stateDivision))
+    .sort((a, b) => a.electionDay.localeCompare(b.electionDay))
+    .slice(0, 3);
+
+  for (const election of relevant) {
+    const data = await civicGet(
+      `/voterinfo?address=${encodeURIComponent(address)}&electionId=${election.id}`,
+      apiKey
+    );
+    if (data.error) continue;
+    const locs = parseLocations(data);
+    if (locs.length > 0) return { locations: locs, election: election.name };
+  }
+
+  return { locations: [], election: null };
+}
+
+module.exports = { fetchOfficialLocations, parseLocations };
