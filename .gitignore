@@ -9,3 +9,6 @@ client/.env
 CLAUDE.md
 .playwright-mcp/
 *.local
+playwright-report/
+test-results/
+.vercel

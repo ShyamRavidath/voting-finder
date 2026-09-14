@@ -7,6 +7,7 @@ export const STATE_DATA = [
   { name: 'Colorado', lat: 39.0, lng: -105.3, party: 'blue', ev: 10 },
   { name: 'Connecticut', lat: 41.5, lng: -72.7, party: 'blue', ev: 7 },
   { name: 'Delaware', lat: 39.3, lng: -75.5, party: 'blue', ev: 3 },
+  { name: 'District of Columbia', lat: 38.9, lng: -77.0, party: 'blue', ev: 3 },
   { name: 'Florida', lat: 27.7, lng: -81.6, party: 'red', ev: 30 },
   { name: 'Georgia', lat: 33.0, lng: -83.6, party: 'gray', ev: 16 },
   { name: 'Hawaii', lat: 21.0, lng: -157.8, party: 'blue', ev: 4 },

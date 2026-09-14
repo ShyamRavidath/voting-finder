@@ -1,64 +1,85 @@
 import { useNews } from '../hooks/useNews';
 import NewsCard from '../components/NewsCard';
+import Icon from '../components/Icon';
+import { usePageTitle } from '../hooks/usePageTitle';
+
+function NewsSkeleton() {
+  return (
+    <ul className="space-y-3" aria-busy="true" aria-label="Loading news">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <li key={i} className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="flex-1">
+            <div className="skeleton h-3 w-32 rounded" />
+            <div className="skeleton mt-3 h-5 w-full rounded" />
+            <div className="skeleton mt-2 h-5 w-3/4 rounded" />
+          </div>
+          <div className="skeleton size-20 rounded-xl sm:h-24 sm:w-32" />
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function NewsPage() {
-  const { articles, loading, error, refresh } = useNews();
+  usePageTitle('2028 election news');
+  const { articles, loading, error, refresh, retry } = useNews();
 
   return (
-    <div className="space-y-8 fade-in">
-      <div className="text-center mb-10">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex-1">
-            <h1 className="text-5xl font-bold mb-2">2028 Election News</h1>
-            <p className="text-slate-600 text-lg">Latest updates on top prospects and key developments</p>
-          </div>
-          <button
-            onClick={refresh}
-            disabled={loading}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            {loading ? 'Loading...' : '↺ Refresh'}
-          </button>
+    <div className="fade-in mx-auto max-w-3xl space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">2028 election news</h1>
+          <p className="mt-1 text-slate-600">Latest headlines on the race and the people in it.</p>
         </div>
+        <button
+          type="button"
+          onClick={refresh}
+          disabled={loading}
+          aria-label="Refresh news"
+          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 font-semibold text-slate-800 transition-colors hover:bg-slate-50 disabled:opacity-50 sm:px-4"
+        >
+          <Icon name="refresh" className={`size-5 ${loading ? 'animate-spin' : ''}`} />
+          <span className="hidden sm:inline">{loading ? 'Loading…' : 'Refresh'}</span>
+        </button>
       </div>
 
-      {loading && articles.length === 0 && (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4" />
-          <p className="font-semibold text-blue-600">Fetching latest election news...</p>
-        </div>
-      )}
+      <div aria-live="polite">
+        {loading && articles.length === 0 && <NewsSkeleton />}
 
-      {error && (
-        <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-6">
-          <h3 className="font-bold text-amber-900 mb-2">News unavailable</h3>
-          <p className="text-sm text-amber-800">{error}</p>
-        </div>
-      )}
+        {error && (
+          <div role="alert" className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+            <Icon name="alert" className="size-5 shrink-0" />
+            <div>
+              <p className="font-semibold">News is unavailable right now</p>
+              <p className="mt-0.5 text-sm">{error}</p>
+              <button type="button" onClick={retry} className="mt-2 min-h-10 text-sm font-semibold underline underline-offset-2">
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
 
-      {!loading && !error && articles.length === 0 && (
-        <div className="text-center py-12 bg-slate-50 rounded-2xl">
-          <p className="text-slate-600 mb-4">No articles found. Try refreshing.</p>
-          <button onClick={refresh} className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
-            Try Again
-          </button>
-        </div>
-      )}
+        {!loading && !error && articles.length === 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+            <p className="font-semibold text-slate-900">No headlines right now</p>
+            <p className="mt-1 text-sm text-slate-600">Check back soon, or tap refresh to try again.</p>
+          </div>
+        )}
 
-      <div className="grid gap-6">
-        {articles.map((article, i) => (
-          <NewsCard key={article.id} article={article} index={i} />
-        ))}
+        {articles.length > 0 && (
+          <ul className={`space-y-3 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+            {articles.map((article) => (
+              <NewsCard key={article.id} article={article} />
+            ))}
+          </ul>
+        )}
       </div>
 
       {articles.length > 0 && (
-        <div className="text-center pt-8 border-t border-slate-200">
-          <p className="text-slate-500 text-sm">
-            News is cached for 14 days. Click Refresh to fetch the latest.
-            <br />
-            <span className="text-xs mt-2 block">Powered by NewsAPI · Articles open in new tab</span>
-          </p>
-        </div>
+        <p className="border-t border-slate-200 pt-4 text-center text-xs text-slate-600">
+          Headlines are gathered automatically from news sources and open on the publisher's site. Party labels reflect
+          the candidate a story mentions, not the outlet. Vote4U doesn't endorse any source or candidate.
+        </p>
       )}
     </div>
   );
