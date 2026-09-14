@@ -1,31 +1,52 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import Icon from '../components/Icon';
+import { nextFederalElection } from '../lib/format';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function HomePage() {
-  const navigate = useNavigate();
+  usePageTitle(null);
+  const next = nextFederalElection();
+  const dateLabel = next.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
   return (
-    <div className="text-center py-24 space-y-8 fade-in">
-      <h2 className="text-7xl font-bold leading-tight tracking-tight">
+    <div className="fade-in mx-auto flex max-w-3xl flex-col items-center py-6 text-center sm:py-16">
+      <p className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-left text-sm text-slate-700">
+        <Icon name="calendar" className="size-4 text-blue-600" />
+        <span>
+          {next.kind}: <strong className="font-semibold text-slate-900">{dateLabel}</strong>
+          {' · '}
+          {next.daysAway === 0 ? 'today' : `${next.daysAway} day${next.daysAway === 1 ? '' : 's'} away`}
+        </span>
+      </p>
+
+      <h1 className="mt-6 text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl">
         Ready for <br />
         <span className="text-red-600">November</span> <span className="text-blue-600">2028?</span>
-      </h2>
-      <p className="text-slate-600 text-xl max-w-2xl mx-auto leading-relaxed font-light">
-        The next generation of leadership starts with your vote. Access nonpartisan tools, real-time election
-        news, and polling locations to make your voice heard.
+      </h1>
+      <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600 sm:text-xl">
+        The next generation of leadership starts with your vote. Find where to vote, see how the
+        electoral map stacks up, and keep up with the 2028 race, all in one nonpartisan place.
       </p>
-      <div className="flex gap-4 justify-center pt-4">
-        <button
-          onClick={() => navigate('/tools')}
-          className="bg-blue-600 text-white px-10 py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+
+      <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+        <Link
+          to="/tools?tab=booths"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 text-lg font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
         >
-          Get Started
-        </button>
-        <button
-          onClick={() => navigate('/about')}
-          className="bg-white border-2 border-slate-200 text-slate-900 px-10 py-4 rounded-xl font-semibold text-lg hover:bg-slate-50 hover:border-slate-300 transition-all"
+          <Icon name="pin" />
+          Find my polling place
+        </Link>
+        <Link
+          to="/tools?tab=map"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-7 text-lg font-semibold text-slate-900 transition-colors hover:bg-slate-50"
         >
-          Learn More
-        </button>
+          <Icon name="map" />
+          Electoral map
+        </Link>
       </div>
+      <Link to="/news" className="mt-5 inline-flex min-h-11 items-center gap-1 font-semibold text-blue-700 hover:text-blue-800">
+        Read the latest 2028 election news <span aria-hidden="true">→</span>
+      </Link>
     </div>
   );
 }

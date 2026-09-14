@@ -1,40 +1,69 @@
-export default function PollingLocationCard({ location, onViewMap }) {
-  const { name, addr, type, hours, isReal, isEstimated, isSample, lat, lng } = location;
+import Icon from './Icon';
+import { directionsUrl, formatMiles } from '../lib/format';
 
-  const borderClass = isReal
-    ? 'border-green-200 bg-green-50/50 hover:border-green-300 hover:bg-green-50'
-    : 'border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-white';
-
-  const typeClass =
-    type === 'Polling Place'
-      ? 'text-blue-600 bg-blue-50'
-      : type === 'Early Voting'
-      ? 'text-purple-600 bg-purple-50'
-      : 'text-slate-600 bg-slate-100';
+export default function PollingLocationCard({ location, number, selected, onShowOnMap }) {
+  const { name, addr, type, hours, distance, isEstimated, lat, lng } = location;
+  const official = !isEstimated;
+  const hasCoords = lat != null && lng != null;
 
   return (
-    <div className={`p-6 border-2 rounded-2xl fade-in transition-all cursor-pointer ${borderClass}`}>
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${typeClass}`}>
-            {type}
-          </span>
-          {isReal && !isEstimated && <span className="text-xs text-green-700 font-semibold">✓ Official</span>}
-          {isReal && isEstimated && <span className="text-xs text-blue-700 font-semibold">✓ Real Location</span>}
-          {isSample && <span className="text-xs text-amber-700 font-semibold">Estimated</span>}
+    <li
+      className={`rounded-2xl border bg-white p-4 transition-colors sm:p-5 ${
+        selected ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'
+      }`}
+    >
+      <div className="flex gap-3">
+        <span
+          className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${
+            official ? 'bg-emerald-600' : 'bg-blue-600'
+          }`}
+          aria-hidden="true"
+        >
+          {number}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold">
+            <span className="text-slate-600">{type}</span>
+            {official ? (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
+                <Icon name="check" className="size-3.5" strokeWidth={2.5} /> Official
+              </span>
+            ) : (
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-800">Not confirmed</span>
+            )}
+            {distance != null && <span className="font-medium text-slate-500">{formatMiles(distance)}</span>}
+          </div>
+          <h3 className="mt-1 text-lg leading-snug font-semibold text-slate-900">{name}</h3>
+          <p className="mt-0.5 text-[15px] text-slate-600">{addr}</p>
+          {hours && (
+            <p className="mt-2 text-sm text-slate-600">
+              <span className="font-semibold text-slate-700">Hours:</span> {hours}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <a
+              href={directionsUrl(location)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 text-sm font-semibold text-white hover:bg-slate-700"
+            >
+              <Icon name="directions" className="size-4" />
+              Directions
+              <span className="sr-only"> to {name} (opens maps)</span>
+            </a>
+            {hasCoords && onShowOnMap && (
+              <button
+                type="button"
+                onClick={onShowOnMap}
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-300 px-3.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              >
+                <Icon name="map" className="size-4" />
+                Show on map
+              </button>
+            )}
+          </div>
         </div>
-        {lat && lng && (
-          <button
-            onClick={() => onViewMap?.(lat, lng)}
-            className="text-xs font-semibold text-blue-600 hover:text-blue-700 whitespace-nowrap"
-          >
-            View on Map →
-          </button>
-        )}
       </div>
-      <h4 className="font-bold text-xl text-slate-900 mb-1">{name}</h4>
-      <p className="text-sm text-slate-600 mb-2">{addr}</p>
-      {hours && <p className="text-xs text-slate-500 mt-2"><strong>Hours:</strong> {hours}</p>}
-    </div>
+    </li>
   );
 }
