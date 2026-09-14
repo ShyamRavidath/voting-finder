@@ -1,71 +1,71 @@
 # Vote4U
 
-A nonpartisan civic-engagement web app built for the 2028 U.S. presidential election cycle. It gives visitors three tools in one place: a live electoral-map tally, a polling-place finder that resolves any ZIP code to real voting locations, and a curated feed of 2028-race news.
+A free, nonpartisan civic-engagement app for U.S. voters, built for the 2028 presidential cycle (and useful for every election before it). Three tools in one place: a polling-place finder, an Electoral College map, and a 2028 election news feed. It's mobile-first and set up to become an iOS app.
+
+Live: https://vote4ucyl.vercel.app
 
 ## What it does
 
-- **Electoral map & tally** (`/tools`, "Electoral Map" tab) — a state-by-state map with running Democrat / Republican / swing-state electoral vote counts, built from a static state dataset (`client/src/data/stateData.js`).
-- **Polling place finder** (`/tools`, "Find My Polling Booth" tab) — enter a 5-digit ZIP code and get nearby voting locations. The server tries three data sources in order and always returns *something*:
-  1. **Google Civic Information API** — official polling/early-voting locations for the address, tried across the nearest upcoming election IDs.
-  2. **OpenStreetMap Nominatim** — if no official data is available, falls back to nearby libraries, schools, community centers, and town halls within 10 km, geocoded and distance-ranked.
-  3. **Sample data** — if both fail (e.g. no API key configured, or the network is unreachable), generates clearly-labeled placeholder locations so the UI never breaks.
-  Results are cached in Postgres (`polling_cache`, 7-day TTL) keyed by ZIP.
-- **Election news feed** (`/news`) — pulls 2028-cycle articles from NewsAPI, tags each one with a candidate (from a fixed watchlist: Newsom, Whitmer, AOC, Buttigieg, Vance, Youngkin, Hawley, DeSantis, Scott, etc.) and an inferred party, then dedupes and caches the result in Postgres (`news_cache`, 14-day TTL).
+- **Polling place finder** (`/tools?tab=booths`): enter a 5-digit ZIP and get nearby voting locations, each with a Directions button (Apple Maps on iOS, Google Maps elsewhere) and a map. Results are shareable via `?zip=`. The server tries, in order:
+  1. **Google Civic Information API**: official polling, early-voting, and drop-off locations for upcoming elections in the user's state (usually published a few weeks before an election).
+  2. **OpenStreetMap Nominatim**: nearby libraries, community centers, and town halls, clearly labeled *not confirmed*.
+  3. **Nothing found**: an honest empty state. The app never invents locations. Official lookup links (USA.gov, NASS, Vote.gov) are always shown.
+- **Electoral map** (`/tools?tab=map`): an SVG map of all 50 states + DC (no map-tile service needed), a 538-vote tally with the 270 line, and a tappable state list. Data lives in `client/src/data/stateData.js`.
+- **Election news** (`/news`): 2028 headlines from NewsAPI, falling back to Google News RSS (no key needed) if NewsAPI is unconfigured, over quota, or down. Party labels come only from a watchlist of named 2028 candidates.
 
 ## Architecture
 
 ```
 voting-finder/
-├── client/          React 19 + Vite SPA (React Router, Tailwind)
-│   └── src/
-│       ├── pages/       HomePage, AboutPage, ToolsPage, NewsPage
-│       ├── components/  ElectoralMap, PollingLocationCard, NewsCard, NavBar
-│       ├── hooks/        usePolling, useNews (fetch + loading/error state)
-│       └── data/         stateData.js — static electoral-vote/party data
-├── server/          Express 5 API
-│   ├── routes/       elections.js, polling.js, news.js
-│   ├── services/     civicService (Google Civic), geocodeService (Zippopotam + Nominatim), newsService (NewsAPI)
-│   ├── middleware/   cors.js, rateLimit.js
-│   └── db/           schema.sql (Postgres cache tables), client.js
-├── vercel.json      Deploys the client as a static Vite build
-└── package.json     Root scripts to run client+server together in dev
+├── api/index.js     Vercel serverless entry: exports the Express app
+├── server/          Express 5 API (also runs standalone for local dev)
+│   ├── app.js        app setup: CORS, rate limit, routes, JSON 404/500
+│   ├── routes/       news.js, polling.js, elections.js
+│   ├── services/     civicService, geocodeService, newsService
+│   ├── db/           optional Postgres cache (schema.sql, client.js)
+│   └── test/         node:test API tests (upstream APIs stubbed)
+├── client/          React 19 + Vite + Tailwind v4 SPA
+│   └── src/          pages/, components/, hooks/, lib/, data/
+├── tests/e2e/       Playwright tests (desktop Chrome, iPhone Safari, Android Chrome)
+├── scripts/         generate-icons.mjs (PWA + App Store icons from the logo)
+├── assets/          app-icon-1024.png (App Store icon master)
+└── vercel.json      builds client, deploys api/ as a function, SPA rewrites, headers
 ```
 
-The client and server are two independent Node projects (`client/package.json`, `server/package.json`) orchestrated by the root `package.json` via `concurrently`.
+Frontend and API deploy together on Vercel, so the browser calls same-origin `/api/*`. Responses carry `Cache-Control: s-maxage` headers, so Vercel's CDN absorbs traffic and upstream APIs (NewsAPI's 100 requests/day free tier, Nominatim's fair-use policy) see only a trickle.
 
-## Setup & running locally
+## Running locally
 
-Requires Node ≥18 and a Postgres instance (for the two cache tables — the app degrades gracefully without one, just without caching).
+Requires Node 22.
 
 ```bash
-npm run install:all          # installs root, client, and server deps
-
-cp .env.example server/.env  # fill in the values below
-cp .env.example client/.env  # only needed for VITE_API_URL in production
-
-# apply the schema once against your Postgres instance
-psql "$DATABASE_URL" -f server/db/schema.sql
-
-npm run dev                  # runs client (Vite, :5173) and server (:3001) together
+npm run install:all
+cp .env.example server/.env   # fill in keys (all optional)
+npm run dev                   # API on :3001, Vite on :5173 (proxies /api)
 ```
 
-**Server environment variables** (`server/.env`):
-
-| Variable | Required | Purpose |
+| Variable (server) | Required | Purpose |
 |---|---|---|
-| `GOOGLE_CIVIC_API_KEY` | optional | Enables official polling-location + election-ID lookups. Without it, the app falls back to OSM/sample data. |
-| `NEWS_API_KEY` | optional | Enables the `/news` feed. Without it, the endpoint returns a 503. |
-| `DATABASE_URL` | optional | Postgres connection string for response caching. Without it, routes still work but hit the live APIs every request. |
-| `CLIENT_URL` | yes | Client origin, for CORS. |
-| `PORT` | no (default 3001) | Server port. |
+| `GOOGLE_CIVIC_API_KEY` | optional | Official polling locations. Without it, OpenStreetMap venues are used. |
+| `NEWS_API_KEY` | optional | NewsAPI headlines. Without it, Google News RSS is used. |
+| `DATABASE_URL` | optional | Postgres cache (run `server/db/schema.sql`). The CDN cache makes this unnecessary on Vercel. |
+| `CLIENT_URL` | optional | Extra allowed CORS origin. |
+| `RATE_LIMIT_MAX` | optional | Requests per 15 min per IP (default 100). |
 
-No API keys or secrets are committed to the repo — `.env` files are gitignored, and `.env.example` only ships placeholders.
+| Variable (client, build time) | Purpose |
+|---|---|
+| `VITE_API_BASE` | Only for native/mobile builds, which have no same-origin server. Set to the deployed site, e.g. `https://vote4ucyl.vercel.app`. Leave unset for the web. |
 
-## Deployment
+## Tests
 
-- **Client**: `vercel.json` builds `client/` with Vite and serves the static output; SPA routes are rewritten to `index.html`.
-- **Server**: any Node host (Railway, Render, etc.) — `server/package.json`'s `start` script runs `node index.js`.
+```bash
+npm test --prefix server   # API unit/integration tests (no network)
+npm run test:e2e           # builds the client, starts both servers, runs Playwright
+BASE_URL=https://vote4ucyl.vercel.app npx playwright test   # same suite against the live site
+```
 
-## Current status
+The e2e suite covers every page on three device profiles: no runtime errors, no sideways scrolling, axe WCAG 2.1 AA checks, navigation, search success/empty/error/offline states, the electoral map, and news fallbacks.
 
-Functional full-stack app with three working tools (electoral map, polling finder, news feed) and a three-tier fallback strategy for polling data so the UI has something to show even without API keys configured. No automated test suite yet. The news feed's candidate/party tagging is a fixed keyword watchlist (`server/services/newsService.js`), not a general NER model, so it only recognizes candidates named in that list.
+## Deployment (free)
+
+Everything runs on Vercel's free Hobby plan: push to `main` and Vercel builds the client and deploys `api/` as a serverless function. In the Vercel project settings, add `GOOGLE_CIVIC_API_KEY` and `NEWS_API_KEY` as environment variables (optional; the app works without them). No separate backend host is needed.
