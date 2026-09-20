@@ -142,6 +142,86 @@ describe('API routes', () => {
     assert.ok(body.locations[0].isEstimated);
   });
 
+  test('polling rejects malformed coordinates', async () => {
+    for (const q of ['lat=&lng=', 'lat=abc&lng=-75.5', 'lat=39.15', 'lng=-75.5', 'lat=91&lng=0', 'lat=0&lng=181']) {
+      const res = await fetch(`${base}/api/polling?${q}`);
+      assert.equal(res.status, 400, q);
+      assert.match((await res.json()).error, /latitude and longitude/);
+    }
+  });
+
+  test('polling reverse-geocodes coordinates to a ZIP and runs the same pipeline', async () => {
+    let reverseUrl;
+    upstream = (u) => {
+      if (u.includes('nominatim') && u.includes('/reverse')) {
+        reverseUrl = u;
+        return json({ address: { postcode: '19901-1234', country_code: 'us' } });
+      }
+      if (u.includes('zippopotam'))
+        return json({ places: [{ 'place name': 'Dover', state: 'Delaware', 'state abbreviation': 'DE', latitude: '39.15', longitude: '-75.52' }] });
+      if (u.includes('nominatim') && u.includes('library'))
+        return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { house_number: '35', road: 'Loockerman Plaza', city: 'Dover', postcode: '19901' } }]);
+      if (u.includes('nominatim')) return json([]);
+    };
+
+    const res = await fetch(`${base}/api/polling?lat=39.1582345&lng=-75.5219876`);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+
+    // ZIP+4 is narrowed to the 5-digit form the rest of the pipeline expects.
+    assert.equal(body.zip, '19901');
+    assert.equal(body.place.zip, '19901');
+    assert.equal(body.dataSource, 'estimated');
+    assert.equal(body.locations[0].name, 'Dover Public Library');
+
+    // Coordinates are rounded to ~110 m before being sent upstream or echoed back.
+    assert.deepEqual(body.device, { lat: 39.158, lng: -75.522 });
+    assert.match(reverseUrl, /lat=39\.158&lon=-75\.522/);
+  });
+
+  test('polling measures distance from the device, not the ZIP centroid', async () => {
+    const stub = (u) => {
+      if (u.includes('nominatim') && u.includes('/reverse')) return json({ address: { postcode: '19901', country_code: 'us' } });
+      if (u.includes('zippopotam'))
+        return json({ places: [{ 'place name': 'Dover', state: 'Delaware', 'state abbreviation': 'DE', latitude: '39.15', longitude: '-75.52' }] });
+      if (u.includes('nominatim') && u.includes('library'))
+        return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { road: 'Loockerman Plaza', city: 'Dover', postcode: '19901' } }]);
+      if (u.includes('nominatim')) return json([]);
+    };
+
+    upstream = stub;
+    const byZip = await (await fetch(`${base}/api/polling?zip=19901`)).json();
+
+    upstream = stub;
+    // Standing essentially on top of the library, so the device distance must be ~0.
+    const byCoords = await (await fetch(`${base}/api/polling?lat=39.158&lng=-75.522`)).json();
+
+    assert.ok(byZip.locations[0].distance > 0.5, `ZIP centroid distance was ${byZip.locations[0].distance}`);
+    assert.equal(byCoords.locations[0].distance, 0);
+  });
+
+  test('polling tells the user plainly when coordinates are outside the US', async () => {
+    upstream = (u) =>
+      u.includes('/reverse') ? json({ address: { postcode: 'SW1A 1AA', country_code: 'gb' } }) : undefined;
+    const res = await fetch(`${base}/api/polling?lat=51.5&lng=-0.14`);
+    assert.equal(res.status, 404);
+    assert.match((await res.json()).error, /United States/);
+  });
+
+  test('polling falls back to ZIP entry when coordinates resolve to no ZIP', async () => {
+    upstream = (u) => (u.includes('/reverse') ? json({ address: { country_code: 'us' } }) : undefined);
+    const res = await fetch(`${base}/api/polling?lat=39.15&lng=-75.52`);
+    assert.equal(res.status, 404);
+    assert.match((await res.json()).error, /enter one instead/);
+  });
+
+  test('polling returns 502 when reverse geocoding is down', async () => {
+    upstream = (u) => (u.includes('/reverse') ? new Response('nope', { status: 503 }) : undefined);
+    const res = await fetch(`${base}/api/polling?lat=39.15&lng=-75.52`);
+    assert.equal(res.status, 502);
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+  });
+
   test('news falls back to Google News RSS when no NewsAPI key is set', async () => {
     const rss = `<rss><channel>
       <item><title>Newsom eyes 2028 run &amp; more - Example Times</title><link>https://example.com/a</link>

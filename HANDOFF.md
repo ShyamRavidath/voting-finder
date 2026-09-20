@@ -57,7 +57,7 @@ voting-finder/
 Hosting: frontend and API deploy together on **Vercel free Hobby**. Railway is gone.
 Response `Cache-Control: s-maxage` headers put Vercel's CDN in front of every upstream API.
 
-Test status on the Mac (2026-09-20): **13/13 server tests pass** on Node 26
+Test status on the Mac (2026-09-20): **19/19 server tests pass** on Node 26
 (`npm test --prefix server`). The Playwright suites (87 local / 88 production) have not yet been
 re-run on this machine — see §8 step 2.
 
@@ -80,15 +80,26 @@ the **data and the logic rules** port directly, and the API contract is unchange
 shared between `client/` and an RN app. With Swift on the other side there is nothing to share,
 so do not refactor the web app — leave `client/` alone. This removes the riskiest step of Phase 0.
 
-## 4. Server work the mobile app needs
+## 4. Server work the mobile app needs — **DONE (2026-09-20)**
 
-*(unchanged and still required)*
+`GET /api/polling` now accepts `?lat=&lng=` alongside `?zip=`. It reverse-geocodes the
+coordinates through Nominatim (keyless) to a ZIP, then runs the identical pipeline, so both
+entry points share the same data tiers and the same "never invent a location" guarantee.
 
-`GET /api/polling` currently accepts **only** `?zip=`. "Use my location" needs coordinates.
-Confirmed working and keyless: OpenStreetMap Nominatim reverse geocoding
-(`/reverse?lat=&lon=&format=json&addressdetails=1`) returned `90210 / Beverly Hills / California`
-for `34.0736,-118.4004`. So the change is to accept `?lat=&lng=`, reverse-geocode to a ZIP,
-then run the existing pipeline.
+Behaviour the app can rely on:
+- Coordinates are **rounded to 3 decimals (~110 m)** before being sent upstream or echoed back.
+  The device's exact position never leaves this server.
+- Distances are measured **from the device** when coordinates are given, from the ZIP centroid
+  when a ZIP is. Verified live: `?lat=34.0736&lng=-118.4004` returns Beverly Hills Public
+  Library at **0.1 km**.
+- Response adds `zip`, `place.zip`, and the rounded `device: { lat, lng }`.
+- **Device lookups bypass the ZIP Postgres cache** — its stored distances are centroid-relative
+  and writing device-relative ones back would poison later ZIP requests.
+- Errors: non-numeric or out-of-range → 400; outside the US → 404 "Vote4U only covers United
+  States elections."; US but no ZIP resolvable → 404 telling the user to type one (so the app
+  can fall back to the ZIP field); Nominatim down → 502, `Cache-Control: no-store`.
+
+Six tests cover this in `server/test/api.test.js`; the suite is **19/19**.
 
 CORS already allows Capacitor origins. A native iOS app sends **no `Origin` header**, so CORS is
 a non-issue for it — but don't remove those entries, the web app still needs the Vercel ones.
@@ -210,7 +221,7 @@ together. Add `ios/build/`, `*.xcuserdatad`, `DerivedData/` to `.gitignore`.
 
 | Phase | Work | Done when |
 |---|---|---|
-| 0. Setup | Install Xcode (§8). Rotate + install API keys in Vercel. Add `?lat=&lng=` to `/api/polling` with tests. **No `shared/` refactor — cancelled.** | `/api/polling?lat=&lng=` returns results; server tests green |
+| 0. Setup | ~~Add `?lat=&lng=` to `/api/polling`~~ **done**. Remaining: install Xcode (§8), rotate + install API keys in Vercel, export map/state JSON. **No `shared/` refactor — cancelled.** | Xcode builds; keys live in Vercel |
 | 1. Scaffold | `ios/` Xcode project, `TabView` with four empty tabs, `APIClient` hitting the live API, app icon + launch screen from `assets/app-icon-1024.png` | App runs in the Simulator and on the real iPhone |
 | 2. Screens | Build the four tabs against the live API | Every web feature has a native equivalent |
 | 3. Native | Notifications, CoreLocation, offline save, haptics | Reminder fires on a real device; location finds a polling place |
@@ -260,12 +271,10 @@ state lookups; news headlines link to their publishers and are not reproduced in
    ! npx skills add https://github.com/code-with-beto/skills --skill app-icon -g -a claude-code -y
    ```
    *(The fifth, `expo/skills --skill building-native-ui`, is no longer relevant — it is Expo-specific.)*
-5. **Phase 0 code work** — can start immediately, it does not need Xcode:
-   - Add `?lat=&lng=` support to `GET /api/polling` using Nominatim reverse geocoding
-     (confirmed working keyless), with tests in `server/test/api.test.js` alongside the existing
-     stubbed-upstream tests.
+5. **Phase 0 code work** — does not need Xcode:
+   - ~~Add `?lat=&lng=` support to `GET /api/polling`~~ **done 2026-09-20, see §4.**
    - Export the electoral-map state paths to `ios/Vote4U/Resources/statePaths.json` and the
-     state data to `states.json` (a script in `scripts/`).
+     state data to `states.json` (a script in `scripts/`). **← next**
    - Then, once Xcode is in, scaffold `ios/` and get the four-tab shell on the iPhone.
 
 ## 9. Environment and gotchas for whoever picks this up

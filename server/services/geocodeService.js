@@ -4,6 +4,42 @@ const { fetchWithTimeout } = require('../lib/fetchWithTimeout');
 const USER_AGENT = 'Vote4U-PollingFinder/1.1 (+https://vote4ucyl.vercel.app)';
 
 class ZipNotFoundError extends Error {}
+class OutsideUsError extends Error {}
+
+// Coordinates are rounded before they leave this server: ~110 m is far more precision than a
+// ZIP lookup needs, it keeps the CDN cache key space bounded, and it means we never forward a
+// device's exact position to a third party.
+const COORD_PRECISION = 3;
+
+function roundCoord(n) {
+  return Math.round(n * 10 ** COORD_PRECISION) / 10 ** COORD_PRECISION;
+}
+
+// Reverse-geocode a device location to the ZIP code that the rest of the polling pipeline needs.
+// Keyless, same Nominatim service the venue search already uses.
+async function coordsToZip(lat, lng) {
+  const url =
+    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}` +
+    '&format=json&addressdetails=1&zoom=18';
+
+  const res = await fetchWithTimeout(url, { headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en' } }, 5000);
+  if (!res.ok) throw new Error(`Reverse geocode failed: HTTP ${res.status}`);
+
+  const data = await res.json();
+  const addr = data?.address;
+  if (!addr) throw new ZipNotFoundError(`No address found for ${lat},${lng}`);
+
+  // Nominatim reports the country even when it has no postcode, so check it first: being outside
+  // the US is a different answer to the user than being somewhere we simply couldn't resolve.
+  const country = (addr.country_code || '').toLowerCase();
+  if (country && country !== 'us') throw new OutsideUsError(`Coordinates are in ${country.toUpperCase()}, not the US`);
+
+  // Postcodes come back as either "19901" or ZIP+4 ("19901-1234"); the pipeline wants the 5-digit form.
+  const zip = String(addr.postcode || '').match(/\b(\d{5})\b/)?.[1];
+  if (!zip) throw new ZipNotFoundError(`No US ZIP code found for ${lat},${lng}`);
+
+  return zip;
+}
 
 async function zipToCoords(zip) {
   const res = await fetchWithTimeout(`https://api.zippopotam.us/us/${zip}`, {}, 5000);
@@ -101,4 +137,12 @@ async function findNearbyPollingVenues(lat, lng, city, state) {
     .slice(0, 5);
 }
 
-module.exports = { zipToCoords, findNearbyPollingVenues, distanceKm, ZipNotFoundError };
+module.exports = {
+  zipToCoords,
+  coordsToZip,
+  findNearbyPollingVenues,
+  distanceKm,
+  roundCoord,
+  ZipNotFoundError,
+  OutsideUsError,
+};
