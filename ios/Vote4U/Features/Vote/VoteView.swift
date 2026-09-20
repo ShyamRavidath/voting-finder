@@ -9,6 +9,8 @@ struct VoteView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     searchField
+                    locationButton
+                    if let saved = model.savedPlace { savedCard(saved) }
 
                     switch model.state {
                     case .idle:
@@ -56,6 +58,34 @@ struct VoteView: View {
         }
     }
 
+    private var locationButton: some View {
+        Button {
+            zipFocused = false
+            Task { await model.searchUsingLocation() }
+        } label: {
+            Label("Use my location", systemImage: "location.fill")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .disabled(model.isBusy)
+    }
+
+    private func savedCard(_ saved: SavedPlace) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label("Your saved polling place", systemImage: "bookmark.fill")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(saved.name).font(.headline)
+            Text(saved.addr).font(.subheadline).foregroundStyle(.secondary)
+            Button("Remove", role: .destructive) { model.clearSavedPlace() }
+                .font(.caption)
+                .padding(.top, 2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.tint.opacity(0.1), in: .rect(cornerRadius: 12))
+    }
+
     @ViewBuilder
     private func results(_ result: PollingResult) -> some View {
         if result.isEmpty {
@@ -88,7 +118,11 @@ struct VoteView: View {
                 PollingMapView(locations: result.locations)
 
                 ForEach(result.locations) { location in
-                    PollingLocationCard(location: location)
+                    PollingLocationCard(
+                        location: location,
+                        isSaved: model.isSaved(location),
+                        onSave: { model.save(location) }
+                    )
                 }
 
                 officialLinks

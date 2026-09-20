@@ -3,6 +3,8 @@ import SwiftUI
 
 struct PollingLocationCard: View {
     let location: PollingLocation
+    var isSaved: Bool = false
+    var onSave: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -37,18 +39,42 @@ struct PollingLocationCard: View {
                 }
             }
 
-            Button {
-                openDirections()
-            } label: {
-                Label("Directions", systemImage: "arrow.triangle.turn.up.right.circle")
+            HStack(spacing: 8) {
+                Button {
+                    openDirections()
+                } label: {
+                    Label("Directions", systemImage: "arrow.triangle.turn.up.right.circle")
+                        .font(.subheadline.weight(.medium))
+                }
+                .buttonStyle(.bordered)
+
+                Button {
+                    onSave()
+                } label: {
+                    Label(
+                        isSaved ? "Saved" : "Save",
+                        systemImage: isSaved ? "bookmark.fill" : "bookmark"
+                    )
                     .font(.subheadline.weight(.medium))
+                }
+                .buttonStyle(.bordered)
+                .disabled(isSaved)
+
+                ShareLink(item: shareText) {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .buttonStyle(.bordered)
             }
-            .buttonStyle(.bordered)
             .padding(.top, 2)
+            .sensoryFeedback(.success, trigger: isSaved)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(.quaternary.opacity(0.35), in: .rect(cornerRadius: 12))
+    }
+
+    private var shareText: String {
+        "\(location.name)\n\(location.addr)"
     }
 
     /// Apple Maps via MapKit rather than a maps.apple.com URL: it is first-party, free, and needs
