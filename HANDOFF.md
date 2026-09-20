@@ -265,6 +265,12 @@ state lookups; news headlines link to their publishers and are not reproduced in
 - ✅ Playwright verified on the Mac (87 local / 88 production).
 - ✅ `GET /api/polling?lat=&lng=` shipped with tests (§4).
 - ✅ `ios/` scaffolded: four tabs, `APIClient`, `ElectionCalendar`, working electoral map.
+- ✅ Phase 2: Vote and News tabs built and verified against production.
+- ✅ Phase 3: "use my location", local election reminders, offline saved polling place, share,
+  haptics. Verified in the Simulator with a simulated GPS fix (Beverly Hills → ZIP 90212,
+  nearest venue 0.1 mi device-relative vs 1.2 mi from the ZIP centroid).
+
+**The live next task is Phase 4 (hardening), and the first item is device testing** — see below.
 
 ### Still outstanding (user actions)
 
@@ -275,7 +281,22 @@ state lookups; news headlines link to their publishers and are not reproduced in
    need this; a physical device does.
 3. **Install the App Store skills** — step 4 below.
 
-### Notes for Phase 2
+### Phase 4 entry notes — read first
+
+- **Notification delivery is unverified.** The scheduling logic and its date arithmetic are
+  checked (rolls to Nov 7 2028 after the 2026 election, skips odd years), but no notification has
+  actually fired. The Simulator cannot grant notification permission from the command line, so
+  this needs a real iPhone. It is Phase 3's stated exit criterion and carries into Phase 4.
+- **Not yet tested at all:** airplane mode, permission-denied paths on a real device, VoiceOver,
+  Dynamic Type at accessibility sizes, dark mode, and the small-screen layout (iPhone SE).
+- **`/privacy` needs a paragraph** about the device location permission and local reminders
+  before submission (guideline 5.1.1(i)). Not yet written.
+- **NewsAPI's development-only terms are still unresolved** (§6) and block shipping under
+  guideline 5.2.2. Production currently runs on the Google News RSS fallback either way.
+- There is **no test target** in the Xcode project. `ElectionCalendar` and `SVGPath` are the two
+  things worth unit-testing if one is added.
+
+### General notes
 
 - `PRODUCT_BUNDLE_IDENTIFIER` is `com.shyamravidath.Vote4U`. Change it now if you want something
   else — it is fixed once the App Store Connect record exists.
