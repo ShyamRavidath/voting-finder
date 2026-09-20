@@ -39,14 +39,20 @@ struct PollingResult: Codable, Equatable {
     var isEmpty: Bool { locations.isEmpty }
 }
 
+/// Field names match `server/services/newsService.js` exactly. `party` is non-nil only when the
+/// headline names someone on the candidate watchlist; the Google News RSS fallback leaves it,
+/// `excerpt` and `imageUrl` empty, so every one of them has to be optional.
 struct Article: Codable, Identifiable, Equatable {
     let id: String
     let title: String
     let url: String
     let source: String?
-    let publishedAt: String?
-    let image: String?
+    let date: String?
+    let excerpt: String?
+    let category: String?
+    let candidate: String?
     let party: String?
+    let imageUrl: String?
 }
 
 struct NewsResponse: Codable {
