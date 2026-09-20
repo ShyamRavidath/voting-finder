@@ -49,7 +49,10 @@ test.describe('API', () => {
     const page = await request.get('/');
     expect(page.headers()['x-content-type-options']).toBe('nosniff');
     expect(page.headers()['referrer-policy']).toBe('strict-origin-when-cross-origin');
+    // Vercel's CDN consumes s-maxage/stale-while-revalidate and rewrites the client-facing
+    // Cache-Control, so assert the CDN actually handled the response instead.
     const news = await request.get('/api/news');
-    expect(news.headers()['cache-control']).toMatch(/s-maxage/);
+    expect(news.headers()['cache-control']).toMatch(/public/);
+    expect(news.headers()['x-vercel-cache']).toBeDefined();
   });
 });
