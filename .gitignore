@@ -12,3 +12,9 @@ CLAUDE.md
 playwright-report/
 test-results/
 .vercel
+
+# Xcode / iOS
+ios/build/
+DerivedData/
+*.xcuserdatad
+*.xcuserstate
