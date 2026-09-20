@@ -153,14 +153,17 @@ Required: **6.9" iPhone** (1320 × 2868 or 1290 × 2796). Apple scales these dow
 devices, so one set is enough for an iPhone-only app. iPad is not required — the target is
 `TARGETED_DEVICE_FAMILY = 1`.
 
-Capture on an iPhone 17 Pro Max simulator, light mode:
+**Captured 2026-09-20 and committed to `ios/screenshots/`** at 1320 × 2868. Regenerate with:
 
 ```
-xcrun simctl boot "iPhone 18 Pro Max"
-xcrun simctl io "iPhone 18 Pro Max" screenshot shot.png
+./scripts/capture-screenshots.sh
 ```
 
-Suggested order — voting tools first, news last, mirroring the app's own priorities:
+That script builds, boots the simulator, pins the status bar to 9:41 with full bars, and uses
+the app's DEBUG-only `-startTab` / `-startZip` launch arguments, so no UI automation is needed.
+Re-run it after any UI change.
+
+The order, voting tools first and news last, mirrors the app's own priorities:
 
 1. Vote tab with results for 90210, map and cards visible.
 2. Home tab countdown with the reminder toggle.
@@ -168,7 +171,12 @@ Suggested order — voting tools first, news last, mirroring the app's own prior
 4. Vote tab empty state showing the official-source links.
 5. News tab.
 
-Use a real search, never a mock-up: screenshots must show the actual app (2.3.3).
+Use a real search, never a mock-up: screenshots must show the actual app (2.3.3). The committed
+set uses live production data for exactly that reason.
+
+**Screenshot 4 is the weakest** — it is mostly empty space. It earns its place by showing that
+the app sends people to official sources, which is the trust story, but swap it for a second
+Vote-tab shot if you would rather lead with density.
 
 ## Pre-submission checklist
 
@@ -181,5 +189,5 @@ Use a real search, never a mock-up: screenshots must show the actual app (2.3.3)
       is a 5.2.2 problem. Production already runs on the Google News RSS fallback, so dropping
       the NewsAPI path entirely is the cleanest answer
 - [ ] Privacy policy live at `/privacy` with the app section (done 2026-09-20)
-- [ ] Screenshots captured
+- [x] Screenshots captured (`ios/screenshots/`, regenerate with `scripts/capture-screenshots.sh`)
 - [ ] Archive ▸ Distribute ▸ App Store Connect ▸ TestFlight ▸ Submit
