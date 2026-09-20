@@ -281,20 +281,30 @@ state lookups; news headlines link to their publishers and are not reproduced in
    need this; a physical device does.
 3. **Install the App Store skills** — step 4 below.
 
-### Phase 4 entry notes — read first
+### What is left before submission — read first
 
-- **Notification delivery is unverified.** The scheduling logic and its date arithmetic are
-  checked (rolls to Nov 7 2028 after the 2026 election, skips odd years), but no notification has
-  actually fired. The Simulator cannot grant notification permission from the command line, so
-  this needs a real iPhone. It is Phase 3's stated exit criterion and carries into Phase 4.
-- **Not yet tested at all:** airplane mode, permission-denied paths on a real device, VoiceOver,
-  Dynamic Type at accessibility sizes, dark mode, and the small-screen layout (iPhone SE).
-- **`/privacy` needs a paragraph** about the device location permission and local reminders
-  before submission (guideline 5.1.1(i)). Not yet written.
-- **NewsAPI's development-only terms are still unresolved** (§6) and block shipping under
-  guideline 5.2.2. Production currently runs on the Google News RSS fallback either way.
-- There is **no test target** in the Xcode project. `ElectionCalendar` and `SVGPath` are the two
-  things worth unit-testing if one is added.
+Everything that can be done without hardware is done. Three things remain, and the first two
+need your Apple account or your phone:
+
+1. **Device testing.** Nothing has run on real hardware yet. Specifically unverified:
+   - **A notification actually firing.** The scheduling logic and its date arithmetic are checked
+     (rolls to Nov 7 2028 after the 2026 election, skips odd years), but the Simulator cannot be
+     granted notification permission from the command line, so no reminder has ever been
+     delivered. This is Phase 3's stated exit criterion.
+   - Airplane mode, and denying/revoking the location permission on a real device.
+   - Real GPS rather than a simulated fix.
+   - Also note the Simulator only has an **iOS 27** runtime, while the deployment target is
+     **iOS 17** — nothing has been run against an older OS.
+2. **Apple account setup.** Add `ravidath@gmail.com` in Xcode ▸ Settings ▸ Accounts and set the
+   team on the Vote4U target. Required before the app can run on a phone at all.
+3. **Screenshots**, then paste `ios/APP_STORE.md` into App Store Connect.
+
+Still open from §6: **NewsAPI's free plan is development-only**, which is a 5.2.2 problem.
+Production already runs on the Google News RSS fallback, so dropping the NewsAPI path entirely
+is the cleanest fix.
+
+There is **no test target** in the Xcode project. `ElectionCalendar` and `SVGPath` are the two
+things most worth unit-testing if one is added — both are pure logic with no UI.
 
 ### General notes
 
