@@ -109,7 +109,9 @@ then run the existing pipeline.
 - API keys are **not** in Vercel, and the old keys were leaked in the removed legacy
   `index.html` (still in git history) — they need rotating before being reused anywhere.
 - NewsAPI's free plan is development-only per its terms; the Google News RSS fallback is what
-  production is actually using.
+  production is actually using. **For the iOS app this becomes an App Store issue** under
+  guideline 5.2.2 (third-party terms) — decide before shipping whether to drop NewsAPI, pay for
+  a plan that permits production use, or confirm Google News RSS terms cover the app.
 - Vercel's free Hobby plan is non-commercial use only.
 - Apple guideline 4.2 (minimum functionality) is the main App Store risk for any app derived
   from a website; the reminders and location features exist largely to answer it.
@@ -218,3 +220,58 @@ Do these in order. Steps 1–3 are the user's; step 4 is where the code work res
 - The rule that matters most in this codebase: **never show a voter a location the data doesn't
   support.** Unofficial results are labeled "not confirmed", and "no results" links to official
   state lookups instead of inventing something.
+
+## 10. Build pipeline, cost, and App Store risk (researched 2026-09-19)
+
+### Shipping from Windows: confirmed possible, and free
+
+Expo's docs state plainly that "EAS Submit works on macOS, Linux, and Windows, so you don't need
+a Mac to ship iOS builds." iOS builds run on Expo's hosted macOS runners, and EAS CLI can create
+and manage the distribution certificate and provisioning profile from an Apple Developer login.
+
+| Item | Cost |
+|---|---|
+| Apple Developer Program | **$99/year — the only unavoidable cost** |
+| EAS Free plan | $0: **15 iOS builds/month**, submissions to the App Store included, 1 concurrency, 45-min build timeout, low-priority queue (**90+ minute waits at peak**) |
+| If 15 builds/month isn't enough | Starter **$19/month**. There is no pay-per-build on the Free plan — the quota resets monthly and does not roll over |
+
+Still needs a Mac (and so is out of scope): `eas build --local`, Xcode, the local iOS Simulator.
+Device testing therefore happens on the real iPhone via TestFlight, not a simulator.
+
+For non-interactive submits, create an **App Store Connect API key** and reference it in
+`eas.json` (`ascApiKeyPath`, `ascApiKeyIssuerId`, `ascApiKeyId`) rather than storing an Apple ID
+password.
+
+### App Store rules: the politics worry was unfounded; 4.2 is the real risk
+
+The current guidelines (last updated June 8, 2026) were searched in full. **"Election," "voter,"
+"nonpartisan," and "polling place" appear zero times.** There is no rule requiring an
+election or voter-information app to be submitted by a government entity, political party, or
+organization. Guideline 5.1.1(ix)'s "highly regulated fields" list (banking, healthcare,
+gambling, cannabis, air travel, crypto) **does not include elections**, so the existing
+**individual** Apple account is fine. Note only that an individual account publishes under your
+personal legal name.
+
+The rules that actually apply:
+
+- **4.2 / 4.2.2** — the genuine risk. Apps "shouldn't primarily be … content aggregators, or a
+  collection of links," and must "elevate beyond a repackaged website." A news-headline feed is
+  a direct hit, so **News stays the last tab, never the center of the app**, and the native
+  capability has to be real: one-tap Core Location lookup, a native map, an offline-readable
+  saved polling place, and local election reminders. No WKWebView of the website.
+- **5.2.2** — third-party services must permit your use, and "authorization must be provided
+  upon request." This is the one to fix before shipping: **NewsAPI's free plan is
+  development-only under its terms**, so the shipped app should not depend on it. The OSM tile
+  usage policy is the other weak link, which the plan already avoids on mobile by using
+  `react-native-maps` (Apple Maps) instead of OSM tiles.
+- **5.1.1(iv)** — if location permission is declined the app must still work; ZIP entry already
+  covers this, and it must stay.
+- **1.1.6** — no false information. This is the guideline behind "never fabricate locations."
+- **5.1.1(i)** — privacy policy link in App Store Connect and in-app. The `/privacy` page exists.
+- **5.2.1 / 5.2.4** — don't imply you are, or are endorsed by, a government or election
+  authority. The existing "not affiliated with any government agency" line is the right move,
+  even though no guideline strictly requires it.
+- **2.3.1(a)** — describe everything in the Notes for Review (see section 7).
+
+Unverified: any non-public App Review precedent for civic apps, and the free-tier terms of
+Expo's hosted cloud simulator.
