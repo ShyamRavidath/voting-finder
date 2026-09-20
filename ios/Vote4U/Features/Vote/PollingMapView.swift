@@ -16,11 +16,13 @@ struct PollingMapView: View {
         } else {
             Map(initialPosition: .region(region)) {
                 ForEach(pins) { location in
-                    Marker(
-                        location.name,
-                        systemImage: location.isConfirmed ? "checkmark.circle.fill" : "mappin",
-                        coordinate: CLLocationCoordinate2D(latitude: location.lat!, longitude: location.lng!)
-                    )
+                    if let lat = location.lat, let lng = location.lng {
+                        Marker(
+                            location.name,
+                            systemImage: location.isConfirmed ? "checkmark.circle.fill" : "mappin",
+                            coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)
+                        )
+                    }
                 }
             }
             .frame(height: 220)
@@ -32,16 +34,19 @@ struct PollingMapView: View {
     private var region: MKCoordinateRegion {
         let lats = pins.compactMap(\.lat)
         let lngs = pins.compactMap(\.lng)
-        let center = CLLocationCoordinate2D(
-            latitude: (lats.min()! + lats.max()!) / 2,
-            longitude: (lngs.min()! + lngs.max()!) / 2
-        )
+        guard let minLat = lats.min(), let maxLat = lats.max(),
+              let minLng = lngs.min(), let maxLng = lngs.max() else {
+            return MKCoordinateRegion()
+        }
+
         // Pad the span so edge pins are not flush against the frame, with a floor for the
         // single-pin case where the computed span would be zero.
-        let span = MKCoordinateSpan(
-            latitudeDelta: max((lats.max()! - lats.min()!) * 1.4, 0.02),
-            longitudeDelta: max((lngs.max()! - lngs.min()!) * 1.4, 0.02)
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: (minLat + maxLat) / 2, longitude: (minLng + maxLng) / 2),
+            span: MKCoordinateSpan(
+                latitudeDelta: max((maxLat - minLat) * 1.4, 0.02),
+                longitudeDelta: max((maxLng - minLng) * 1.4, 0.02)
+            )
         )
-        return MKCoordinateRegion(center: center, span: span)
     }
 }

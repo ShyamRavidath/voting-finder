@@ -82,6 +82,18 @@ private struct NewsRow: View {
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Opens the article")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var accessibilityLabel: String {
+        var parts = [article.title]
+        if let source = article.source { parts.append(source) }
+        let ago = Formatting.timeAgo(article.date)
+        if !ago.isEmpty { parts.append(ago) }
+        return parts.joined(separator: ", ")
     }
 }
 

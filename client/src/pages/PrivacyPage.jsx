@@ -1,6 +1,6 @@
 import { usePageTitle } from '../hooks/usePageTitle';
 
-const UPDATED = 'September 13, 2026';
+const UPDATED = 'September 20, 2026';
 
 export default function PrivacyPage() {
   usePageTitle('Privacy policy');
@@ -43,6 +43,41 @@ export default function PrivacyPage() {
       <p>
         Your browser loads map images directly from OpenStreetMap and news thumbnails directly from publishers. Links to
         articles, maps, and official election sites open those sites, which have their own privacy policies.
+      </p>
+
+      <h2 className="pt-2 text-xl font-bold text-slate-900">The Vote4U iOS app</h2>
+      <p>
+        The iOS app talks to the same server and follows the same rules as this website. There are still no accounts,
+        no ads, and no analytics. Two things are specific to the app:
+      </p>
+      <ul className="list-disc space-y-2 pl-5">
+        <li>
+          <strong>Location (optional).</strong> If you tap &ldquo;Use my location&rdquo;, the app asks for permission to
+          read your location while you're using it. Your coordinates are rounded to roughly 110 metres before they
+          leave your device, sent to our server once to work out which ZIP code you're in, and then used exactly like a
+          ZIP code you typed. They are not stored on our server and are never linked to you or used to track you across
+          apps or websites. You can decline, or turn the permission off later in Settings, and the app keeps working
+          normally &mdash; ZIP code entry is always available.
+        </li>
+        <li>
+          <strong>Election reminders and your saved polling place (optional).</strong> Reminders are scheduled by your
+          iPhone itself. There is no push server, so nothing about them reaches us &mdash; we never learn that you turned
+          them on. A polling place you save is stored only on your device, so it stays readable without a signal, and
+          removing it or deleting the app erases it.
+        </li>
+      </ul>
+      <p>
+        The app draws its maps with Apple Maps, which is governed by{' '}
+        <a
+          href="https://www.apple.com/legal/privacy/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-blue-700 underline underline-offset-2"
+        >
+          Apple&rsquo;s privacy policy
+        </a>
+        . Tapping a headline opens the publisher&rsquo;s own page inside the app, where that publisher&rsquo;s privacy
+        policy applies.
       </p>
 
       <h2 className="pt-2 text-xl font-bold text-slate-900">Children</h2>

@@ -71,6 +71,15 @@ struct PollingLocationCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(.quaternary.opacity(0.35), in: .rect(cornerRadius: 12))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var accessibilityLabel: String {
+        var parts = [location.name, location.addr, location.type]
+        if let miles = location.milesAway { parts.append("\(miles) away") }
+        if !location.isConfirmed { parts.append("Not confirmed") }
+        return parts.joined(separator: ", ")
     }
 
     private var shareText: String {

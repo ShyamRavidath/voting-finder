@@ -4,6 +4,9 @@ struct HomeView: View {
     private let election = ElectionCalendar.next()
 
     @AppStorage("remindersEnabled") private var remindersEnabled = false
+    // Scales with Dynamic Type instead of being pinned at 72pt, but capped below so the largest
+    // accessibility sizes cannot push the number off screen.
+    @ScaledMetric(relativeTo: .largeTitle) private var countdownSize: CGFloat = 72
     @State private var permissionDenied = false
 
     var body: some View {
@@ -35,8 +38,10 @@ struct HomeView: View {
                 .font(.headline)
                 .foregroundStyle(.secondary)
             Text("\(election.daysAway)")
-                .font(.system(size: 72, weight: .bold, design: .rounded))
+                .font(.system(size: countdownSize, weight: .bold, design: .rounded))
                 .monospacedDigit()
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
             Text(election.daysAway == 1 ? "day away" : "days away")
                 .font(.title3)
             Text(election.date, format: .dateTime.weekday(.wide).month(.wide).day().year())
@@ -47,7 +52,8 @@ struct HomeView: View {
         .padding(.vertical, 32)
         .background(.quaternary.opacity(0.4), in: .rect(cornerRadius: 16))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(election.kind) in \(election.daysAway) days")
+        .accessibilityLabel("\(election.kind) in \(election.daysAway) days, \(election.date.formatted(date: .complete, time: .omitted))")
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
     }
 
     private var reminderToggle: some View {

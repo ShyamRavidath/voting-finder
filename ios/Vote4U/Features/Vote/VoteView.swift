@@ -21,13 +21,26 @@ struct VoteView: View {
                     case .loaded(let result):
                         results(result)
                     case .failed(let message):
-                        ContentUnavailableView {
-                            Label("Couldn't search", systemImage: "exclamationmark.triangle")
-                        } description: {
-                            Text(message)
-                        } actions: {
-                            Button("Try again") { Task { await model.search() } }
+                        // The official links are bundled, so they still work when the API does
+                        // not — which is exactly when someone needs them most.
+                        VStack(spacing: 12) {
+                            ContentUnavailableView {
+                                Label("Couldn't search", systemImage: "exclamationmark.triangle")
+                            } description: {
+                                Text(message)
+                            } actions: {
+                                Button("Try again") {
+                                    Task {
+                                        if model.usingLocation {
+                                            await model.searchUsingLocation()
+                                        } else {
+                                            await model.search()
+                                        }
+                                    }
+                                }
                                 .buttonStyle(.borderedProminent)
+                            }
+                            officialLinks
                         }
                     }
                 }

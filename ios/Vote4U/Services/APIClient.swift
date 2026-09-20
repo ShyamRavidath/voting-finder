@@ -2,13 +2,18 @@ import Foundation
 
 enum APIError: LocalizedError {
     case offline
+    case unreachable
     case timeout
     case server(String)
     case decoding
 
     var errorDescription: String? {
         switch self {
+        // Only claim the user is offline when the system actually says so. A refused connection
+        // or a DNS failure usually means our server is down, and telling someone with four bars
+        // to check their connection sends them chasing the wrong problem.
         case .offline: "You appear to be offline. Check your connection and try again."
+        case .unreachable: "We couldn't reach Vote4U. It may be temporarily down — please try again shortly."
         case .timeout: "That took too long. Please try again."
         case .server(let message): message
         case .decoding: "We got an unexpected response. Please try again."
@@ -57,7 +62,7 @@ struct APIClient {
             switch error.code {
             case .notConnectedToInternet, .networkConnectionLost: throw APIError.offline
             case .timedOut: throw APIError.timeout
-            default: throw APIError.offline
+            default: throw APIError.unreachable
             }
         }
 
