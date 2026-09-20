@@ -47,7 +47,9 @@ enum SVGPath {
                 // exporter writes every ring.
                 while let next = readPoint() { path.addLine(to: next) }
             case "Z", "z":
-                path.closeSubpath()
+                // Closing with nothing open leaves SwiftUI's Path in a non-empty state, so guard
+                // it. Generated data never does this, but malformed input should be a no-op.
+                if !path.isEmpty { path.closeSubpath() }
             default:
                 break // Unknown command: the exporter never emits one, so skip rather than fail.
             }

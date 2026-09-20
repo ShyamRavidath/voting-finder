@@ -8,13 +8,31 @@
 
 /* Begin PBXFileReference section */
 		F40000000000000000000001 /* Vote4U.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Vote4U.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F40000000000000000000011 /* Vote4UTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Vote4UTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F40000000000000000000021 /* Vote4UUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Vote4UUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F40000000000000000000002 /* Vote4U */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Vote4U; sourceTree = "<group>"; };
+		F40000000000000000000012 /* Vote4UTests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Vote4UTests; sourceTree = "<group>"; };
+		F40000000000000000000022 /* Vote4UUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Vote4UUITests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		F40000000000000000000026 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F40000000000000000000016 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F40000000000000000000003 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -29,6 +47,8 @@
 			isa = PBXGroup;
 			children = (
 				F40000000000000000000002 /* Vote4U */,
+				F40000000000000000000012 /* Vote4UTests */,
+				F40000000000000000000022 /* Vote4UUITests */,
 				F40000000000000000000005 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -37,6 +57,8 @@
 			isa = PBXGroup;
 			children = (
 				F40000000000000000000001 /* Vote4U.app */,
+				F40000000000000000000011 /* Vote4UTests.xctest */,
+				F40000000000000000000021 /* Vote4UUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -66,7 +88,83 @@
 			productReference = F40000000000000000000001 /* Vote4U.app */;
 			productType = "com.apple.product-type.application";
 		};
+		F40000000000000000000013 /* Vote4UTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F40000000000000000000014 /* Build configuration list for PBXNativeTarget "Vote4UTests" */;
+			buildPhases = (
+				F40000000000000000000015 /* Sources */,
+				F40000000000000000000016 /* Frameworks */,
+				F40000000000000000000017 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F40000000000000000000018 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F40000000000000000000012 /* Vote4UTests */,
+			);
+			name = Vote4UTests;
+			packageProductDependencies = (
+			);
+			productName = Vote4UTests;
+			productReference = F40000000000000000000011 /* Vote4UTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		F40000000000000000000023 /* Vote4UUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F40000000000000000000024 /* Build configuration list for PBXNativeTarget "Vote4UUITests" */;
+			buildPhases = (
+				F40000000000000000000025 /* Sources */,
+				F40000000000000000000026 /* Frameworks */,
+				F40000000000000000000027 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F40000000000000000000028 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F40000000000000000000022 /* Vote4UUITests */,
+			);
+			name = Vote4UUITests;
+			packageProductDependencies = (
+			);
+			productName = Vote4UUITests;
+			productReference = F40000000000000000000021 /* Vote4UUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXTargetDependency section */
+		F40000000000000000000018 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F40000000000000000000006 /* Vote4U */;
+			targetProxy = F40000000000000000000019 /* PBXContainerItemProxy */;
+		};
+		F40000000000000000000028 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F40000000000000000000006 /* Vote4U */;
+			targetProxy = F40000000000000000000029 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		F40000000000000000000019 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F4000000000000000000000A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F40000000000000000000006;
+			remoteInfo = Vote4U;
+		};
+		F40000000000000000000029 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F4000000000000000000000A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F40000000000000000000006;
+			remoteInfo = Vote4U;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXProject section */
 		F4000000000000000000000A /* Project object */ = {
@@ -96,11 +194,27 @@
 			projectRoot = "";
 			targets = (
 				F40000000000000000000006 /* Vote4U */,
+				F40000000000000000000013 /* Vote4UTests */,
+				F40000000000000000000023 /* Vote4UUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		F40000000000000000000027 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F40000000000000000000017 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F40000000000000000000009 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -111,6 +225,20 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		F40000000000000000000025 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F40000000000000000000015 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F40000000000000000000008 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -228,6 +356,70 @@
 			};
 			name = Release;
 		};
+		F4000000000000000000001A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shyamravidath.Vote4UTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Vote4U.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Vote4U";
+			};
+			name = Debug;
+		};
+		F4000000000000000000001B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shyamravidath.Vote4UTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Vote4U.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Vote4U";
+			};
+			name = Release;
+		};
+		F4000000000000000000002A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shyamravidath.Vote4UUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Vote4U;
+			};
+			name = Debug;
+		};
+		F4000000000000000000002B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shyamravidath.Vote4UUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Vote4U;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -245,6 +437,24 @@
 			buildConfigurations = (
 				F4000000000000000000000C /* Debug */,
 				F4000000000000000000000D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F40000000000000000000014 /* Build configuration list for PBXNativeTarget "Vote4UTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4000000000000000000001A /* Debug */,
+				F4000000000000000000001B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F40000000000000000000024 /* Build configuration list for PBXNativeTarget "Vote4UUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4000000000000000000002A /* Debug */,
+				F4000000000000000000002B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

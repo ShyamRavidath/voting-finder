@@ -58,10 +58,17 @@ struct HomeView: View {
 
     private var reminderToggle: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Toggle("Remind me about Election Day", isOn: $remindersEnabled)
-                .onChange(of: remindersEnabled) { _, enabled in
-                    Task { await updateReminders(enabled: enabled) }
+            // Driven by an explicit binding rather than .onChange: when authorization is refused
+            // we flip the toggle back ourselves, and .onChange would treat that as a fresh user
+            // action and re-enter updateReminders(enabled: false), wiping the explanation before
+            // it could ever be read.
+            Toggle("Remind me about Election Day", isOn: Binding(
+                get: { remindersEnabled },
+                set: { wantsReminders in
+                    remindersEnabled = wantsReminders
+                    Task { await updateReminders(enabled: wantsReminders) }
                 }
+            ))
 
             Text(permissionDenied
                  ? "Notifications are turned off for Vote4U. Turn them on in Settings to get reminders."
