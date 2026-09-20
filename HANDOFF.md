@@ -288,21 +288,45 @@ state lookups; news headlines link to their publishers and are not reproduced in
 Everything that can be done without hardware is done. Three things remain, and the first two
 need your Apple account or your phone:
 
-1. **Device testing.** Nothing has run on real hardware yet. Specifically unverified:
-   - **A notification actually firing.** The scheduling logic and its date arithmetic are checked
-     (rolls to Nov 7 2028 after the 2026 election, skips odd years), but the Simulator cannot be
-     granted notification permission from the command line, so no reminder has ever been
-     delivered. This is Phase 3's stated exit criterion.
-   - Airplane mode, and denying/revoking the location permission on a real device.
-   - Real GPS rather than a simulated fix.
-   - Also note the Simulator only has an **iOS 27** runtime, while the deployment target is
-     **iOS 17** — nothing has been run against an older OS.
+1. **Device testing.** Much less is blocked here than previously recorded — see the test suite
+   below. What genuinely needs hardware:
+   - **A notification banner arriving at its scheduled time.** Permission grant/denial and the
+     queuing of requests are now covered by tests; only delivery weeks later is unverifiable.
+   - Real GPS rather than a simulated fix, and airplane mode.
+   - The Simulator only has an **iOS 27** runtime while the deployment target is **iOS 17**, so
+     nothing has run against an older OS.
 2. **Apple account setup.** Add `ravidath@gmail.com` in Xcode ▸ Settings ▸ Accounts and set the
    team on the Vote4U target. Required before the app can run on a phone at all.
 3. **Screenshots**, then paste `ios/APP_STORE.md` into App Store Connect.
 
 There is **no test target** in the Xcode project. `ElectionCalendar` and `SVGPath` are the two
 things most worth unit-testing if one is added — both are pure logic with no UI.
+
+### The iOS test suite
+
+```
+./scripts/test-ios.sh      # 35 tests: unit, UI smoke, and both permission directions
+```
+
+**None of it needs a signing identity** — Simulator tests do not. Note that a plain
+`xcodebuild test` is *not* equivalent, for two reasons the script documents:
+
+- iOS asks for notification permission once and remembers the answer. Neither `simctl uninstall`
+  nor `simctl privacy reset` clears it, so the allow and deny tests each need a **throwaway
+  simulator**, which the script creates and destroys.
+- The allow test must run **before** the unit tests, because `ReminderScheduler` needs
+  authorization before `UNUserNotificationCenter` will queue anything. Without it those tests
+  skip rather than fail.
+
+Traps worth knowing if you extend the UI tests:
+
+- iOS writes **"Don’t Allow" with a typographic apostrophe** (U+2019). Matching an ASCII `'`
+  finds nothing, and with `XCTSkipUnless` that looks like a pass. Match on a prefix.
+- A cold, freshly created simulator needs `app.wait(for: .runningForeground,)` before the first
+  tap, or the tap silently does nothing and no alert ever appears.
+- Don't run two `xcodebuild` invocations against the same `derivedDataPath` — the result bundles
+  collide and tests report `Executed 0 tests`.
+- Shut simulators down when finished. Several booted at once will exhaust memory.
 
 ### General notes
 
