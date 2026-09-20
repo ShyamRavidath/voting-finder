@@ -38,7 +38,7 @@ export default function PrivacyPage() {
         <li>Zippopotam.us (ZIP code to city and coordinates)</li>
         <li>Google Civic Information API (official polling locations)</li>
         <li>OpenStreetMap Nominatim (nearby public buildings)</li>
-        <li>NewsAPI.org and Google News (headlines)</li>
+        <li>Google News (headlines)</li>
       </ul>
       <p>
         Your browser loads map images directly from OpenStreetMap and news thumbnails directly from publishers. Links to

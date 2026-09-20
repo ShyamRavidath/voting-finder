@@ -4,7 +4,6 @@ const http = require('node:http');
 
 // Keep tests hermetic: no real keys, no DB, no network.
 process.env.GOOGLE_CIVIC_API_KEY = '';
-process.env.NEWS_API_KEY = '';
 process.env.DATABASE_URL = '';
 require('dotenv').config = () => ({});
 
@@ -222,7 +221,7 @@ describe('API routes', () => {
     assert.equal(res.headers.get('cache-control'), 'no-store');
   });
 
-  test('news falls back to Google News RSS when no NewsAPI key is set', async () => {
+  test('news comes from Google News RSS', async () => {
     const rss = `<rss><channel>
       <item><title>Newsom eyes 2028 run &amp; more - Example Times</title><link>https://example.com/a</link>
         <pubDate>Sat, 12 Sep 2026 10:00:00 GMT</pubDate><source url="https://example.com">Example Times</source></item>
@@ -238,6 +237,21 @@ describe('API routes', () => {
     assert.equal(body.articles[0].title, 'Newsom eyes 2028 run & more');
     assert.equal(body.articles[0].source, 'Example Times');
     assert.equal(body.articles[0].party, 'Democrat');
+  });
+
+  test('news still excludes the blocked domains', async () => {
+    // The exclusion used to be a NewsAPI query parameter; it moved into dedupeAndSort when
+    // NewsAPI was removed, so it needs its own test.
+    const rss = `<rss><channel>
+      <item><title>2028 election latest - Biztoc</title><link>https://biztoc.com/x</link>
+        <pubDate>Sat, 12 Sep 2026 10:00:00 GMT</pubDate><source url="https://biztoc.com">Biztoc</source></item>
+      <item><title>2028 election roundup - Wire</title><link>https://example.com/ok</link>
+        <pubDate>Sat, 12 Sep 2026 09:00:00 GMT</pubDate><source url="https://example.com">Wire</source></item>
+    </channel></rss>`;
+    upstream = (u) => (u.includes('news.google.com') ? new Response(rss, { status: 200 }) : undefined);
+    const body = await (await fetch(`${base}/api/news`)).json();
+    assert.equal(body.articles.length, 1);
+    assert.equal(body.articles[0].url, 'https://example.com/ok');
   });
 
   test('news reuses the in-memory cache instead of re-hitting upstream', async () => {

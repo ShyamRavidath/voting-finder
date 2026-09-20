@@ -36,9 +36,10 @@ Re-verified in production on **2026-09-20** from the Mac:
 - `/api/news` → 200, articles served by the **Google News RSS fallback**
 - `/api/elections` → **503 "Election data is not configured."**
 
-That 503 and the RSS fallback both mean `GOOGLE_CIVIC_API_KEY` and `NEWS_API_KEY` are **still
-not set in Vercel**. The app is designed to work without them, so nothing is broken — it just
-isn't using the better sources. See §8 step 1.
+That 503 means `GOOGLE_CIVIC_API_KEY` is **still not set in Vercel**. The app is designed to work
+without it, so nothing is broken — it just isn't using the better source. See §8.
+
+News is served by Google News RSS by design: **NewsAPI was removed on 2026-09-20** (see §6).
 
 Architecture (see `CLAUDE.md` for the detailed version):
 
@@ -142,10 +143,11 @@ a non-issue for it — but don't remove those entries, the web app still needs t
 
 - API keys are **not** in Vercel, and the old keys were leaked in the removed legacy
   `index.html` (still in git history) — they need rotating before being reused anywhere.
-- NewsAPI's free plan is development-only per its terms; the Google News RSS fallback is what
-  production is actually using. **For the iOS app this is an App Store issue** under guideline
-  5.2.2 (third-party terms) — decide before shipping whether to drop NewsAPI, pay for a plan
-  that permits production use, or confirm Google News RSS terms cover the app.
+- ~~NewsAPI's development-only free plan~~ **RESOLVED 2026-09-20 by removing NewsAPI entirely.**
+  Its free plan was development-only under its own terms, which made shipping an app on it a
+  guideline 5.2.2 violation, and production had always run on Google News RSS anyway. The code
+  path, the `NEWS_API_KEY` variable and its docs are gone. Do not reintroduce it without a paid
+  plan that permits production use.
 - Vercel's free Hobby plan is non-commercial use only.
 - Apple guideline 4.2 (minimum functionality). **Going native materially lowers this risk** —
   see §10 — but a news feed is still a 4.2.2 trigger, so News stays the last tab.
@@ -299,10 +301,6 @@ need your Apple account or your phone:
    team on the Vote4U target. Required before the app can run on a phone at all.
 3. **Screenshots**, then paste `ios/APP_STORE.md` into App Store Connect.
 
-Still open from §6: **NewsAPI's free plan is development-only**, which is a 5.2.2 problem.
-Production already runs on the Google News RSS fallback, so dropping the NewsAPI path entirely
-is the cleanest fix.
-
 There is **no test target** in the Xcode project. `ElectionCalendar` and `SVGPath` are the two
 things most worth unit-testing if one is added — both are pure logic with no UI.
 
@@ -334,11 +332,12 @@ things most worth unit-testing if one is added — both are pure logic with no U
    Verify with `xcodebuild -version`. See §9 for what Xcode actually is and how it's used.
 2. ~~**Re-run the Playwright suites on the Mac**~~ **done 2026-09-20** — 87 local, 88 production,
    both matching the old machine. See §2.
-3. **Rotate the leaked keys and install them in Vercel.** The old Google Civic and NewsAPI keys
-   were public in the removed legacy `index.html` and remain in git history. Regenerate both
-   (restrict the Google key to the Civic Information API), then add `GOOGLE_CIVIC_API_KEY` and
-   `NEWS_API_KEY` in Vercel → Settings → Environment Variables and redeploy. This turns
-   `/api/elections` back on and moves news off the RSS fallback.
+3. **Rotate the leaked Google Civic key and install it in Vercel.** It was public in the removed
+   legacy `index.html` and remains in git history. Regenerate it (restrict it to the Civic
+   Information API), then add `GOOGLE_CIVIC_API_KEY` in Vercel → Settings → Environment
+   Variables and redeploy. This turns `/api/elections` back on. The old NewsAPI key no longer
+   needs rotating for this project — that integration is gone — but rotate it anyway if it was
+   reused anywhere else.
 4. **Install the App Store skills** (the automatic install was blocked):
    ```
    ! npx skills add eronred/aso-skills --skill aso-audit -g -a claude-code -y

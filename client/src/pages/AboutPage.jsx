@@ -12,7 +12,7 @@ const SOURCES = [
   ['Polling places', "Google Civic Information API (Voting Information Project) when official data is published; otherwise nearby public buildings from OpenStreetMap."],
   ['ZIP code lookup', 'Zippopotam.us'],
   ['Maps', 'U.S. state shapes from the U.S. Census Bureau (via us-atlas); street maps © OpenStreetMap contributors.'],
-  ['News', 'NewsAPI.org and Google News headlines, linked to the original publishers.'],
+  ['News', 'Google News headlines, linked to the original publishers.'],
   ['Electoral votes', 'Electoral College allocation for the 2024 and 2028 elections, based on the 2020 Census.'],
 ];
 

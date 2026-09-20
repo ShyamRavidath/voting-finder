@@ -11,7 +11,7 @@ Live: https://vote4ucyl.vercel.app
   2. **OpenStreetMap Nominatim**: nearby libraries, community centers, and town halls, clearly labeled *not confirmed*.
   3. **Nothing found**: an honest empty state. The app never invents locations. Official lookup links (USA.gov, NASS, Vote.gov) are always shown.
 - **Electoral map** (`/tools?tab=map`): an SVG map of all 50 states + DC (no map-tile service needed), a 538-vote tally with the 270 line, and a tappable state list. Data lives in `client/src/data/stateData.js`.
-- **Election news** (`/news`): 2028 headlines from NewsAPI, falling back to Google News RSS (no key needed) if NewsAPI is unconfigured, over quota, or down. Party labels come only from a watchlist of named 2028 candidates.
+- **Election news** (`/news`): 2028 headlines from Google News RSS (keyless). Party labels come only from a watchlist of named 2028 candidates.
 
 ## Architecture
 
@@ -32,7 +32,7 @@ voting-finder/
 └── vercel.json      builds client, deploys api/ as a function, SPA rewrites, headers
 ```
 
-Frontend and API deploy together on Vercel, so the browser calls same-origin `/api/*`. Responses carry `Cache-Control: s-maxage` headers, so Vercel's CDN absorbs traffic and upstream APIs (NewsAPI's 100 requests/day free tier, Nominatim's fair-use policy) see only a trickle.
+Frontend and API deploy together on Vercel, so the browser calls same-origin `/api/*`. Responses carry `Cache-Control: s-maxage` headers, so Vercel's CDN absorbs traffic and upstream services (Google News, Nominatim's fair-use policy) see only a trickle.
 
 ## Running locally
 
@@ -47,7 +47,6 @@ npm run dev                   # API on :3001, Vite on :5173 (proxies /api)
 | Variable (server) | Required | Purpose |
 |---|---|---|
 | `GOOGLE_CIVIC_API_KEY` | optional | Official polling locations. Without it, OpenStreetMap venues are used. |
-| `NEWS_API_KEY` | optional | NewsAPI headlines. Without it, Google News RSS is used. |
 | `DATABASE_URL` | optional | Postgres cache (run `server/db/schema.sql`). The CDN cache makes this unnecessary on Vercel. |
 | `CLIENT_URL` | optional | Extra allowed CORS origin. |
 | `RATE_LIMIT_MAX` | optional | Requests per 15 min per IP (default 100). |
@@ -68,4 +67,4 @@ The e2e suite covers every page on three device profiles: no runtime errors, no 
 
 ## Deployment (free)
 
-Everything runs on Vercel's free Hobby plan: push to `main` and Vercel builds the client and deploys `api/` as a serverless function. In the Vercel project settings, add `GOOGLE_CIVIC_API_KEY` and `NEWS_API_KEY` as environment variables (optional; the app works without them). No separate backend host is needed.
+Everything runs on Vercel's free Hobby plan: push to `main` and Vercel builds the client and deploys `api/` as a serverless function. In the Vercel project settings, add `GOOGLE_CIVIC_API_KEY` as an environment variable (optional; the app works without it). No separate backend host is needed.

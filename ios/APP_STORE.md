@@ -185,9 +185,8 @@ Vote-tab shot if you would rather lead with density.
 - [ ] `MARKETING_VERSION` 1.0, `CURRENT_PROJECT_VERSION` bumped for each upload
 - [ ] Reminder verified firing on a real device
 - [ ] Airplane-mode and permission-denied paths checked on a real device
-- [ ] **NewsAPI question resolved** (§6 of HANDOFF) — its free plan is development-only, which
-      is a 5.2.2 problem. Production already runs on the Google News RSS fallback, so dropping
-      the NewsAPI path entirely is the cleanest answer
+- [x] **NewsAPI removed 2026-09-20** — its development-only free plan was the 5.2.2 risk. Gone;
+      news comes from Google News RSS, which is keyless
 - [ ] Privacy policy live at `/privacy` with the app section (done 2026-09-20)
 - [x] Screenshots captured (`ios/screenshots/`, regenerate with `scripts/capture-screenshots.sh`)
 - [ ] Archive ▸ Distribute ▸ App Store Connect ▸ TestFlight ▸ Submit

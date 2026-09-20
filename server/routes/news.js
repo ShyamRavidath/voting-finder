@@ -4,15 +4,15 @@ const pool = require('../db/client');
 const { fetchAndProcessNews } = require('../services/newsService');
 
 const QUERY_KEY = 'election-2028';
-// Vercel's CDN caches the response per URL, so upstream APIs see roughly one request per window
+// Vercel's CDN caches the response per URL, so Google News sees roughly one request per window
 // no matter how many visitors there are. ?refresh=true gets a shorter window so the Refresh
-// button can't be used to burn through the NewsAPI free-tier quota.
+// button can't be used to hammer it.
 const CACHE_OK = 'public, max-age=60, s-maxage=1800, stale-while-revalidate=86400';
 const CACHE_REFRESH = 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600';
 const CACHE_EMPTY = 'public, max-age=0, s-maxage=60';
 
 // Per-instance memory cache: a warm serverless instance (or local dev server) reuses results
-// instead of spending NewsAPI quota. Refresh may bypass it, but only once it's 2+ minutes old.
+// instead of re-fetching. Refresh may bypass it, but only once it's 2+ minutes old.
 const MEMO_TTL_MS = 10 * 60 * 1000;
 const MEMO_MIN_AGE_FOR_REFRESH_MS = 2 * 60 * 1000;
 let memo = null;
@@ -48,7 +48,7 @@ router.get('/', async (req, res) => {
   }
 
   try {
-    const { articles, provider } = await fetchAndProcessNews(process.env.NEWS_API_KEY);
+    const { articles, provider } = await fetchAndProcessNews();
 
     if (articles.length > 0) {
       memo = { articles, provider, at: Date.now() };

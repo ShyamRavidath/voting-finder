@@ -1,6 +1,5 @@
 const { fetchWithTimeout } = require('../lib/fetchWithTimeout');
 
-const NEWS_BASE = 'https://newsapi.org/v2/everything';
 const GOOGLE_NEWS_RSS = 'https://news.google.com/rss/search';
 // Watchlist of potential 2028 candidates. An article's party badge comes only from a matched
 // candidate, so a story that merely mentions a sitting official isn't labeled partisan.
@@ -23,7 +22,7 @@ const CANDIDATES = [
   { name: 'Tim Scott', match: ['tim scott'], party: 'Republican' },
 ];
 const MAX_ARTICLES = 15;
-const EXCLUDED_DOMAINS = 'biztoc.com,freerepublic.com';
+const EXCLUDED_DOMAINS = ['biztoc.com', 'freerepublic.com'];
 
 function findCandidate(title, desc) {
   const text = `${title} ${desc}`.toLowerCase();
@@ -65,40 +64,8 @@ function dedupeAndSort(articles) {
       seen.add(key);
       return true;
     })
+    .filter((a) => !EXCLUDED_DOMAINS.some((d) => a.url.includes(d)))
     .slice(0, MAX_ARTICLES);
-}
-
-async function fetchFromNewsAPI(query, apiKey) {
-  const url = `${NEWS_BASE}?q=${encodeURIComponent(query)}&sortBy=publishedAt&language=en&pageSize=20&excludeDomains=${EXCLUDED_DOMAINS}`;
-  const res = await fetchWithTimeout(url, { headers: { 'X-Api-Key': apiKey, 'User-Agent': 'Vote4U/1.0' } });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || data.status === 'error') throw new Error(`NewsAPI ${res.status}: ${data.message || data.code || 'error'}`);
-  return data.articles || [];
-}
-
-async function fetchNewsAPIArticles(apiKey) {
-  const queries = [
-    '"2028 election" OR "2028 presidential"',
-    '(Newsom OR Whitmer OR "Ocasio-Cortez" OR Buttigieg OR Shapiro OR Vance OR Rubio OR DeSantis) AND 2028',
-  ];
-  const results = await Promise.allSettled(queries.map((q) => fetchFromNewsAPI(q, apiKey)));
-  const raw = [];
-  results.forEach((r, i) => {
-    if (r.status === 'fulfilled') raw.push(...r.value);
-    else console.error(`NewsAPI query failed: ${queries[i]}:`, r.reason.message);
-  });
-  return raw
-    .filter((a) => a.title && a.url && !a.title.includes('[Removed]'))
-    .map((a) =>
-      toArticle({
-        title: a.title,
-        description: a.description,
-        url: a.url,
-        publishedAt: a.publishedAt,
-        source: a.source?.name,
-        imageUrl: a.urlToImage,
-      })
-    );
 }
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
@@ -115,7 +82,11 @@ function tag(xml, name) {
   return m ? decodeEntities(m[1]).trim() : '';
 }
 
-// Keyless fallback: Google News RSS search. Used when NewsAPI is unconfigured, over quota, or down.
+// Google News RSS search — the only news source, and keyless.
+//
+// NewsAPI was removed on 2026-09-20: its free plan is development-only under its own terms, which
+// makes shipping an app on it an App Store guideline 5.2.2 problem, and production had always run
+// on this path anyway. Don't reintroduce it without a paid plan that permits production use.
 async function fetchGoogleNewsArticles() {
   const q = encodeURIComponent('"2028 election" OR "2028 presidential race" when:14d');
   const res = await fetchWithTimeout(`${GOOGLE_NEWS_RSS}?q=${q}&hl=en-US&gl=US&ceid=US:en`, {
@@ -138,15 +109,7 @@ async function fetchGoogleNewsArticles() {
   });
 }
 
-async function fetchAndProcessNews(apiKey) {
-  if (apiKey) {
-    try {
-      const articles = dedupeAndSort(await fetchNewsAPIArticles(apiKey));
-      if (articles.length > 0) return { articles, provider: 'newsapi' };
-    } catch (err) {
-      console.error('NewsAPI failed, falling back to Google News:', err.message);
-    }
-  }
+async function fetchAndProcessNews() {
   const articles = dedupeAndSort(await fetchGoogleNewsArticles());
   return { articles, provider: 'google-news' };
 }

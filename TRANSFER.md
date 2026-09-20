@@ -36,17 +36,16 @@ is verified end to end.
 
 ## Still outstanding
 
-1. **Rotate the leaked API keys.** The old Google Civic and NewsAPI keys were committed in the
-   removed legacy `index.html` and remain in git history, so they must be replaced regardless of
-   the move.
+1. **Rotate the leaked Google Civic API key.** It was committed in the removed legacy
+   `index.html` and remains in git history, so it must be replaced regardless of the move.
    - Google Cloud Console → regenerate the Civic Information API key, restrict it to that API.
-   - newsapi.org → regenerate the key.
-   - Add both to **Vercel → Settings → Environment Variables** as `GOOGLE_CIVIC_API_KEY` and
-     `NEWS_API_KEY`, then redeploy. This turns `/api/elections` back on and moves news off the
-     Google News RSS fallback.
-   - Locally: `cp .env.example server/.env` and paste the same values. (`server/.env` does not
+   - Add it to **Vercel → Settings → Environment Variables** as `GOOGLE_CIVIC_API_KEY`, then
+     redeploy. This turns `/api/elections` back on.
+   - Locally: `cp .env.example server/.env` and paste the same value. (`server/.env` does not
      exist on the Mac yet.)
-   The app is built to run without any keys, so nothing breaks while this is pending.
+   The old NewsAPI key was leaked too, but **NewsAPI was removed from this project on
+   2026-09-20**, so it no longer needs rotating here — do it anyway if that key was reused
+   elsewhere. The app is built to run without any keys, so nothing breaks while this is pending.
 2. ~~Playwright browsers~~ **installed and both suites verified** (see above).
 3. **Xcode.app is installed, but `xcode-select` still points at the Command Line Tools.** Until
    that is switched there is no `xcodebuild` and no `simctl`:
