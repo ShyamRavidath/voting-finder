@@ -17,7 +17,12 @@ uncommitted or unpushed on the old machine.
 ## Verified on the Mac (2026-09-20)
 
 - `npm run install:all` — clean, 0 vulnerabilities.
-- `npm test --prefix server` — **13 pass, 0 fail** on Node 26.
+- `npm test --prefix server` — **19 pass, 0 fail** on Node 26 (13 before the lat/lng work).
+- `npm run test:e2e` — **87 passed, 9 skipped**.
+- `BASE_URL=https://vote4ucyl.vercel.app npx playwright test` — **88 passed, 8 skipped**.
+
+Both Playwright numbers match what the old Windows machine produced on 2026-09-19, so the move
+is verified end to end.
 - Live production API probed directly: `/api/health` 200, `/api/polling?zip=90210` 200 with real
   locations, `/api/news` 200 (RSS fallback), `/api/elections` 503 (keys still unset, as expected).
 
@@ -42,10 +47,16 @@ uncommitted or unpushed on the old machine.
    - Locally: `cp .env.example server/.env` and paste the same values. (`server/.env` does not
      exist on the Mac yet.)
    The app is built to run without any keys, so nothing breaks while this is pending.
-2. **Playwright browsers are not installed on the Mac.** `npx playwright install chromium webkit`
-   (~400 MB), then confirm `npm run test:e2e` → 87 passed and
-   `BASE_URL=https://vote4ucyl.vercel.app npx playwright test` → 88 passed, 8 skipped.
-3. **Xcode is not installed** — Command Line Tools only. See `HANDOFF.md` §8 step 1.
+2. ~~Playwright browsers~~ **installed and both suites verified** (see above).
+3. **Xcode.app is installed, but `xcode-select` still points at the Command Line Tools.** Until
+   that is switched there is no `xcodebuild` and no `simctl`:
+   ```
+   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+   sudo xcodebuild -license accept
+   xcodebuild -runFirstLaunch
+   ```
+   (Or Xcode ▸ Settings ▸ Locations ▸ Command Line Tools.) The iOS **Simulator runtimes** are a
+   separate ~7–10 GB download from Xcode ▸ Settings ▸ Components.
 
 ## Accounts needed on this Mac
 

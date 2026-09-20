@@ -57,9 +57,18 @@ voting-finder/
 Hosting: frontend and API deploy together on **Vercel free Hobby**. Railway is gone.
 Response `Cache-Control: s-maxage` headers put Vercel's CDN in front of every upstream API.
 
-Test status on the Mac (2026-09-20): **19/19 server tests pass** on Node 26
-(`npm test --prefix server`). The Playwright suites (87 local / 88 production) have not yet been
-re-run on this machine — see §8 step 2.
+Test status on the Mac (2026-09-20), everything green and matching the old machine's numbers:
+
+| Suite | Result |
+|---|---|
+| `npm test --prefix server` | **19 pass, 0 fail** (13 before the lat/lng work) |
+| `npm run test:e2e` | **87 passed, 9 skipped** |
+| `BASE_URL=https://vote4ucyl.vercel.app npx playwright test` | **88 passed, 8 skipped** |
+
+Note on flakes: `playwright.config.js` sets `retries: 0` locally, so a flake shows as a hard
+failure. One parallel run produced two `browserContext.close: ENOENT … .playwright-artifacts-*`
+trace-writer errors; the same specs passed serially and the next full run was clean at 87. If
+you see that error, re-run before investigating — it is not an assertion failure.
 
 ## 3. What carries over to the SwiftUI app
 
@@ -255,9 +264,8 @@ state lookups; news headlines link to their publishers and are not reproduced in
    xcodebuild -runFirstLaunch
    ```
    Verify with `xcodebuild -version`. See §9 for what Xcode actually is and how it's used.
-2. **Re-run the Playwright suites on the Mac** to confirm the move was clean:
-   `npx playwright install chromium webkit` then `npm run test:e2e` (expect 87 passed) and
-   `BASE_URL=https://vote4ucyl.vercel.app npx playwright test` (expect 88 passed, 8 skipped).
+2. ~~**Re-run the Playwright suites on the Mac**~~ **done 2026-09-20** — 87 local, 88 production,
+   both matching the old machine. See §2.
 3. **Rotate the leaked keys and install them in Vercel.** The old Google Civic and NewsAPI keys
    were public in the removed legacy `index.html` and remain in git history. Regenerate both
    (restrict the Google key to the Civic Information API), then add `GOOGLE_CIVIC_API_KEY` and
