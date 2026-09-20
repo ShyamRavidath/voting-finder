@@ -230,8 +230,8 @@ together. Add `ios/build/`, `*.xcuserdatad`, `DerivedData/` to `.gitignore`.
 
 | Phase | Work | Done when |
 |---|---|---|
-| 0. Setup | ~~Add `?lat=&lng=` to `/api/polling`~~ **done**. Remaining: install Xcode (§8), rotate + install API keys in Vercel, export map/state JSON. **No `shared/` refactor — cancelled.** | Xcode builds; keys live in Vercel |
-| 1. Scaffold | `ios/` Xcode project, `TabView` with four empty tabs, `APIClient` hitting the live API, app icon + launch screen from `assets/app-icon-1024.png` | App runs in the Simulator and on the real iPhone |
+| 0. Setup | **DONE** — lat/lng endpoint, Xcode 27 + iOS 27 runtime installed, map/state JSON exported. Only the Vercel API keys remain (user action). **No `shared/` refactor — cancelled.** | ✅ |
+| 1. Scaffold | **DONE 2026-09-20** — `ios/Vote4U.xcodeproj`, four tabs, `APIClient`, app icon, and the electoral map already rendering from bundled data | ✅ Builds Debug + Release, runs in the Simulator |
 | 2. Screens | Build the four tabs against the live API | Every web feature has a native equivalent |
 | 3. Native | Notifications, CoreLocation, offline save, haptics | Reminder fires on a real device; location finds a polling place |
 | 4. Hardening | Empty/offline/error states (`ContentUnavailableView`), VoiceOver labels, Dynamic Type, dark mode, device testing | Works on a real iPhone in airplane mode and with permissions denied |
@@ -253,6 +253,43 @@ OpenStreetMap and is labeled "not confirmed" when unofficial; the app always lin
 state lookups; news headlines link to their publishers and are not reproduced in full.
 
 ## 8. The next step (start here)
+
+> **Phases 0 and 1 are complete as of 2026-09-20.** The app builds and runs. Steps 1–4 below are
+> historical except where marked; **the live next task is Phase 2 (§7): build the Vote and News
+> tabs.** Everything they need already exists — `APIClient` knows both polling entry points, and
+> the API is live.
+
+### Done already
+
+- ✅ Xcode 27.0 installed and selected; iOS 27.0 Simulator runtime present.
+- ✅ Playwright verified on the Mac (87 local / 88 production).
+- ✅ `GET /api/polling?lat=&lng=` shipped with tests (§4).
+- ✅ `ios/` scaffolded: four tabs, `APIClient`, `ElectionCalendar`, working electoral map.
+
+### Still outstanding (user actions)
+
+1. **Rotate the leaked API keys and install them in Vercel** — see step 1 below. Nothing in the
+   iOS work is blocked by this, but `/api/elections` stays 503 until it is done.
+2. **Add the Apple Developer account in Xcode ▸ Settings ▸ Accounts** (`ravidath@gmail.com`),
+   then set the team on the Vote4U target so it can run on a real iPhone. The Simulator does not
+   need this; a physical device does.
+3. **Install the App Store skills** — step 4 below.
+
+### Notes for Phase 2
+
+- `PRODUCT_BUNDLE_IDENTIFIER` is `com.shyamravidath.Vote4U`. Change it now if you want something
+  else — it is fixed once the App Store Connect record exists.
+- `TARGETED_DEVICE_FAMILY = 1` (iPhone only). That is deliberate: it avoids having to produce and
+  maintain iPad screenshots. Flip to `1,2` only if you decide to support iPad.
+- `SWIFT_VERSION = 5.0`. The code is written to be Swift 6 clean; switching is a one-line build
+  setting change once there is more concurrency in play.
+- The project uses a **file-system-synchronized root group**, so adding a `.swift` file to
+  `ios/Vote4U/` is enough — no `project.pbxproj` edit, and no merge conflicts in it.
+- Re-run `node scripts/export-ios-data.mjs` whenever `client/src/data/*` changes.
+- Known rough edge: DC is a few pixels wide on the map, so it is effectively untappable. Phase 4
+  should add the state list as the accessible way to select one, as the web app does.
+
+### Historical checklist
 
 1. **Install Xcode.** *Not yet installed on this Mac* — only the Command Line Tools are
    (`xcode-select -p` → `/Library/Developer/CommandLineTools`). Install from the **Mac App
