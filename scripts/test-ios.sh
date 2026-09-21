@@ -53,11 +53,20 @@ fresh_simulator() {
 }
 
 # Build once up front so the warm-up above has an app bundle to launch.
+#
+# `generic/platform=iOS Simulator` rather than `name=$DEVICE_TYPE`: a bare device name is resolved
+# against the newest installed runtime, so pinning the deployment-era runtime
+# (DEVICE_TYPE='iPhone 15 Pro' RUNTIME=…iOS-17-5) failed here with "no available devices matched"
+# — there is no iPhone 15 Pro on iOS 27. A generic destination needs no device at all; the tests
+# below still run on the exact simulators this script creates.
 echo "▸ Building"
+mkdir -p "$DERIVED"
+BUILD_LOG="$DERIVED/build-for-testing.log"
 xcodebuild build-for-testing -project "$PROJECT" -scheme Vote4U \
-  -destination "platform=iOS Simulator,name=$DEVICE_TYPE" \
-  -derivedDataPath "$DERIVED" >/dev/null 2>&1 || {
-    echo "build-for-testing failed" >&2
+  -destination "generic/platform=iOS Simulator" \
+  -derivedDataPath "$DERIVED" >"$BUILD_LOG" 2>&1 || {
+    echo "build-for-testing failed. Last 40 log lines:" >&2
+    tail -40 "$BUILD_LOG" >&2
     exit 1
   }
 
@@ -99,6 +108,27 @@ fresh_simulator
 DENY="$FRESH_UDID"
 run "Notification permission — deny" "$DENY" \
   -only-testing:Vote4UUITests/ReminderPermissionUITests/testDenyingNotificationsFlipsTheToggleBackAndExplains
+
+# The UI tests drive canned API responses through APIStub, which invents polling venues. Never
+# showing a voter a location the data does not support is rule #1 (and guideline 1.1.6), so prove
+# the stub really is compiled out of Release rather than trusting the #if.
+echo ""
+echo "▸ Release build contains no stubbed venues"
+RELEASE_DERIVED="$DERIVED-release"
+if xcodebuild build -project "$PROJECT" -scheme Vote4U -configuration Release \
+     -destination "generic/platform=iOS Simulator" \
+     -derivedDataPath "$RELEASE_DERIVED" >"$DERIVED/release-build.log" 2>&1; then
+  BINARY="$RELEASE_DERIVED/Build/Products/Release-iphonesimulator/Vote4U.app/Vote4U"
+  if strings "$BINARY" | grep -qE "Roxbury Community Center|-stubPolling|-startTab"; then
+    echo "✗ DEBUG-only strings survived into the Release binary" >&2
+    exit 1
+  fi
+  echo "  ok"
+else
+  echo "✗ Release build failed. Last 40 log lines:" >&2
+  tail -40 "$DERIVED/release-build.log" >&2
+  exit 1
+fi
 
 echo ""
 echo "Done."

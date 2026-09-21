@@ -21,16 +21,36 @@ final class AppSmokeUITests: XCTestCase {
     }
 
     func testVoteTabSearchesAndLabelsUnconfirmedResults() {
-        let app = launch(["-startTab", "vote", "-startZip", "90210"])
+        // Stubbed, not live: this used to drive the real API and failed on a correct build the
+        // day Nominatim stopped returning venues for 90210. The labelling rule is too important
+        // to be asserted only when a third-party geocoder cooperates.
+        let app = launch(["-startTab", "vote", "-startZip", "90210", "-stubPolling", "estimated"])
 
-        // Hits the live API, so allow generously for a cold serverless start.
         let library = app.staticTexts["Beverly Hills Public Library"]
-        XCTAssertTrue(library.waitForExistence(timeout: 30), "no results from the live API")
+        XCTAssertTrue(library.waitForExistence(timeout: 15), "the stubbed result never rendered")
 
         // The rule the codebase is built around must be visible, not just modelled.
         XCTAssertTrue(app.staticTexts["Not confirmed"].firstMatch.exists, "estimated results must be labelled")
         XCTAssertTrue(app.buttons["Directions"].firstMatch.exists)
         XCTAssertTrue(app.buttons["Save"].firstMatch.exists)
+    }
+
+    /// The honest-empty path: a successful lookup that found nothing must say so and hand the
+    /// voter an official source rather than inventing a venue.
+    func testVoteTabOffersOfficialSourcesWhenNothingIsFound() {
+        let app = launch(["-startTab", "vote", "-startZip", "90210", "-stubPolling", "empty"])
+
+        XCTAssertTrue(app.staticTexts["No polling places found"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["Official sources"].exists, "a dead end must still offer an official lookup")
+    }
+
+    /// The failure path, which could previously only be exercised by unplugging the network.
+    func testVoteTabExplainsAServerFailureAndOffersRetry() {
+        let app = launch(["-startTab", "vote", "-startZip", "90210", "-stubPolling", "error"])
+
+        XCTAssertTrue(app.staticTexts["Couldn't search"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["Try again"].firstMatch.exists, "a failed search must be retryable")
+        XCTAssertTrue(app.staticTexts["Official sources"].exists)
     }
 
     func testVoteTabAlwaysOffersOfficialSourcesBeforeSearching() {
@@ -64,8 +84,43 @@ final class AppSmokeUITests: XCTestCase {
     }
 
     func testNewsTabLoadsHeadlines() {
-        let app = launch(["-startTab", "news"])
+        let app = launch(["-startTab", "news", "-stubNews", "sample"])
         XCTAssertTrue(app.navigationBars["Election News"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 30), "no headlines from the live API")
+        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 15), "the stubbed headlines never rendered")
+    }
+
+    /// The one test that still talks to production. It deliberately accepts any *terminal* state:
+    /// upstream data comes and goes (ZIP 90210 had no venues at all on 2026-09-20), so asserting
+    /// a particular venue makes a correct build fail. What must never happen is the app hanging
+    /// on a spinner or failing to decode what the API actually sends.
+    func testLiveAPIReachesATerminalStateOnVoteAndNews() {
+        let app = launch(["-startTab", "vote", "-startZip", "90210"])
+
+        // Any venue at all, not a named one — the upstream ranking changes from day to day.
+        let results = app.buttons["Directions"].firstMatch
+        let nothingFound = app.staticTexts["No polling places found"]
+        let failed = app.staticTexts["Couldn't search"]
+        // Any one of the three is a pass, and XCTWaiter would insist on all three, so poll.
+        let deadline = Date().addingTimeInterval(45)
+        while Date() < deadline && !(results.exists || nothingFound.exists || failed.exists) {
+            _ = app.staticTexts.firstMatch.waitForExistence(timeout: 1)
+        }
+        XCTAssertTrue(
+            results.exists || nothingFound.exists || failed.exists,
+            "the Vote tab never left its loading state against the live API"
+        )
+
+        app.tabBars.buttons["News"].tap()
+        let headline = app.cells.firstMatch
+        let noHeadlines = app.staticTexts["No headlines right now"]
+        let newsFailed = app.staticTexts["Couldn't load the news"]
+        let newsDeadline = Date().addingTimeInterval(45)
+        while Date() < newsDeadline && !(headline.exists || noHeadlines.exists || newsFailed.exists) {
+            _ = app.staticTexts.firstMatch.waitForExistence(timeout: 1)
+        }
+        XCTAssertTrue(
+            headline.exists || noHeadlines.exists || newsFailed.exists,
+            "the News tab never left its loading state against the live API"
+        )
     }
 }

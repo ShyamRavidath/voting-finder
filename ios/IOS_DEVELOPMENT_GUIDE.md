@@ -72,7 +72,9 @@ RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' \
   ./scripts/test-ios.sh
 ```
 
-The full script creates fresh simulators for notification allow and deny paths because notification authorization persists on a simulator. Use a focused `xcodebuild` command during iteration and the full script before handing off notification-sensitive or release-bound work.
+The full script creates fresh simulators for notification allow and deny paths because notification authorization persists on a simulator. It finishes with a Release build and greps the binary to prove the DEBUG-only launch arguments and API stubs did not ship. Use a focused `xcodebuild` command during iteration and the full script before handing off notification-sensitive or release-bound work.
+
+Note for focused `xcodebuild` runs: a bare `-destination "platform=iOS Simulator,name=iPhone 15 Pro"` is resolved against the newest installed runtime and fails with "no available devices matched" when that device only exists on iOS 17.5. Add `,OS=17.5`, or build with `generic/platform=iOS Simulator` as the script does.
 
 ## 2. Choosing tools and skills
 

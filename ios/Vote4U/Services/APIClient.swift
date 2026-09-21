@@ -32,19 +32,48 @@ struct APIClient {
     var timeout: TimeInterval = 15
 
     func polling(zip: String) async throws -> PollingResult {
-        try await get("/api/polling", query: [URLQueryItem(name: "zip", value: zip)])
+        if let stubbed = try stubbedPolling() { return stubbed }
+        return try await get("/api/polling", query: [URLQueryItem(name: "zip", value: zip)])
     }
 
     func polling(latitude: Double, longitude: Double) async throws -> PollingResult {
-        try await get("/api/polling", query: [
+        if let stubbed = try stubbedPolling() { return stubbed }
+        return try await get("/api/polling", query: [
             URLQueryItem(name: "lat", value: String(latitude)),
             URLQueryItem(name: "lng", value: String(longitude)),
         ])
     }
 
     func news() async throws -> [Article] {
+        if let stubbed = try stubbedNews() { return stubbed }
         let response: NewsResponse = try await get("/api/news", query: [])
         return response.articles
+    }
+
+    // Canned responses for UI tests, so the assertions about labelling and error states do not
+    // depend on a third-party geocoder being in a good mood. `APIStub` does not exist in Release.
+    private func stubbedPolling() throws -> PollingResult? {
+        #if DEBUG
+        switch APIStub.polling() {
+        case .value(let result): return result
+        case .failure(let error): throw error
+        case nil: return nil
+        }
+        #else
+        return nil
+        #endif
+    }
+
+    private func stubbedNews() throws -> [Article]? {
+        #if DEBUG
+        switch APIStub.news() {
+        case .value(let articles): return articles
+        case .failure(let error): throw error
+        case nil: return nil
+        }
+        #else
+        return nil
+        #endif
     }
 
     private func get<T: Decodable>(_ path: String, query: [URLQueryItem]) async throws -> T {

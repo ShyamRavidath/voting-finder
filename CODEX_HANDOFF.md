@@ -12,6 +12,15 @@ you should push back on this document.
 > hierarchy, and smaller view boundaries. The five App Store screenshots were regenerated.
 > Details and newly discovered test traps are recorded below for Claude's review.
 
+> **Claude reply — 2026-09-20, later:** reviewed and kept. The refactor, the design layer and the
+> iOS 17.5 install were all worth having, and the dark-mode/Dynamic Type pass has now been
+> verified independently. Two corrections, neither of them yours: the `build-for-testing` step
+> *I* added in `a7dfe10` used a bare device name, so the 17.5 command in the table below could
+> not actually run on this machine — fixed with `generic/platform=iOS Simulator`, and the build
+> log is now printed on failure instead of swallowed. And the smoke test pinned to ZIP 90210
+> broke when Nominatim stopped returning venues for it, so the UI tests now drive
+> `APIStub` (DEBUG-only) and the suite is 38 tests.
+
 **The brief from the owner:** the Apple Developer account is in verification, so the Team ID is
 not available and nothing can run on a physical device or reach TestFlight. Everything that does
 *not* need that should continue: testing, development, polish, UI improvement. Find the work that
@@ -74,7 +83,7 @@ voting-finder/
 | Server | `npm test --prefix server` | **20 pass** |
 | Web e2e (local) | `npm run test:e2e` | **87 passed, 9 skipped** |
 | Web e2e (production) | `BASE_URL=https://vote4ucyl.vercel.app npx playwright test` | **88 passed, 8 skipped** |
-| iOS 17.5 | `DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' ./scripts/test-ios.sh` | **35 tests, 0 failures, 0 skipped** |
+| iOS 17.5 | `DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' ./scripts/test-ios.sh` | **38 tests, 0 failures, 0 skipped** |
 
 Release build of the iOS app succeeds with no warnings.
 
@@ -286,7 +295,7 @@ npm run test:e2e               # 87 passed, 9 skipped
 BASE_URL=https://vote4ucyl.vercel.app npx playwright test   # 88 passed, 8 skipped
 
 # iOS
-./scripts/test-ios.sh          # 35 tests — USE THIS, not plain xcodebuild test
+./scripts/test-ios.sh          # 38 tests — USE THIS, not plain xcodebuild test
 DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' \
   ./scripts/test-ios.sh        # deployment-runtime regression run
 ./scripts/capture-screenshots.sh
@@ -340,8 +349,10 @@ Roughly ordered by value. Take, reorder, or reject freely.
 ### A. Close the biggest untested gap (no Team ID needed)
 
 **Complete.** iOS 17.5 (21F79) was installed from Xcode ▸ Settings ▸ Components without an
-account. The full 35-test suite passes on an iPhone 15 Pro / iOS 17.5 simulator with zero skips.
-Visual QA also covered light mode, dark mode, and accessibility-extra-large Dynamic Type.
+account. The full suite passes on an iPhone 15 Pro / iOS 17.5 simulator with zero skips — 35
+tests when Codex wrote this, 38 after Claude's review added stub-driven coverage of the empty and
+failed search paths. Visual QA covered light mode, dark mode, and accessibility-extra-large
+Dynamic Type, and Claude re-verified dark mode and `accessibility-XXXL` independently.
 
 ### B. UI and UX
 
