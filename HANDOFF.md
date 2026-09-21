@@ -205,6 +205,21 @@ it, but ask first.
   interaction surface. Don't "fix" this by making shapes focusable.
 - **A fixed `.font(.system(size: 72))` ignores Dynamic Type entirely.** Use `@ScaledMetric`, cap
   with `.dynamicTypeSize(...)`, add `minimumScaleFactor`.
+- **`removePendingNotificationRequests` is processed asynchronously by the notification daemon.**
+  `ReminderScheduler.schedule()` used to `cancelAll()` then add; the removal could land *after*
+  the adds and wipe them, so toggling reminders on silently scheduled nothing — intermittently.
+  **Adding a request with an existing identifier already replaces it atomically**, so never
+  cancel-then-add. Remove only what you deliberately did not schedule, afterwards.
+- **A single green run does not prove the absence of a race.** That bug passed once and I took it
+  as verified. It only surfaced after I removed the skips.
+- **`.searchable` with default placement collapses behind the title until the user scrolls.** The
+  field is unreachable to UI tests and easy to miss as a user. Use
+  `.navigationBarDrawer(displayMode: .always)` when it should always be visible.
+- **A freshly created simulator is cold enough to outrun a UI test's patience.** The permission
+  alert lands outside the timeout and the failure looks like "no alert appeared" rather than
+  "slow boot". `scripts/test-ios.sh` now warms each new simulator with a throwaway
+  install/launch/terminate before the real run. `app.wait(for: .runningForeground)` is **not**
+  sufficient — it returns before SwiftUI has settled.
 - **`.onChange` cannot distinguish a programmatic revert from a user action.** Denying
   notification permission set a warning flag *and* flipped the toggle back; the revert re-fired
   `.onChange`, re-entered the handler, and wiped the flag — so denial was completely unexplained.
@@ -307,7 +322,8 @@ The owner brought in Codex (better iOS integration) and explicitly wanted it **u
 same authority I have, free to change my decisions. My role is to **review afterwards and push
 back where warranted**, not to constrain it up front. `CODEX_HANDOFF.md` is the on-ramp I wrote.
 
-**Codex's first commit, `1da4c8d`** — reviewed 2026-09-20, build verified clean:
+**Codex's first commit, `1da4c8d`** — reviewed 2026-09-20. Kept, with follow-up fixes in
+`a7dfe10` (see below):
 
 - **Installed the iOS 17.5 runtime and verified against it.** This was my #1 recommendation and it
   closed the largest untested gap: nothing had ever run on the actual deployment target.
@@ -322,10 +338,22 @@ back where warranted**, not to constrain it up front. `CODEX_HANDOFF.md` is the 
   skills/plugins that may not exist here, and iOS 26 / Swift 6.2 / Liquid Glass guidance that does
   **not** apply to this iOS 17 project. Treat as inspiration, not instruction.
 
-**Things to check on Codex's work when reviewing:** whether the new gradient theme survives dark
-mode and accessibility text sizes (I verified those manually before; the design layer is new since),
-whether screenshots need regenerating (`ios/screenshots/` still shows the pre-polish UI), and
-whether the view decomposition preserved the accessibility grouping I added.
+**Review outcome (`a7dfe10`).** The refactor and redesign are genuinely good and were kept — the
+Home redesign in particular fixes the "Home is bare" criticism, and Codex's `test-ios.sh` change
+fixed a real flaw of mine (my `run()` swallowed xcodebuild's exit status, so failures could pass
+silently). Three follow-ups were needed:
+
+1. Codex's new state search used `.searchable` with default placement → unreachable; pinned open.
+2. My own `ReminderScheduler` cancel/add race, found only because I removed the test skips.
+3. Simulator pre-warming, because cold boots were outrunning the permission-alert timeout.
+
+**Still outstanding on Codex's work:**
+- **`ios/screenshots/` is stale** — it shows the pre-redesign UI and these are App Store
+  deliverables. Regenerate with `./scripts/capture-screenshots.sh`.
+- **The new gradient theme is unverified in dark mode and at accessibility text sizes.** I
+  verified those manually on the pre-Codex UI; the `Design/` layer is new since. Real regression
+  risk from a change I otherwise like.
+- Confirm the view decomposition preserved the accessibility grouping I added to cards and rows.
 
 ---
 
