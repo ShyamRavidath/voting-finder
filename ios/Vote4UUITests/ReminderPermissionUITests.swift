@@ -31,7 +31,12 @@ final class ReminderPermissionUITests: XCTestCase {
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let matching = NSPredicate(format: "label BEGINSWITH[c] %@", prefix)
 
-        let springboardButton = springboard.buttons.containing(matching).firstMatch
+        // `matching(_:)`, NOT `containing(_:)`. `containing` keeps elements that have a
+        // *descendant* satisfying the predicate and ignores the element's own attributes, so it
+        // can never match a leaf button by its own label. It failed exactly that way on
+        // 2026-09-21 — the diagnostic below printed `springboard buttons: ["Don't Allow",
+        // "Allow"]` while claiming no button started with "Allow".
+        let springboardButton = springboard.buttons.matching(matching).firstMatch
         if springboardButton.waitForExistence(timeout: timeout) {
             springboardButton.tap()
             return true
@@ -39,7 +44,7 @@ final class ReminderPermissionUITests: XCTestCase {
 
         // Newer iOS does not always parent the permission alert to springboard.
         let app = XCUIApplication()
-        let appButton = app.alerts.buttons.containing(matching).firstMatch
+        let appButton = app.alerts.buttons.matching(matching).firstMatch
         if appButton.waitForExistence(timeout: 5) {
             appButton.tap()
             return true
