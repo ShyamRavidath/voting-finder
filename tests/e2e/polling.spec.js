@@ -36,7 +36,7 @@ test.describe('polling place finder', () => {
       await expect(directions).toHaveAttribute('href', /^https:\/\/(maps\.apple\.com|www\.google\.com\/maps)/);
       await expect(directions).toHaveAttribute('target', '_blank');
       // Unconfirmed venues must be labeled as such
-      await expect(page.getByText(/Likely venues, not confirmed|Official locations/)).toBeVisible();
+      await expect(page.getByText(/Likely venues, not confirmed|Nothing listed nearby|Official locations/)).toBeVisible();
       await expect(page.getByRole('region', { name: 'Map of nearby locations' })).toBeVisible();
 
       await cards.first().getByRole('button', { name: 'Show on map' }).click();
@@ -79,6 +79,43 @@ test.describe('polling place finder', () => {
     fail = false;
     await page.getByRole('button', { name: 'Try again' }).click();
     await expect(page.getByText('No locations found near Testville, TX yet')).toBeVisible();
+    await expect(page.getByRole('link', { name: /Find your official polling place/ })).toBeVisible();
+  });
+
+  // The widened tier (dataSource 'nearby'). Mocked rather than live because whether a given ZIP
+  // widens depends on Nominatim's index that day — the lesson that made the iOS UI tests stubbed.
+  test('a widened search says so and hedges harder than the tier above it', async ({ page }) => {
+    await page.route('**/api/polling*', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          dataSource: 'nearby',
+          searchRadiusKm: 25,
+          zip: '83428',
+          place: { city: 'Irwin', state: 'Idaho', stateAbbr: 'ID', zip: '83428', lat: 43.3861, lng: -111.2527 },
+          locations: [
+            {
+              name: 'Swan Valley Elementary School',
+              addr: 'Swan Valley Highway, Irwin, Idaho, 83428',
+              type: 'Civic Building',
+              lat: 43.4058,
+              lng: -111.2932,
+              distance: 3.9,
+              isEstimated: true,
+            },
+          ],
+        }),
+      })
+    );
+    await page.goto('/tools?tab=booths&zip=83428');
+
+    await expect(page.getByText('Nothing listed nearby')).toBeVisible();
+    // 25 km, reported to the reader in miles.
+    await expect(page.getByText(/widened the search to about 16 miles/)).toBeVisible();
+    await expect(page.getByText(/None of them is a confirmed polling place/)).toBeVisible();
+    // Rule #1: every venue in the weakest tier still carries the per-card disclaimer.
+    await expect(page.getByText('Not confirmed')).toBeVisible();
     await expect(page.getByRole('link', { name: /Find your official polling place/ })).toBeVisible();
   });
 

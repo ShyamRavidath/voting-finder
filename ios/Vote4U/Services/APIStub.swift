@@ -13,6 +13,7 @@ import Foundation
 /// by grepping the Release binary.
 ///
 ///     -stubPolling estimated   two unofficial venues, both labelled "Not confirmed"
+///     -stubPolling nearby      the widened fallback: civic buildings, hedged harder still
 ///     -stubPolling empty       a successful lookup that found nothing
 ///     -stubPolling error       a server-side failure
 ///     -stubNews sample         three fixed headlines
@@ -26,6 +27,7 @@ enum APIStub {
     static func polling() -> Outcome<PollingResult>? {
         switch argument(for: "-stubPolling") {
         case "estimated": .value(estimated)
+        case "nearby": .value(widened)
         case "empty": .value(empty)
         case "error": .failure(.server("The stubbed server is unavailable."))
         default: nil
@@ -77,14 +79,45 @@ enum APIStub {
         ],
         place: place,
         dataSource: "estimated",
-        zip: "90210"
+        zip: "90210",
+        searchRadiusKm: 10
+    )
+
+    /// The tier below `estimated`: nothing polling-shaped was found in the immediate area, so the
+    /// server widened the box. Same `isEstimated: true` labelling, weaker `type` wording.
+    private static let widened = PollingResult(
+        locations: [
+            PollingLocation(
+                name: "Westwood Branch Library",
+                addr: "1246 Glendon Avenue, Los Angeles, California, 90024",
+                type: "Civic Building",
+                lat: 34.0596,
+                lng: -118.4419,
+                distance: 5.9,
+                isEstimated: true
+            ),
+            PollingLocation(
+                name: "Cheviot Hills Recreation Center",
+                addr: "2551 Motor Avenue, Los Angeles, California, 90064",
+                type: "Civic Building",
+                lat: 34.0378,
+                lng: -118.4103,
+                distance: 8.4,
+                isEstimated: true
+            ),
+        ],
+        place: place,
+        dataSource: "nearby",
+        zip: "90210",
+        searchRadiusKm: 25
     )
 
     private static let empty = PollingResult(
         locations: [],
         place: place,
         dataSource: "none",
-        zip: "90210"
+        zip: "90210",
+        searchRadiusKm: nil
     )
 
     private static let articles: [Article] = [

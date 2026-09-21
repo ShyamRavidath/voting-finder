@@ -67,64 +67,106 @@ function distanceKm(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-async function findNearbyPollingVenues(lat, lng, city, state) {
-  const locationTypes = [
-    { query: 'library', label: 'Likely Polling Place' },
-    { query: 'community center', label: 'Likely Early Voting' },
-    { query: 'town hall', label: 'Likely Early Voting' },
-  ];
+// Venue search runs in tiers, widening only when the tier above it comes back empty.
+//
+// Tier 1 names the city and state in the query text, which is precise when Nominatim's index
+// cooperates. It often doesn't: the exact query this server sends for 90210 returned venues one
+// afternoon, `[]` the next morning, and venues again the day after. So tier 2 drops the place
+// name entirely and lets the bounding box do the geography, which is far more stable, over a
+// wider box and a broader set of venue types — the buildings American precincts actually use.
+//
+// Tier 2 results are *not* a better guess, they are a weaker one, and the labelling gets more
+// cautious to match: "Civic Building", never "Likely Polling Place".
+const VENUE_TIERS = [
+  {
+    dataSource: 'estimated',
+    box: 0.03, // ~3 km
+    maxDistanceKm: 10,
+    scoped: true,
+    venues: [
+      { query: 'library', label: 'Likely Polling Place' },
+      { query: 'community center', label: 'Likely Early Voting' },
+      { query: 'town hall', label: 'Likely Early Voting' },
+    ],
+  },
+  {
+    dataSource: 'nearby',
+    box: 0.1, // ~11 km
+    maxDistanceKm: 25,
+    scoped: false,
+    venues: [
+      { query: 'library', label: 'Civic Building' },
+      { query: 'community center', label: 'Civic Building' },
+      { query: 'school', label: 'Civic Building' },
+      { query: 'fire station', label: 'Civic Building' },
+    ],
+  },
+];
 
-  const allLocations = [];
+// Nominatim matches on free text, so a query for "town hall" happily returns the bus stop named
+// "Paterson Plank Rd At Town Hall", "library" returns a Little Free Library book box, and
+// "community center" returns a compost drop-off. Every one of those was being shown to voters
+// under the heading "Likely Polling Place".
+//
+// `class` and `type` come back with `addressdetails=1` and are enough to reject them. This is a
+// denylist, not an allowlist: a real community center is sometimes only tagged `building=yes`,
+// and dropping those would cost more than the noise does.
+const REJECTED_CLASSES = new Set([
+  'highway', 'railway', 'waterway', 'natural', 'boundary', 'place', 'shop', 'tourism',
+]);
+const REJECTED_TYPES = new Set([
+  'bus_stop', 'bus_station', 'platform', 'public_bookcase', 'recycling', 'waste_disposal',
+  'waste_transfer_station', 'bench', 'parking', 'bicycle_parking', 'garden', 'park', 'playground',
+  'pitch', 'dog_park', 'bar', 'pub', 'restaurant', 'cafe', 'fast_food', 'atm', 'vending_machine',
+  'toilets', 'drinking_water', 'fuel', 'car_wash', 'post_box',
+]);
 
-  for (let i = 0; i < locationTypes.length; i++) {
-    const { query, label } = locationTypes[i];
-    if (i > 0) await new Promise((r) => setTimeout(r, 1000));
+function isPlausibleVenue(place) {
+  return !REJECTED_CLASSES.has(place.class) && !REJECTED_TYPES.has(place.type);
+}
 
-    try {
-      const bbox = `${lng - 0.03},${lat - 0.03},${lng + 0.03},${lat + 0.03}`;
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-        query + ' ' + city + ' ' + state
-      )}&format=json&limit=3&addressdetails=1&bounded=1&viewbox=${bbox}&dedupe=1&countrycodes=us`;
+function buildVenue(place, label, originLat, originLng, state, maxDistanceKm) {
+  if (!isPlausibleVenue(place)) return null;
 
-      const res = await fetchWithTimeout(url, { headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en' } }, 5000);
-      if (!res.ok) continue;
+  const placeLat = parseFloat(place.lat);
+  const placeLng = parseFloat(place.lon);
+  if (!Number.isFinite(placeLat) || !Number.isFinite(placeLng)) return null;
 
-      const data = await res.json();
-      data.forEach((place) => {
-        const placeLat = parseFloat(place.lat);
-        const placeLng = parseFloat(place.lon);
-        const distance = distanceKm(lat, lng, placeLat, placeLng);
-        if (distance >= 10) return;
+  const distance = distanceKm(originLat, originLng, placeLat, placeLng);
+  if (distance >= maxDistanceKm) return null;
 
-        const addr = place.address || {};
-        const parts = [
-          [addr.house_number, addr.road || addr.street].filter(Boolean).join(' '),
-          addr.city || addr.town || addr.village || addr.municipality,
-          state,
-          addr.postcode,
-        ].filter(Boolean);
-        const fullAddress =
-          parts.length >= 2 ? parts.join(', ') : place.display_name.split(',').slice(0, 3).join(', ').trim();
+  const displayName = typeof place.display_name === 'string' ? place.display_name : '';
+  if (!place.name && !displayName) return null;
 
-        allLocations.push({
-          name: place.name || place.display_name.split(',')[0],
-          addr: fullAddress,
-          type: label,
-          lat: placeLat,
-          lng: placeLng,
-          distance: Math.round(distance * 10) / 10,
-          isReal: true,
-          isEstimated: true,
-        });
-      });
-    } catch (_) {
-      // continue with next type
-    }
-  }
+  const addr = place.address || {};
+  const parts = [
+    [addr.house_number, addr.road || addr.street].filter(Boolean).join(' '),
+    addr.city || addr.town || addr.village || addr.municipality,
+    // The venue's own state, not the ZIP's: the widened tier's box is ~11 km and can cross a
+    // state line, and printing the wrong state under a venue's name is exactly the kind of
+    // quiet inaccuracy rule #1 exists to prevent.
+    addr.state || state,
+    addr.postcode,
+  ].filter(Boolean);
+  const fullAddress =
+    parts.length >= 2 ? parts.join(', ') : displayName.split(',').slice(0, 3).join(', ').trim();
 
+  return {
+    name: place.name || displayName.split(',')[0],
+    addr: fullAddress,
+    type: label,
+    lat: placeLat,
+    lng: placeLng,
+    distance: Math.round(distance * 10) / 10,
+    isReal: true,
+    isEstimated: true,
+  };
+}
+
+function dedupe(locations) {
   const seenNames = new Set();
   const seenAddrs = new Set();
-  return allLocations
+  return locations
     .sort((a, b) => a.distance - b.distance)
     .filter((loc) => {
       const n = loc.name.toLowerCase().trim();
@@ -137,7 +179,52 @@ async function findNearbyPollingVenues(lat, lng, city, state) {
     .slice(0, 5);
 }
 
+// Returns { locations, dataSource, searchRadiusKm }. `dataSource` is 'estimated' for a tight,
+// place-scoped match, 'nearby' for the widened civic-building fallback, and 'none' when both
+// tiers come up empty — we say so rather than inventing anything (rule #1).
+async function findNearbyPollingVenues(lat, lng, city, state) {
+  // Nominatim's usage policy caps us at one request per second across every query we send, so
+  // the tiers share a single sequential budget rather than each pacing themselves.
+  let isFirstRequest = true;
+
+  for (const tier of VENUE_TIERS) {
+    const found = [];
+
+    for (const { query, label } of tier.venues) {
+      if (!isFirstRequest) await new Promise((r) => setTimeout(r, 1000));
+      isFirstRequest = false;
+
+      try {
+        const bbox = `${lng - tier.box},${lat - tier.box},${lng + tier.box},${lat + tier.box}`;
+        const q = tier.scoped ? `${query} ${city} ${state}` : query;
+        const url =
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}` +
+          `&format=json&limit=3&addressdetails=1&bounded=1&viewbox=${bbox}&dedupe=1&countrycodes=us`;
+
+        const res = await fetchWithTimeout(url, { headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en' } }, 5000);
+        if (!res.ok) continue;
+
+        const data = await res.json();
+        if (!Array.isArray(data)) continue;
+        data.forEach((place) => {
+          const venue = buildVenue(place, label, lat, lng, state, tier.maxDistanceKm);
+          if (venue) found.push(venue);
+        });
+      } catch (_) {
+        // A single venue type failing shouldn't sink the tier — try the next one.
+      }
+    }
+
+    if (found.length > 0) {
+      return { locations: dedupe(found), dataSource: tier.dataSource, searchRadiusKm: tier.maxDistanceKm };
+    }
+  }
+
+  return { locations: [], dataSource: 'none', searchRadiusKm: null };
+}
+
 module.exports = {
+  isPlausibleVenue,
   zipToCoords,
   coordsToZip,
   findNearbyPollingVenues,

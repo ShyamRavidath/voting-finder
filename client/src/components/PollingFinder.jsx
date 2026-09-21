@@ -74,6 +74,16 @@ const SOURCE_NOTICE = {
     body: () =>
       "Official polling places aren't published for your area yet. These are nearby public buildings (libraries, community centers, town halls) that are often used as polling places.",
   },
+  // The weakest tier the server will return. The wording hedges harder than 'estimated' on
+  // purpose: these came from a wider sweep with no match in the immediate area.
+  nearby: {
+    tone: 'border-amber-200 bg-amber-50 text-amber-900',
+    title: 'Nothing listed nearby — here are the closest civic buildings',
+    body: (_election, radiusKm) =>
+      `We couldn't find any polling-type venue in your immediate area, so we widened the search${
+        radiusKm ? ` to about ${Math.round(radiusKm * 0.621371)} miles` : ''
+      }. These are civic buildings of the kind precincts often use. None of them is a confirmed polling place — check the official links below before you go.`,
+  },
 };
 
 export default function PollingFinder() {
@@ -82,7 +92,7 @@ export default function PollingFinder() {
   const zipParam = searchParams.get('zip');
   const [zip, setZip] = useState(() => (isZip(zipParam) ? zipParam : readLastZip()));
   const [selected, setSelected] = useState(null);
-  const { status, locations, dataSource, place, election, error, search, zip: searchedZip } = usePolling();
+  const { status, locations, dataSource, place, election, searchRadiusKm, error, search, zip: searchedZip } = usePolling();
 
   // Run the search whenever the URL's ?zip= changes (form submit, shared link, back/forward).
   useEffect(() => {
@@ -179,8 +189,9 @@ export default function PollingFinder() {
               No locations found near {place ? `${place.city}, ${place.stateAbbr}` : searchedZip} yet
             </p>
             <p className="mt-1 text-sm text-slate-600">
-              Official polling places are usually published a few weeks before each election. Use the official lookups
-              below in the meantime.
+              We checked official data, then nearby public buildings, then widened the search — nothing came back. Official
+              polling places are usually published a few weeks before each election. Use the official lookups below in the
+              meantime.
             </p>
           </div>
         )}
@@ -195,7 +206,7 @@ export default function PollingFinder() {
             </div>
             {notice && (
               <div className={`rounded-xl border p-3 text-sm ${notice.tone}`}>
-                <strong className="font-semibold">{notice.title}.</strong> {notice.body(election)}
+                <strong className="font-semibold">{notice.title}.</strong> {notice.body(election, searchRadiusKm)}
               </div>
             )}
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">

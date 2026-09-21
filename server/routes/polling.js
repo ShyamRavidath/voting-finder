@@ -103,6 +103,7 @@ router.get('/', async (req, res) => {
   let locations = [];
   let dataSource = 'none';
   let election = null;
+  let searchRadiusKm = null;
 
   const civicKey = process.env.GOOGLE_CIVIC_API_KEY;
   if (civicKey) {
@@ -121,19 +122,27 @@ router.get('/', async (req, res) => {
     }
   }
 
+  // Nominatim runs its own tiers: a tight, place-scoped search first, then a wider civic-building
+  // sweep. It reports which one answered so the UI can hedge harder as the data gets weaker.
   if (locations.length === 0) {
     try {
       const nearby = await findNearbyPollingVenues(originLat, originLng, city, state);
-      if (nearby.length > 0) {
-        locations = nearby;
-        dataSource = 'estimated';
+      if (nearby.locations.length > 0) {
+        locations = nearby.locations;
+        dataSource = nearby.dataSource;
+        searchRadiusKm = nearby.searchRadiusKm;
       }
     } catch (err) {
       console.warn('Nominatim failed:', err.message);
     }
   }
 
-  const payload = { locations, place: { city, state, stateAbbr, zip: zipCode, lat, lng }, election };
+  const payload = {
+    locations,
+    place: { city, state, stateAbbr, zip: zipCode, lat, lng },
+    election,
+    searchRadiusKm,
+  };
 
   if (dataSource !== 'none' && !device) {
     try {

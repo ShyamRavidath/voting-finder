@@ -35,6 +35,29 @@ final class AppSmokeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Save"].firstMatch.exists)
     }
 
+    /// The widened tier. When nothing polling-shaped exists nearby the server falls back to
+    /// civic buildings, and the copy has to hedge *harder* than the tier above it, not less —
+    /// that is rule #1 stated as a UI assertion.
+    func testVoteTabExplainsWhenTheSearchHadToWiden() {
+        let app = launch(["-startTab", "vote", "-startZip", "90210", "-stubPolling", "nearby"])
+
+        let school = app.staticTexts["Westwood Branch Library"]
+        XCTAssertTrue(school.waitForExistence(timeout: 15), "the widened stub never rendered")
+
+        let notice = app.staticTexts["polling.unofficialNotice"]
+        XCTAssertTrue(notice.exists, "a widened search must explain itself")
+        XCTAssertTrue(
+            notice.label.contains("widened the search"),
+            "expected the widened wording, got: \(notice.label)"
+        )
+        XCTAssertTrue(
+            notice.label.contains("none is a confirmed polling place"),
+            "the weakest tier must disclaim hardest, got: \(notice.label)"
+        )
+        XCTAssertTrue(app.staticTexts["Not confirmed"].firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["Official sources"].exists)
+    }
+
     /// The honest-empty path: a successful lookup that found nothing must say so and hand the
     /// voter an official source rather than inventing a venue.
     func testVoteTabOffersOfficialSourcesWhenNothingIsFound() {
