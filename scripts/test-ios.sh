@@ -32,12 +32,34 @@ trap cleanup EXIT
 # Simulators are memory-hungry; several booted at once will exhaust a laptop.
 xcrun simctl shutdown all >/dev/null 2>&1 || true
 
+BUNDLE_ID="com.shyamravidath.Vote4U"
+APP_PATH="$DERIVED/Build/Products/Debug-iphonesimulator/Vote4U.app"
+
 fresh_simulator() {
   FRESH_UDID=$(xcrun simctl create "Vote4U-Test-$$-${#CREATED[@]}" "$DEVICE_TYPE" "$RUNTIME")
   CREATED+=("$FRESH_UDID")
   xcrun simctl boot "$FRESH_UDID" >/dev/null
   xcrun simctl bootstatus "$FRESH_UDID" -b >/dev/null
+
+  # A brand-new simulator is cold enough that the first app launch can take longer than a UI
+  # test's patience: the permission alert then never appears inside the timeout and the failure
+  # looks like a missing alert rather than a slow boot. Warm it with a throwaway launch first.
+  if [ -d "$APP_PATH" ]; then
+    xcrun simctl install "$FRESH_UDID" "$APP_PATH" >/dev/null 2>&1 || true
+    xcrun simctl launch "$FRESH_UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
+    sleep 8
+    xcrun simctl terminate "$FRESH_UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
+  fi
 }
+
+# Build once up front so the warm-up above has an app bundle to launch.
+echo "▸ Building"
+xcodebuild build-for-testing -project "$PROJECT" -scheme Vote4U \
+  -destination "platform=iOS Simulator,name=$DEVICE_TYPE" \
+  -derivedDataPath "$DERIVED" >/dev/null 2>&1 || {
+    echo "build-for-testing failed" >&2
+    exit 1
+  }
 
 run() {
   local label="$1" udid="$2" status log

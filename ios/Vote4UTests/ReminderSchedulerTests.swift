@@ -15,6 +15,23 @@ final class ReminderSchedulerTests: XCTestCase {
         calendar.date(from: DateComponents(year: y, month: m, day: d))!
     }
 
+    override func setUp() async throws {
+        try await super.setUp()
+        // UNUserNotificationCenter refuses to queue anything unauthorized, which used to make
+        // every assertion below skip — and a skip reads as a pass. Fail loudly instead, naming
+        // the fix. `requestAuthorization` on an already-decided app returns the existing answer
+        // without showing an alert, so this is safe to call in a unit test.
+        let granted = await ReminderScheduler.authorize()
+        try XCTSkipIf(
+            !granted,
+            """
+            Notifications are not authorized on this simulator, so nothing can be queued and \
+            these assertions would be vacuous. Run ./scripts/test-ios.sh, which taps Allow in a \
+            UI test first — plain `xcodebuild test` cannot grant this.
+            """
+        )
+    }
+
     override func tearDown() async throws {
         ReminderScheduler.cancelAll()
         try await super.tearDown()
@@ -28,7 +45,6 @@ final class ReminderSchedulerTests: XCTestCase {
         await ReminderScheduler.schedule(place: nil, calendar: calendar, now: date(2026, 9, 20))
 
         let requests = await pending()
-        try XCTSkipIf(requests.isEmpty, "notification authorization not granted in this environment")
         XCTAssertEqual(requests.count, 2)
 
         let triggers = requests.compactMap { ($0.identifier, $0.trigger as? UNCalendarNotificationTrigger) }
@@ -57,8 +73,6 @@ final class ReminderSchedulerTests: XCTestCase {
         await ReminderScheduler.schedule(place: saved, calendar: calendar, now: date(2026, 9, 20))
 
         let requests = await pending()
-        try XCTSkipIf(requests.isEmpty, "notification authorization not granted in this environment")
-
         let morning = try XCTUnwrap(requests.first { $0.identifier.contains("morning-of") })
         XCTAssertTrue(morning.content.body.contains("Beverly Hills Public Library"), morning.content.body)
     }
@@ -68,7 +82,6 @@ final class ReminderSchedulerTests: XCTestCase {
         await ReminderScheduler.schedule(place: nil, calendar: calendar, now: date(2026, 9, 20))
 
         let requests = await pending()
-        try XCTSkipIf(requests.isEmpty, "notification authorization not granted in this environment")
         XCTAssertEqual(requests.count, 2, "rescheduling must replace, never stack")
     }
 
@@ -88,7 +101,6 @@ final class ReminderSchedulerTests: XCTestCase {
         await ReminderScheduler.schedule(place: nil, calendar: calendar, now: date(2026, 10, 28))
 
         let requests = await pending()
-        try XCTSkipIf(requests.isEmpty, "notification authorization not granted in this environment")
         XCTAssertEqual(requests.count, 1)
         XCTAssertTrue(requests[0].identifier.contains("morning-of"))
     }

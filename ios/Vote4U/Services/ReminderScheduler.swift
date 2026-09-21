@@ -30,11 +30,16 @@ enum ReminderScheduler {
         calendar: Calendar = .current,
         now: Date = Date()
     ) async -> Bool {
-        cancelAll()
-
         let election = ElectionCalendar.next(from: now, calendar: calendar)
         let center = UNUserNotificationCenter.current()
-        var scheduledAny = false
+        var scheduled: Set<String> = []
+
+        // Deliberately NOT cancelAll() first. removePendingNotificationRequests is processed
+        // asynchronously by the notification daemon, so a removal issued before these adds can
+        // land after them and silently wipe the reminders we just scheduled — which is exactly
+        // what happened, intermittently, until the tests caught it. Adding a request with an
+        // existing identifier already replaces it atomically, so the replace is free; only the
+        // reminders we decide *not* to schedule need an explicit removal, done at the end.
 
         // A week out, 9am: enough time to still register or plan early voting.
         if let weekBefore = calendar.date(byAdding: .day, value: -7, to: election.date),
@@ -46,7 +51,7 @@ enum ReminderScheduler {
             content.sound = .default
 
             if await add(id: weekBeforeID, content: content, at: fireDate, calendar: calendar, center: center) {
-                scheduledAny = true
+                scheduled.insert(weekBeforeID)
             }
         }
 
@@ -60,11 +65,18 @@ enum ReminderScheduler {
             content.sound = .default
 
             if await add(id: morningOfID, content: content, at: fireDate, calendar: calendar, center: center) {
-                scheduledAny = true
+                scheduled.insert(morningOfID)
             }
         }
 
-        return scheduledAny
+        // Clear only what we did not just schedule — e.g. a week-before reminder whose date has
+        // already passed, which must not linger from an earlier run.
+        let stale = [weekBeforeID, morningOfID].filter { !scheduled.contains($0) }
+        if !stale.isEmpty {
+            center.removePendingNotificationRequests(withIdentifiers: stale)
+        }
+
+        return !scheduled.isEmpty
     }
 
     private static func add(

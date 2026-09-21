@@ -39,7 +39,14 @@ struct ElectoralMapView: View {
                     .ignoresSafeArea()
             }
             .navigationTitle("Electoral Map")
-            .searchable(text: $searchText, prompt: "Search states")
+            // Pinned open rather than left to .automatic, which collapses the field behind the
+            // title until the user scrolls up. A search control nobody can see is a search
+            // control nobody uses — and it made the UI test unable to reach it at all.
+            .searchable(
+                text: $searchText,
+                placement: .navigationBarDrawer(displayMode: .always),
+                prompt: "Search states"
+            )
         }
     }
 
