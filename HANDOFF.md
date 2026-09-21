@@ -8,6 +8,12 @@ Last updated: 2026-09-20. Owner: Shyam Ravidath (ShyamRavidath/voting-finder).
 > constraint is gone. Sections 1, 3, 7, 8, 9 and 10 were rewritten for this. Sections 2,
 > 4, 5 and 6 are unchanged and still accurate.
 
+> **2026-09-20 Codex hardening update.** iOS 17.5 is now installed alongside iOS 27 and the full
+> 35-test suite passes there with zero skips. All four tabs received a SwiftUI visual/accessibility
+> polish pass, the large views were split into dedicated subviews, strict-concurrency diagnostics
+> are clean, and all five 1320×2868 App Store screenshots were regenerated. Device/TestFlight
+> work remains blocked only on Apple Developer Team verification.
+
 ## 1. The goal
 
 Ship **Vote4U** as an iOS App Store app, built **natively in Swift / SwiftUI**, while keeping
@@ -236,8 +242,8 @@ together. Add `ios/build/`, `*.xcuserdatad`, `DerivedData/` to `.gitignore`.
 | 1. Scaffold | **DONE 2026-09-20** — `ios/Vote4U.xcodeproj`, four tabs, `APIClient`, app icon, and the electoral map already rendering from bundled data | ✅ Builds Debug + Release, runs in the Simulator |
 | 2. Screens | Build the four tabs against the live API | Every web feature has a native equivalent |
 | 3. Native | Notifications, CoreLocation, offline save, haptics | Reminder fires on a real device; location finds a polling place |
-| 4. Hardening | Empty/offline/error states (`ContentUnavailableView`), VoiceOver labels, Dynamic Type, dark mode, device testing | Works on a real iPhone in airplane mode and with permissions denied |
-| 5. Store prep | Screenshots, description, keywords, privacy nutrition labels, review notes | App Store Connect record complete |
+| 4. Hardening | **Simulator portion complete** — error/loading states, VoiceOver routes, Dynamic Type, dark mode, and iOS 17.5 regression coverage. Real-device checks remain. | Works on a real iPhone in airplane mode and with permissions denied |
+| 5. Store prep | **Local assets complete** — refreshed screenshots plus listing/privacy/review copy. App Store Connect entry waits on the account. | App Store Connect record complete |
 | 6. Ship | Archive, TestFlight, submit | Approved |
 
 ### Privacy labels (App Store Connect)
@@ -256,10 +262,10 @@ state lookups; news headlines link to their publishers and are not reproduced in
 
 ## 8. The next step (start here)
 
-> **Phases 0 and 1 are complete as of 2026-09-20.** The app builds and runs. Steps 1–4 below are
-> historical except where marked; **the live next task is Phase 2 (§7): build the Vote and News
-> tabs.** Everything they need already exists — `APIClient` knows both polling entry points, and
-> the API is live.
+> **Phases 0–3 and the simulator portion of Phases 4–5 are complete as of 2026-09-20.** The app
+> builds and runs on iOS 17.5 and iOS 27, all tests pass, and the store assets are ready locally.
+> The remaining submission path starts with the verified Apple Developer Team ID and a real-device
+> pass; optional unblocked improvements are listed below.
 
 ### Done already
 
@@ -271,8 +277,13 @@ state lookups; news headlines link to their publishers and are not reproduced in
 - ✅ Phase 3: "use my location", local election reminders, offline saved polling place, share,
   haptics. Verified in the Simulator with a simulated GPS fix (Beverly Hills → ZIP 90212,
   nearest venue 0.1 mi device-relative vs 1.2 mi from the ZIP centroid).
+- ✅ iOS 17.5 runtime coverage: 35 tests, zero failures, zero skips.
+- ✅ UI polish and refactor across all four tabs, including loading skeletons and state search.
+- ✅ Five App Store screenshots regenerated at 1320×2868 and visually reviewed.
 
-**The live next task is Phase 4 (hardening), and the first item is device testing** — see below.
+**The live next task is the real-device portion of Phase 4 once the Team ID clears.** Further
+unblocked improvements are deterministic network/error UI fixtures, saved-place lifecycle UI
+coverage, and an optional WidgetKit extension.
 
 ### Still outstanding (user actions)
 
@@ -285,27 +296,30 @@ state lookups; news headlines link to their publishers and are not reproduced in
 
 ### What is left before submission — read first
 
-Everything that can be done without hardware is done. Three things remain, and the first two
-need your Apple account or your phone:
+The submission blockers need the Apple account or a phone. Additional simulator testing and a
+widget remain optional, unblocked follow-up work:
 
 1. **Device testing.** Much less is blocked here than previously recorded — see the test suite
    below. What genuinely needs hardware:
    - **A notification banner arriving at its scheduled time.** Permission grant/denial and the
      queuing of requests are now covered by tests; only delivery weeks later is unverifiable.
    - Real GPS rather than a simulated fix, and airplane mode.
-   - The Simulator only has an **iOS 27** runtime while the deployment target is **iOS 17**, so
-     nothing has run against an older OS.
+   - The iOS 17.5 Simulator suite is green; only real-hardware behavior remains unverified.
 2. **Apple account setup.** Add `ravidath@gmail.com` in Xcode ▸ Settings ▸ Accounts and set the
    team on the Vote4U target. Required before the app can run on a phone at all.
-3. **Screenshots**, then paste `ios/APP_STORE.md` into App Store Connect.
+3. Paste `ios/APP_STORE.md` into App Store Connect and upload the already refreshed
+   `ios/screenshots/` set once the account is available.
 
-There is **no test target** in the Xcode project. `ElectionCalendar` and `SVGPath` are the two
-things most worth unit-testing if one is added — both are pure logic with no UI.
+The project has 28 unit tests and seven UI tests. `ElectionCalendar`, `SVGPath`, API decoding,
+date formatting, reminders, all tabs, live polling/news smoke paths, and both notification
+permission decisions are covered.
 
 ### The iOS test suite
 
 ```
 ./scripts/test-ios.sh      # 35 tests: unit, UI smoke, and both permission directions
+DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' \
+  ./scripts/test-ios.sh    # verified deployment-runtime run
 ```
 
 **None of it needs a signing identity** — Simulator tests do not. Note that a plain
@@ -327,6 +341,10 @@ Traps worth knowing if you extend the UI tests:
 - Don't run two `xcodebuild` invocations against the same `derivedDataPath` — the result bundles
   collide and tests report `Executed 0 tests`.
 - Shut simulators down when finished. Several booted at once will exhaust memory.
+- Home uses lazy rendering. The reminder test must scroll first, then tap the trailing switch
+  control: on iOS 17 the accessibility frame includes an untappable gap between label and switch.
+- The runner must preserve `xcodebuild`'s exit code and create simulators outside command
+  substitution; both bugs previously produced false success or leaked devices and are now fixed.
 
 ### General notes
 
@@ -334,20 +352,18 @@ Traps worth knowing if you extend the UI tests:
   else — it is fixed once the App Store Connect record exists.
 - `TARGETED_DEVICE_FAMILY = 1` (iPhone only). That is deliberate: it avoids having to produce and
   maintain iPad screenshots. Flip to `1,2` only if you decide to support iPad.
-- `SWIFT_VERSION = 5.0`. The code is written to be Swift 6 clean; switching is a one-line build
-  setting change once there is more concurrency in play.
+- `SWIFT_VERSION = 5.0`. A complete strict-concurrency build is warning-free; treat changing the
+  language mode as a deliberate migration rather than mixing it into feature work.
 - The project uses a **file-system-synchronized root group**, so adding a `.swift` file to
   `ios/Vote4U/` is enough — no `project.pbxproj` edit, and no merge conflicts in it.
 - Re-run `node scripts/export-ios-data.mjs` whenever `client/src/data/*` changes.
-- Known rough edge: DC is a few pixels wide on the map, so it is effectively untappable. Phase 4
-  should add the state list as the accessible way to select one, as the web app does.
+- DC remains too small to tap directly on the map, by design. The searchable state list is the
+  accessible route to every state and has explicit UI-test coverage for D.C.
 
 ### Historical checklist
 
-1. **Install Xcode.** *Not yet installed on this Mac* — only the Command Line Tools are
-   (`xcode-select -p` → `/Library/Developer/CommandLineTools`). Install from the **Mac App
-   Store** (free, ~17 GB, signed in with any Apple ID — it does not have to be the developer
-   account). Then:
+1. ~~**Install Xcode.**~~ **Done 2026-09-20.** Xcode 27 is selected, with iOS 27 and iOS 17.5
+   Simulator runtimes. The original setup commands were:
    ```
    sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
    sudo xcodebuild -license accept
@@ -370,19 +386,19 @@ Traps worth knowing if you extend the UI tests:
    ! npx skills add https://github.com/code-with-beto/skills --skill app-icon -g -a claude-code -y
    ```
    *(The fifth, `expo/skills --skill building-native-ui`, is no longer relevant — it is Expo-specific.)*
-5. **Phase 0 code work** — does not need Xcode:
+5. ~~**Phase 0 code work**~~ — complete:
    - ~~Add `?lat=&lng=` support to `GET /api/polling`~~ **done 2026-09-20, see §4.**
-   - Export the electoral-map state paths to `ios/Vote4U/Resources/statePaths.json` and the
-     state data to `states.json` (a script in `scripts/`). **← next**
-   - Then, once Xcode is in, scaffold `ios/` and get the four-tab shell on the iPhone.
+   - ~~Export the electoral-map state paths to `ios/Vote4U/Resources/statePaths.json` and the
+     state data to `states.json`.~~ Done; the offline map renders and is tested.
+   - ~~Scaffold `ios/` and get the four-tab shell running.~~ Done.
 
 ## 9. Environment and gotchas for whoever picks this up
 
 - **Mac, Apple Silicon, macOS 27 (Darwin 27.0.0).** Repo at `~/voting-finder`. 127 GB free.
 - **Node 26.0.0 / npm 11.12.1.** Note the old machine ran Node 22 and `HANDOFF` used to say so.
   The server suite passes 13/13 on Node 26; the Playwright suites are unverified on it (§8 step 2).
-- **Xcode is not installed yet** — Command Line Tools only. This is the single blocker for any
-  iOS work. Everything else (API changes, data export, tests) works today.
+- **Xcode 27 is installed** with iOS 27 and iOS 17.5 Simulator runtimes. Device signing remains
+  blocked until the Apple Developer Team ID finishes verification.
 - Homebrew is at `/opt/homebrew`. `watchman`, `pod`, `eas` and `expo` are absent and **are not
   needed** — the native plan has no JS toolchain and no CocoaPods.
 - `CLAUDE.md` (gitignored, local only) carries the web architecture notes and the React 19 traps.

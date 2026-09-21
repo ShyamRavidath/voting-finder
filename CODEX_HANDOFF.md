@@ -6,6 +6,12 @@ obey — it is what I learned, including the parts I got wrong. If you think a d
 change it and say why. Claude will review your changes afterwards and may push back, the same way
 you should push back on this document.
 
+> **Codex update — 2026-09-20:** §8A is complete and the main §8B polish pass is complete.
+> iOS 17.5 is installed alongside iOS 27; all 35 tests pass on a fresh iPhone 15 Pro / iOS 17.5
+> setup. Home, Vote, Map, and News now share a visual system, loading states, clearer action
+> hierarchy, and smaller view boundaries. The five App Store screenshots were regenerated.
+> Details and newly discovered test traps are recorded below for Claude's review.
+
 **The brief from the owner:** the Apple Developer account is in verification, so the Team ID is
 not available and nothing can run on a physical device or reach TestFlight. Everything that does
 *not* need that should continue: testing, development, polish, UI improvement. Find the work that
@@ -31,7 +37,7 @@ The app is functionally complete. It is not shipped.
 
 ### Repo
 
-`github.com/ShyamRavidath/voting-finder`, branch `main`, currently `c9285f3`. Clean, pushed.
+`github.com/ShyamRavidath/voting-finder`, branch `main`. See `git log -1` for the current commit.
 Local checkout: `~/voting-finder` on the owner's Mac (Apple Silicon, macOS 27, Node 26).
 
 ```
@@ -68,7 +74,7 @@ voting-finder/
 | Server | `npm test --prefix server` | **20 pass** |
 | Web e2e (local) | `npm run test:e2e` | **87 passed, 9 skipped** |
 | Web e2e (production) | `BASE_URL=https://vote4ucyl.vercel.app npx playwright test` | **88 passed, 8 skipped** |
-| iOS | `./scripts/test-ios.sh` | **35 tests, 0 failures, 0 skipped** |
+| iOS 17.5 | `DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' ./scripts/test-ios.sh` | **35 tests, 0 failures, 0 skipped** |
 
 Release build of the iOS app succeeds with no warnings.
 
@@ -89,12 +95,14 @@ https://vote4ucyl.vercel.app — healthy. Deploys automatically from `main` on V
 Four tabs. **News is last on purpose** — App Store guideline 4.2.2 treats a news aggregator as
 thin, so the voting tools lead. Do not reorder without reading §7.
 
-- **Home** — countdown to the next federal election, reminder toggle, nonpartisan disclaimer.
+- **Home** — designed countdown, voting-plan CTA or offline saved-place card, reminder toggle,
+  nonpartisan disclaimer.
 - **Vote** — ZIP entry, "Use my location", result cards with distance/Directions/Save/Share, a
   MapKit map, official-source links. Saved place persists and is readable offline.
 - **Map** — all 51 states as SwiftUI `Path`s from bundled Albers-projected data, 538 tally,
-  270 line, tappable state list.
-- **News** — headlines with relative time, pull to refresh, `SFSafariViewController`.
+  270 line, searchable state list.
+- **News** — material headline cards with loading skeletons, relative time, pull to refresh,
+  `SFSafariViewController`.
 
 Native: CoreLocation (when-in-use), UserNotifications (local only), `ShareLink`, haptics.
 **No third-party dependencies at all.** Keep it that way if you can — it is a real advantage for
@@ -118,9 +126,8 @@ need to add a target, copy the existing pattern carefully (see §6).
 - Seeing a notification banner actually arrive at its scheduled time.
 - Real GPS, airplane mode, revoking permissions on-device.
 - Archive, TestFlight, App Store Connect submission.
-- Anything against iOS < 27 — only the iOS 27 runtime is installed, while the target is iOS 17.
-  (You *can* download an older runtime from Xcode ▸ Settings ▸ Components without an account.
-  Worth doing — it is the largest untested surface and needs no Team ID.)
+- A true iOS 17.0 runtime is not offered by this Xcode, but iOS **17.5 (21F79)** is installed and
+  the entire suite passes on it. iOS 27 remains installed alongside it.
 
 **Not blocked — this is your playground:**
 - Every Simulator test. **Simulator tests need no signing identity.** I initially told the owner
@@ -141,7 +148,7 @@ Most recently touched, and where the live edges are:
 | File | State |
 |---|---|
 | `ios/Vote4U/Features/Home/HomeView.swift` | Just fixed a re-entrancy bug (§5). The `Binding` there is deliberate — do not revert it to `.onChange`. |
-| `ios/Vote4U/Features/Vote/VoteView.swift` | Largest view. Has a `#if DEBUG` launch-argument hook. Ripe for refactoring; see §8. |
+| `ios/Vote4U/Features/Vote/VoteView.swift` | Now a small state-composition view. Its extracted search/results/error/source views live beside it; the `#if DEBUG` launch hook remains. |
 | `ios/Vote4U/Features/Vote/VoteViewModel.swift` | `@Observable`, `@MainActor`. Owns state, saved place, location. |
 | `ios/Vote4U/Features/Map/SVGPath.swift` | Hand-rolled parser, ~60 lines. Two bugs found so far. |
 | `ios/Vote4U/Services/ReminderScheduler.swift` | Local notifications. Fully unit-tested. |
@@ -214,6 +221,19 @@ and wiped the flag. Users who denied got no explanation at all. Fixed with an ex
 The general lesson: in SwiftUI, if you programmatically revert a control's state, `.onChange`
 cannot distinguish that from a user action.
 
+**Do not hide `xcodebuild` behind a filtering pipeline without preserving its exit status.** The
+old runner piped output through `grep`, then returned success even when tests failed. The runner
+now writes each action to a log, reports the actual status, and tails failures.
+
+**Do not populate cleanup arrays inside command substitution.** Bash runs `$(fresh_simulator)` in
+a subshell, so the parent never sees `CREATED+=...` and throwaway devices leak. The runner now
+uses a shared `FRESH_UDID` and calls the function directly.
+
+**An XCUITest `Switch` frame can include untappable whitespace.** On iOS 17, the reminder
+toggle's accessibility frame spans its label, empty gap, and switch. `toggle.tap()` hit the gap.
+Scroll the lazy Home stack on screen and tap the trailing switch coordinate; keep the stable
+`election-reminder-toggle` identifier.
+
 ### Product / infrastructure
 
 **Railway is dead.** The old backend deployment returns "Application not found" and the free tier
@@ -267,6 +287,8 @@ BASE_URL=https://vote4ucyl.vercel.app npx playwright test   # 88 passed, 8 skipp
 
 # iOS
 ./scripts/test-ios.sh          # 35 tests — USE THIS, not plain xcodebuild test
+DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' \
+  ./scripts/test-ios.sh        # deployment-runtime regression run
 ./scripts/capture-screenshots.sh
 node scripts/export-ios-data.mjs   # regenerate bundled JSON after changing client/src/data/*
 
@@ -317,32 +339,27 @@ Roughly ordered by value. Take, reorder, or reject freely.
 
 ### A. Close the biggest untested gap (no Team ID needed)
 
-Download an **older iOS runtime** (Xcode ▸ Settings ▸ Components — free, no account) and run the
-whole suite against **iOS 17**, the actual deployment target. Nothing has ever run on it.
-`@Observable`, `.sensoryFeedback`, `ContentUnavailableView`, and the SwiftUI `MapKit` API are all
-iOS 17 APIs, but "compiles against" is not "behaves on". I rate this the highest-value unblocked
-task and I never got to it.
+**Complete.** iOS 17.5 (21F79) was installed from Xcode ▸ Settings ▸ Components without an
+account. The full 35-test suite passes on an iPhone 15 Pro / iOS 17.5 simulator with zero skips.
+Visual QA also covered light mode, dark mode, and accessibility-extra-large Dynamic Type.
 
-### B. UI and UX — the app is correct but plain
+### B. UI and UX
 
-I built for correctness and ran out of room for craft. Honest assessment of each screen:
+**Main polish pass complete:**
 
-- **Home is bare.** A number, a toggle, a disclaimer. It should be the reason someone opens the
-  app twice. Ideas: surface the saved polling place here, show registration deadlines, show
-  "early voting starts in N days", make the countdown feel designed rather than defaulted.
-- **The countdown is a plain number.** No typographic personality, no motion. A `ContentTransition`
-  or a subtle ring would cost little.
-- **Vote's result cards are functional and visually flat.** Three bordered buttons in a row is not
-  a hierarchy — Directions is the primary action and does not look like it.
-- **Screenshot 4 in `ios/screenshots/` is mostly whitespace** and I flagged it as the weak one.
-  If the empty state gets better, that screenshot gets better.
-- **The Map tab's state list is a long undifferentiated scroll** of 51 rows. It works and it is
-  the accessibility surface, but it could be searchable or collapsible.
-- **No empty/loading skeletons** anywhere — just `ProgressView`.
-- **No app-wide visual identity.** The accent colour is set and otherwise it is stock SwiftUI.
-  The web app has a design language (`client/src/index.css`); the app does not echo it.
-- **Consider a widget.** A countdown or saved-polling-place WidgetKit extension is genuinely
-  useful, strengthens the 4.2 story considerably, and needs no account to build and test.
+- Home has a branded countdown card with a subtle numeric transition, saved-place/plan card,
+  reminder card, and explicit nonpartisan notice.
+- Vote gives Directions the primary hierarchy, uses structured search/error/loading/result views,
+  and gives official sources a useful empty-state card.
+- Map has separated rendering boundaries, a searchable lazy state list, selected-state detail,
+  legend, and a clearer tally.
+- News uses skeleton loading and consistent material cards.
+- `Vote4UTheme` centralizes spacing, corners, and page/hero gradients. Primary actions use
+  Liquid Glass only on iOS 26+, with an iOS 17 bordered-prominent fallback.
+- The App Store screenshot set was regenerated at 1320×2868 and visually reviewed.
+
+Still worth considering: a countdown or saved-polling-place WidgetKit extension. It is useful,
+strengthens the 4.2 story, and needs no developer account to build in Simulator.
 
 ### C. Testing depth
 
@@ -356,12 +373,17 @@ I built for correctness and ran out of room for craft. Honest assessment of each
   timeouts — that is a real fragility.
 - The UI smoke tests **depend on the live API**. If Vercel is slow they fail for no good reason.
 
+The map smoke test now uses state search to prove D.C. remains reachable with lazy rendering.
+The larger remaining win is still deterministic launch-argument state injection.
+
 ### D. Code quality
 
-- `VoteView.swift` is doing too much — search field, location button, saved card, results, error
-  states, official links.
+- `VoteView.swift`, `HomeView.swift`, and `ElectoralMapView.swift` were split into small dedicated
+  subviews with explicit inputs/actions and stable rendering boundaries.
 - `APIClient` has no retry and no request coalescing.
-- Consider Swift 6 language mode; the code was written for it.
+- A `SWIFT_STRICT_CONCURRENCY=complete` build is clean. Shared mutable ISO8601 formatters were
+  replaced with `Date.ISO8601FormatStyle`; the project intentionally remains in Swift 5 language
+  mode until a dedicated migration.
 - There is **no SwiftLint / swift-format**. Adding one is free and the codebase is small enough
   that it will not be noisy.
 - No CI. A GitHub Action running `npm test`, Playwright and `test-ios.sh` on a macOS runner is

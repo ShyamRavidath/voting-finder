@@ -10,6 +10,7 @@ This reference distills the user-supplied article, “Summary of Prompts for iOS
 | Scheme | `Vote4U` |
 | Bundle ID | `com.shyamravidath.Vote4U` |
 | Current deployment target | iOS 17.0 |
+| Oldest installed runtime | iOS 17.5 (21F79), iPhone 15 Pro verified |
 | Current Swift language setting | Swift 5 |
 | Full test script | `./scripts/test-ios.sh` |
 | Screenshot script | `./scripts/capture-screenshots.sh` |
@@ -61,6 +62,14 @@ Run the repository's complete iOS test loop:
 
 ```sh
 ./scripts/test-ios.sh
+```
+
+Pin the deployment-era runtime instead of accepting the script's newest-runtime default:
+
+```sh
+DEVICE_TYPE='iPhone 15 Pro' \
+RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' \
+  ./scripts/test-ios.sh
 ```
 
 The full script creates fresh simulators for notification allow and deny paths because notification authorization persists on a simulator. Use a focused `xcodebuild` command during iteration and the full script before handing off notification-sensitive or release-bound work.

@@ -13,7 +13,7 @@ BUNDLE_ID="com.shyamravidath.Vote4U"
 OUT="$(cd "$(dirname "$0")/.." && pwd)/ios/screenshots"
 DERIVED="${TMPDIR:-/tmp}/vote4u-screenshots"
 
-echo "Building for $DEVICE…"
+echo "Building for ${DEVICE}…"
 xcodebuild -project ios/Vote4U.xcodeproj -scheme Vote4U \
   -destination "platform=iOS Simulator,name=$DEVICE" \
   -derivedDataPath "$DERIVED" build >/dev/null
@@ -38,7 +38,7 @@ shoot() {
   local name="$1"; shift
   xcrun simctl terminate "$DEVICE" "$BUNDLE_ID" >/dev/null 2>&1 || true
   xcrun simctl launch "$DEVICE" "$BUNDLE_ID" "$@" >/dev/null
-  sleep 6   # let the live API call land before capturing
+  sleep 12  # allow live endpoints to finish a cold serverless start before capturing
   xcrun simctl io "$DEVICE" screenshot "$OUT/$name" >/dev/null
   echo "  $name"
 }

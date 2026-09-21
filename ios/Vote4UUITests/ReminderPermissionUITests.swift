@@ -57,9 +57,27 @@ final class ReminderPermissionUITests: XCTestCase {
     }
 
     private func reminderToggle(in app: XCUIApplication) -> XCUIElement {
-        let toggle = app.switches["Remind me about Election Day"]
-        XCTAssertTrue(toggle.waitForExistence(timeout: 20), "reminder toggle never appeared")
+        let toggle = app.switches["election-reminder-toggle"]
+        let scrollView = app.scrollViews.firstMatch
+
+        // Home uses a LazyVStack, so the reminder card is not in the accessibility tree until
+        // it is scrolled on screen. XCTest can report a partially clipped control as hittable,
+        // so always advance the page once before testing or tapping it.
+        XCTAssertTrue(scrollView.waitForExistence(timeout: 10), "Home scroll view never appeared")
+        scrollView.swipeUp()
+        for _ in 0..<3 where !toggle.exists || !toggle.isHittable {
+            scrollView.swipeUp()
+        }
+
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10), "reminder toggle never appeared")
+        XCTAssertTrue(toggle.isHittable, "reminder toggle never became tappable")
         return toggle
+    }
+
+    private func tapSwitchControl(_ toggle: XCUIElement) {
+        // SwiftUI exposes the full row as the switch's accessibility frame even though the
+        // empty space between its label and control is not tappable on iOS 17.
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
     }
 
     func testAllowingNotificationsLeavesTheToggleOn() {
@@ -67,7 +85,7 @@ final class ReminderPermissionUITests: XCTestCase {
         let toggle = reminderToggle(in: app)
         XCTAssertEqual(toggle.value as? String, "0", "reminders start off")
 
-        toggle.tap()
+        tapSwitchControl(toggle)
         XCTAssertEqual(toggle.value as? String, "1", "the toggle tap did not register")
 
         answerSystemAlert(prefix: "Allow")
@@ -85,7 +103,7 @@ final class ReminderPermissionUITests: XCTestCase {
         let app = launch()
         let toggle = reminderToggle(in: app)
 
-        toggle.tap()
+        tapSwitchControl(toggle)
         XCTAssertEqual(toggle.value as? String, "1", "the toggle tap did not register")
 
         answerSystemAlert(prefix: "Don")

@@ -59,6 +59,11 @@ enum BundledData {
     static let states: [ElectoralState] = load("states.json")
     static let statePaths: StatePaths = load("statePaths.json")
     static let officialLinks: [OfficialLink] = load("officialLinks.json")
+    static let statesByParty = Dictionary(
+        uniqueKeysWithValues: ElectoralState.Party.allCases.map { party in
+            (party, states.filter { $0.party == party }.sorted { $0.ev > $1.ev })
+        }
+    )
 
     static var totalElectoralVotes: Int { states.reduce(0) { $0 + $1.ev } }
 

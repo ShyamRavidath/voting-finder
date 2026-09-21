@@ -52,8 +52,15 @@ final class AppSmokeUITests: XCTestCase {
 
         // The state list is the accessible route to every state, including the ones too small to tap.
         XCTAssertTrue(app.buttons.containing(NSPredicate(format: "label CONTAINS 'California'")).firstMatch.exists)
-        XCTAssertTrue(app.buttons.containing(NSPredicate(format: "label CONTAINS 'District of Columbia'")).firstMatch.exists,
-                      "DC must be reachable even though it is unhittable on the map")
+
+        let stateSearch = app.searchFields["Search states"]
+        XCTAssertTrue(stateSearch.waitForExistence(timeout: 5), "state search must be reachable")
+        stateSearch.tap()
+        stateSearch.typeText("District of Columbia")
+
+        let district = app.buttons.containing(NSPredicate(format: "label CONTAINS 'District of Columbia'")).firstMatch
+        XCTAssertTrue(district.waitForExistence(timeout: 5),
+                      "DC must be reachable through search even though it is unhittable on the map")
     }
 
     func testNewsTabLoadsHeadlines() {

@@ -20,7 +20,7 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            HomeView()
+            HomeView(selection: $selection)
                 .tabItem { Label("Home", systemImage: "house") }
                 .tag(Tab.home)
             VoteView()

@@ -9,7 +9,7 @@ struct NewsView: View {
             Group {
                 switch model.state {
                 case .loading:
-                    ProgressView()
+                    NewsLoadingView()
                 case .loaded(let articles) where articles.isEmpty:
                     ContentUnavailableView("No headlines right now", systemImage: "newspaper")
                 case .loaded(let articles):
@@ -18,8 +18,12 @@ struct NewsView: View {
                             NewsRow(article: article)
                         }
                         .buttonStyle(.plain)
+                        .listRowInsets(.init(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     }
                     .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                     .refreshable { await model.load() }
                 case .failed(let message):
                     ContentUnavailableView {
@@ -31,6 +35,10 @@ struct NewsView: View {
                             .buttonStyle(.borderedProminent)
                     }
                 }
+            }
+            .background {
+                Vote4UTheme.pageBackground
+                    .ignoresSafeArea()
             }
             .navigationTitle("Election News")
             .task { if case .loading = model.state { await model.load() } }
@@ -46,7 +54,7 @@ private struct NewsRow: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(article.title)
-                    .font(.subheadline.weight(.medium))
+                    .font(.headline)
                     .multilineTextAlignment(.leading)
                     .lineLimit(3)
 
@@ -81,7 +89,9 @@ private struct NewsRow: View {
                 .clipShape(.rect(cornerRadius: 8))
             }
         }
-        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityHint("Opens the article")

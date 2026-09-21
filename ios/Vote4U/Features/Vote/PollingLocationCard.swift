@@ -1,4 +1,3 @@
-import MapKit
 import SwiftUI
 
 struct PollingLocationCard: View {
@@ -7,10 +6,10 @@ struct PollingLocationCard: View {
     var onSave: () -> Void = {}
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
                 Text(location.name)
-                    .font(.headline)
+                    .font(.title3.bold())
                 Spacer(minLength: 8)
                 if let miles = location.milesAway {
                     Text(miles)
@@ -23,12 +22,12 @@ struct PollingLocationCard: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Text(location.type)
-                    .font(.caption.weight(.medium))
+                    .font(.caption.bold())
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(.quaternary, in: .capsule)
+                    .background(.thinMaterial, in: .capsule)
 
                 // The single most important rule in this codebase: never present an unofficial
                 // venue as confirmed.
@@ -39,38 +38,45 @@ struct PollingLocationCard: View {
                 }
             }
 
-            HStack(spacing: 8) {
-                Button {
-                    openDirections()
-                } label: {
-                    Label("Directions", systemImage: "arrow.triangle.turn.up.right.circle")
-                        .font(.subheadline.weight(.medium))
-                }
-                .buttonStyle(.bordered)
+            Divider()
 
-                Button {
-                    onSave()
-                } label: {
+            Button {
+                MapDirections.open(
+                    name: location.name,
+                    address: location.addr,
+                    latitude: location.lat,
+                    longitude: location.lng
+                )
+            } label: {
+                Label("Directions", systemImage: "arrow.triangle.turn.up.right.circle.fill")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+            }
+            .controlSize(.large)
+            .vote4UPrimaryActionStyle()
+
+            HStack(spacing: 10) {
+                Button(action: onSave) {
                     Label(
                         isSaved ? "Saved" : "Save",
                         systemImage: isSaved ? "bookmark.fill" : "bookmark"
                     )
-                    .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .disabled(isSaved)
 
                 ShareLink(item: shareText) {
-                    Image(systemName: "square.and.arrow.up")
+                    Label("Share", systemImage: "square.and.arrow.up")
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
             }
-            .padding(.top, 2)
             .sensoryFeedback(.success, trigger: isSaved)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(.quaternary.opacity(0.35), in: .rect(cornerRadius: 12))
+        .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(accessibilityLabel)
     }
@@ -86,23 +92,4 @@ struct PollingLocationCard: View {
         "\(location.name)\n\(location.addr)"
     }
 
-    /// Apple Maps via MapKit rather than a maps.apple.com URL: it is first-party, free, and needs
-    /// no key or network round trip.
-    private func openDirections() {
-        let item: MKMapItem
-        if let lat = location.lat, let lng = location.lng {
-            let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lng)
-            item = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
-        } else {
-            // No coordinates from the upstream data — hand Apple Maps the address to resolve
-            // rather than inventing a pin.
-            item = MKMapItem(placemark: MKPlacemark(coordinate: kCLLocationCoordinate2DInvalid))
-        }
-        item.name = location.name
-        if location.lat != nil {
-            item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
-        } else if let url = URL(string: "http://maps.apple.com/?address=\(location.addr.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
-            UIApplication.shared.open(url)
-        }
-    }
 }

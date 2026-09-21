@@ -20,7 +20,6 @@ RUNTIME="${RUNTIME:-$(xcrun simctl list runtimes | grep -oE 'com.apple.CoreSimul
 PROJECT="$(cd "$(dirname "$0")/.." && pwd)/ios/Vote4U.xcodeproj"
 DERIVED="${TMPDIR:-/tmp}/vote4u-test"
 
-FAILED=0
 CREATED=()
 
 cleanup() {
@@ -34,29 +33,37 @@ trap cleanup EXIT
 xcrun simctl shutdown all >/dev/null 2>&1 || true
 
 fresh_simulator() {
-  local udid
-  udid=$(xcrun simctl create "Vote4U-Test-$$-${#CREATED[@]}" "$DEVICE_TYPE" "$RUNTIME")
-  CREATED+=("$udid")
-  xcrun simctl boot "$udid" >/dev/null
-  xcrun simctl bootstatus "$udid" -b >/dev/null
-  echo "$udid"
+  FRESH_UDID=$(xcrun simctl create "Vote4U-Test-$$-${#CREATED[@]}" "$DEVICE_TYPE" "$RUNTIME")
+  CREATED+=("$FRESH_UDID")
+  xcrun simctl boot "$FRESH_UDID" >/dev/null
+  xcrun simctl bootstatus "$FRESH_UDID" -b >/dev/null
 }
 
 run() {
-  local label="$1" udid="$2"; shift 2
+  local label="$1" udid="$2" status log
+  shift 2
+  mkdir -p "$DERIVED"
+  log="$DERIVED/${label//[^[:alnum:]]/_}.log"
   echo ""
   echo "▸ $label"
   if xcodebuild test -project "$PROJECT" -scheme Vote4U -destination "id=$udid" \
-       -derivedDataPath "$DERIVED" "$@" 2>&1 \
-       | grep -E "Test Case .*(passed|failed)|Executed .* test|error: -\[|TEST (SUCCEEDED|FAILED)"; then
-    :
+       -derivedDataPath "$DERIVED" "$@" >"$log" 2>&1; then
+    status=0
+  else
+    status=$?
   fi
-  # grep eats xcodebuild's status, so check the marker the run itself printed.
-  return 0
+
+  grep -E "Test Case .*(passed|failed)|Executed .* test|error: -\[|TEST (SUCCEEDED|FAILED)" "$log" || true
+  if (( status != 0 )); then
+    echo "✗ $label failed (xcodebuild exit $status). Last 80 log lines:" >&2
+    tail -80 "$log" >&2
+    return "$status"
+  fi
 }
 
 # One simulator for the allow path plus everything that needs authorization.
-MAIN=$(fresh_simulator)
+fresh_simulator
+MAIN="$FRESH_UDID"
 run "Notification permission — allow" "$MAIN" \
   -only-testing:Vote4UUITests/ReminderPermissionUITests/testAllowingNotificationsLeavesTheToggleOn
 
@@ -66,7 +73,8 @@ run "Unit tests + UI smoke tests" "$MAIN" \
 xcrun simctl shutdown "$MAIN" >/dev/null 2>&1 || true
 
 # The deny path needs a device that has never been asked.
-DENY=$(fresh_simulator)
+fresh_simulator
+DENY="$FRESH_UDID"
 run "Notification permission — deny" "$DENY" \
   -only-testing:Vote4UUITests/ReminderPermissionUITests/testDenyingNotificationsFlipsTheToggleBackAndExplains
 

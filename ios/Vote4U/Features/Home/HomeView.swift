@@ -1,84 +1,66 @@
 import SwiftUI
 
 struct HomeView: View {
-    private let election = ElectionCalendar.next()
+    @Binding var selection: Tab
 
     @AppStorage("remindersEnabled") private var remindersEnabled = false
-    // Scales with Dynamic Type instead of being pinned at 72pt, but capped below so the largest
-    // accessibility sizes cannot push the number off screen.
-    @ScaledMetric(relativeTo: .largeTitle) private var countdownSize: CGFloat = 72
     @State private var permissionDenied = false
+    @State private var savedPlace: SavedPlace?
+
+    private var reminderBinding: Binding<Bool> {
+        // This explicit binding is deliberate: reverting a denied toggle through onChange would
+        // re-enter the handler and erase the denial explanation.
+        Binding(
+            get: { remindersEnabled },
+            set: { wantsReminders in
+                remindersEnabled = wantsReminders
+                Task { await updateReminders(enabled: wantsReminders) }
+            }
+        )
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    countdown
-                    reminderToggle
-                    Text("Vote4U is independent and nonpartisan. It is not affiliated with any government agency, election office, campaign or party.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                LazyVStack(spacing: Vote4UTheme.sectionSpacing) {
+                    ElectionCountdownCard()
+
+                    if let savedPlace {
+                        HomeSavedPlaceCard(place: savedPlace, onOpenVote: openVoteTab)
+                    } else {
+                        HomeVotingPlanCard(onFindPollingPlace: openVoteTab)
+                    }
+
+                    ElectionReminderCard(
+                        isEnabled: reminderBinding,
+                        permissionDenied: permissionDenied
+                    )
+
+                    NonpartisanNotice()
                 }
                 .padding()
             }
-            .navigationTitle("Vote4U")
-            .task {
-                // The system setting can be revoked outside the app, so trust it over our flag.
-                if remindersEnabled, await !ReminderScheduler.isAuthorized() {
-                    remindersEnabled = false
-                }
+            .background {
+                Vote4UTheme.pageBackground
+                    .ignoresSafeArea()
             }
+            .navigationTitle("Vote4U")
+            .task(id: selection) { await refreshIfVisible() }
         }
     }
 
-    private var countdown: some View {
-        VStack(spacing: 8) {
-            Text(election.kind)
-                .font(.headline)
-                .foregroundStyle(.secondary)
-            Text("\(election.daysAway)")
-                .font(.system(size: countdownSize, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .minimumScaleFactor(0.5)
-                .lineLimit(1)
-            Text(election.daysAway == 1 ? "day away" : "days away")
-                .font(.title3)
-            Text(election.date, format: .dateTime.weekday(.wide).month(.wide).day().year())
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
-        .background(.quaternary.opacity(0.4), in: .rect(cornerRadius: 16))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(election.kind) in \(election.daysAway) days, \(election.date.formatted(date: .complete, time: .omitted))")
-        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+    private func openVoteTab() {
+        selection = .vote
     }
 
-    private var reminderToggle: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Driven by an explicit binding rather than .onChange: when authorization is refused
-            // we flip the toggle back ourselves, and .onChange would treat that as a fresh user
-            // action and re-enter updateReminders(enabled: false), wiping the explanation before
-            // it could ever be read.
-            Toggle("Remind me about Election Day", isOn: Binding(
-                get: { remindersEnabled },
-                set: { wantsReminders in
-                    remindersEnabled = wantsReminders
-                    Task { await updateReminders(enabled: wantsReminders) }
-                }
-            ))
+    private func refreshIfVisible() async {
+        guard selection == .home else { return }
+        savedPlace = SavedPlaceStore.load()
 
-            Text(permissionDenied
-                 ? "Notifications are turned off for Vote4U. Turn them on in Settings to get reminders."
-                 : "A reminder one week before, and again on Election Day morning. Everything is scheduled on your device.")
-                .font(.caption)
-                .foregroundStyle(permissionDenied ? .orange : .secondary)
+        // The system setting can be revoked outside the app, so trust it over our stored flag.
+        if remindersEnabled, await !ReminderScheduler.isAuthorized() {
+            remindersEnabled = false
         }
-        .padding()
-        .background(.quaternary.opacity(0.4), in: .rect(cornerRadius: 12))
-        .sensoryFeedback(.selection, trigger: remindersEnabled)
     }
 
     private func updateReminders(enabled: Bool) async {
@@ -100,4 +82,4 @@ struct HomeView: View {
     }
 }
 
-#Preview { HomeView() }
+#Preview { HomeView(selection: .constant(.home)) }

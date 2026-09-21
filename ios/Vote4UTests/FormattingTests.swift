@@ -2,7 +2,7 @@ import XCTest
 @testable import Vote4U
 
 final class FormattingTests: XCTestCase {
-    private let now = ISO8601DateFormatter().date(from: "2026-09-20T12:00:00Z")!
+    private let now = try! Date.ISO8601FormatStyle().parse("2026-09-20T12:00:00Z")
 
     private func ago(_ iso: String) -> String {
         Formatting.timeAgo(iso, now: now)

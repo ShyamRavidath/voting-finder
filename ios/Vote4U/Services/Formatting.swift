@@ -1,16 +1,15 @@
 import Foundation
 
 enum Formatting {
-    private static let iso = ISO8601DateFormatter()
-    private static let isoWithFraction: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
     static func date(fromISO string: String?) -> Date? {
         guard let string else { return nil }
-        return iso.date(from: string) ?? isoWithFraction.date(from: string)
+
+        // FormatStyle is a Sendable value type, unlike a shared ISO8601DateFormatter. Foundation
+        // caches identical styles internally, so creating these values is also inexpensive.
+        if let date = try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse(string) {
+            return date
+        }
+        return try? Date.ISO8601FormatStyle().parse(string)
     }
 
     /// Matches `timeAgo` in `client/src/lib/format.js` closely enough that a headline reads the

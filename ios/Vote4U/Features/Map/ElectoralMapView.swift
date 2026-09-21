@@ -2,9 +2,9 @@ import SwiftUI
 
 struct ElectoralMapView: View {
     @State private var selected: ElectoralState?
+    @State private var searchText = ""
 
     private let paths = BundledData.statePaths
-    private let states = BundledData.states
     private let byName = Dictionary(
         uniqueKeysWithValues: BundledData.states.map { ($0.name, $0) }
     )
@@ -12,124 +12,39 @@ struct ElectoralMapView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
-                    tally
-                    map
-                    if let selected { detail(for: selected) }
-                    legend
-                    stateList
+                LazyVStack(spacing: Vote4UTheme.sectionSpacing) {
+                    ElectoralTallyView()
+                    ElectoralMapCanvas(
+                        paths: paths,
+                        statesByName: byName,
+                        selected: selected,
+                        onSelect: select
+                    )
+
+                    if let selected {
+                        ElectoralStateDetail(state: selected)
+                    }
+
+                    ElectoralMapLegend()
+                    ElectoralStateList(
+                        searchText: searchText,
+                        selected: selected,
+                        onSelect: select
+                    )
                 }
                 .padding()
             }
+            .background {
+                Vote4UTheme.pageBackground
+                    .ignoresSafeArea()
+            }
             .navigationTitle("Electoral Map")
+            .searchable(text: $searchText, prompt: "Search states")
         }
     }
 
-    private var tally: some View {
-        HStack(spacing: 12) {
-            ForEach(ElectoralState.Party.allCases, id: \.self) { party in
-                VStack(spacing: 2) {
-                    Text(party.label)
-                        .font(.caption2)
-                        .foregroundStyle(party.color)
-                        .multilineTextAlignment(.center)
-                    Text("\(BundledData.tally(for: party))")
-                        .font(.title2.bold())
-                        .monospacedDigit()
-                }
-                .frame(maxWidth: .infinity)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(party.label): \(BundledData.tally(for: party)) electoral votes")
-            }
-        }
-    }
-
-    private var map: some View {
-        // The source canvas is 975x610; scaling to the available width keeps every state aligned.
-        GeometryReader { geometry in
-            let scale = geometry.size.width / paths.viewBox.width
-
-            ZStack {
-                ForEach(paths.shapes) { shape in
-                    let state = byName[shape.name]
-                    let path = SVGPath.parse(shape.d, scale: CGSize(width: scale, height: scale))
-
-                    path
-                        .fill(state?.party.color ?? .gray)
-                        .overlay(path.stroke(.background, lineWidth: 0.5))
-                        .onTapGesture {
-                            guard let state else { return }
-                            selected = selected == state ? nil : state
-                        }
-                }
-            }
-        }
-        .aspectRatio(paths.viewBox.width / paths.viewBox.height, contentMode: .fit)
-        // Individual state shapes are far too small to be VoiceOver targets — several are a few
-        // points across, and DC is barely visible at all. The map is exposed as one summary
-        // element and the list below is the accessible, reliable way to pick a state.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Map of the United States coloured by electoral rating. Use the state list below to select a state.")
-    }
-
-    private func detail(for state: ElectoralState) -> some View {
-        VStack(spacing: 4) {
-            Text(state.name).font(.headline)
-            Text("\(state.ev) electoral votes").font(.subheadline)
-            Text(state.party.label)
-                .font(.caption)
-                .foregroundStyle(state.party.color)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(.quaternary.opacity(0.4), in: .rect(cornerRadius: 12))
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isSelected)
-    }
-
-    private var legend: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("270 electoral votes are needed to win.")
-                .font(.footnote)
-            Text("Ratings are an editorial summary, not a prediction or an official result.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// Mirrors the web app's chip list. It is the accessible route to every state, and the only
-    /// practical way to reach the small ones.
-    private var stateList: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ForEach(ElectoralState.Party.allCases, id: \.self) { party in
-                let group = states.filter { $0.party == party }.sorted { $0.ev > $1.ev }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(party.label)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(party.color)
-
-                    ForEach(group) { state in
-                        Button {
-                            selected = selected == state ? nil : state
-                        } label: {
-                            HStack {
-                                Text(state.name)
-                                Spacer()
-                                Text("\(state.ev)").monospacedDigit().foregroundStyle(.secondary)
-                            }
-                            .font(.subheadline)
-                            .padding(.vertical, 8)
-                            .contentShape(.rect)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(state.name), \(state.ev) electoral votes, \(party.label)")
-                        Divider()
-                    }
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    private func select(_ state: ElectoralState) {
+        selected = selected == state ? nil : state
     }
 }
 
