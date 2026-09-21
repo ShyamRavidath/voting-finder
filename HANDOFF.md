@@ -117,7 +117,7 @@ voting-finder/
 | Server | `npm test --prefix server` | **20 pass** |
 | Web e2e local | `npm run test:e2e` | 87 passed, 9 skipped *(not re-run this session)* |
 | Web e2e prod | `BASE_URL=https://vote4ucyl.vercel.app npx playwright test` | 88 passed, 8 skipped *(not re-run)* |
-| iOS on iOS 27.0 | `./scripts/test-ios.sh` | **38 tests, 0 failures, 0 skipped** |
+| iOS on iOS 27.0 | `./scripts/test-ios.sh` | **41 tests, 0 failures, 0 skipped** (2026-09-21, after the §8A/§8D work) |
 | iOS on iOS 17.5 | `DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' ./scripts/test-ios.sh` | **38 tests, 0 failures, 0 skipped** |
 
 `test-ios.sh` now ends with a Release build and greps the binary to prove no DEBUG launch-argument
@@ -240,6 +240,21 @@ out what it was. Redirect if you must, but always print the tail on failure.
   ("Find your official polling place, USA.gov"). Exact-match XCUITest queries fail; use `CONTAINS`.
 - **SwiftUI exposes the whole row as a `Toggle`'s accessibility frame**, but only the control end
   is tappable on iOS 17. Tap `coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))`.
+- **`XCUIElementQuery.containing(_:)` is not `matching(_:)`.** `containing` keeps elements that
+  have a **descendant** satisfying the predicate and ignores the element's own attributes, so it
+  can never match a leaf button by its own label. `ReminderPermissionUITests` used
+  `springboard.buttons.containing(label BEGINSWITH "Allow")` and failed on 2026-09-21 with a
+  diagnostic that printed `springboard buttons: ["Don’t Allow", "Allow"]` while claiming no
+  button started with "Allow" — the contradiction *was* the clue. Fixed by switching both
+  lookups to `matching(_:)`. Note this file passed 38/38 on 2026-09-20 with the same code, so
+  the hierarchy it depended on is not stable across runs: **when a selector and its own
+  diagnostic disagree, suspect the query API, not the app.**
+- **A failing first phase hides the rest of the suite.** `test-ios.sh` runs the allow-permission
+  test first and stops there, so that one failure meant the unit tests and `AppSmokeUITests`
+  never executed at all. A red run is not evidence about anything downstream of the red test.
+- **A failed UI test costs ten extra minutes.** Xcode tries to collect simulator diagnostics and
+  gives up only after a 600 s timeout (`Failure collecting diagnostics from simulator`). A run
+  that seems hung after a failure is usually just this.
 - **A `LazyVStack` keeps off-screen cards out of the accessibility tree.** The reminder-toggle
   helper scrolls before it looks, and checks `isHittable`, because XCTest reports a partially
   clipped control as existing.
@@ -431,7 +446,43 @@ API-stub decoupling).
 returned, we can ideally report that to the user and then just come up with community centers or
 something else (the next best thing)."* That is §8A and it is the next thing to build.
 
-### A. Make the polling search degrade instead of dead-ending — **start here**
+### A. Make the polling search degrade instead of dead-ending — **DONE 2026-09-21**
+
+Built as described below, with one addition the investigation turned up. What shipped:
+
+- **Two tiers in `findNearbyPollingVenues`.** Tier 1 is the old behaviour (library / community
+  center / town hall, city+state in the query text, ±0.03° box, ≤10 km) and still answers
+  `dataSource: 'estimated'`. Tier 2 runs **only when tier 1 is empty**: it drops the place name
+  and lets the bounding box do the geography, over a ±0.1° box with a 25 km cap, adding `school`
+  and `fire station`. It answers a new `dataSource: 'nearby'`.
+- **Dropping the place name is the important part**, not the wider box. Re-probing on 2026-09-21
+  showed `library Beverly Hills California` returning venues again — the 90210 hole was Nominatim's
+  *text index* being flaky, not a geography problem, so tier 2 removes the text dependency.
+- **`searchRadiusKm`** rides along in the response so both UIs can say how far the search went.
+- **Labelling gets more cautious, not less** (rule #1): tier-2 venues are typed `Civic Building`,
+  never `Likely Polling Place`, and both UIs carry distinct widened-search copy. Per-venue
+  "Not confirmed" is unchanged — tier 2 is still `isEstimated: true`.
+- **Nominatim's 1 req/s budget is shared across both tiers**, so the worst case is 7 sequential
+  calls. `vercel.json` allows `maxDuration: 30`, and the CDN caches the answer either way.
+- **New: a structural plausibility filter (`isPlausibleVenue`).** Nominatim matches free text, so
+  "town hall" was returning the *bus stop* named "Paterson Plank Rd At Town Hall", "library" was
+  returning a Little Free Library book box, and "community center" was returning the "Community
+  Compost Center" — all shown to voters under "Likely Polling Place". `class`/`type` come back
+  with `addressdetails=1` and are enough to reject them. It is a **denylist, not an allowlist**,
+  because a real community center is often only tagged `building=yes`.
+
+Verified live against the local server on 2026-09-21: `83428` and `89060` used to dead-end and now
+return real schools, fire stations and community centers as `nearby`; `07094`, `10001` and `90210`
+still answer `estimated` and no longer contain the bus stop, the book box or the compost centre.
+`59645` still answers `none`, which is correct — there genuinely is nothing.
+
+Not done, and still worth considering: a `-stubPolling nearby` iOS screenshot, and item 5 below's
+"first tier empty, second tier hits" case is covered but the Postgres cache still stores only
+`data_source`, so a cached `nearby` row replays fine but `searchRadiusKm` comes from the stored
+payload (older rows simply omit it and the clients default to null — there is a test for that).
+
+<details>
+<summary>The original plan, kept for the reasoning</summary>
 
 Today, when Nominatim returns nothing, the user gets "No polling places found" and a link list.
 That is honest but it is a dead end, and right now it is what every 90210 lookup sees.
@@ -457,8 +508,31 @@ Proposed shape — worth confirming with the owner before writing much of it:
 Mind the budget: each Nominatim call is 1s apart by policy and `fetchWithTimeout` allows 5s, so a
 naive "try everything" could exceed the serverless limit. Run later tiers only when the earlier
 one is empty.
+</details>
 
-### B. Re-shoot the App Store screenshots — **decided, just do it**
+### B. Re-shoot the App Store screenshots — **blocked on the deploy, do it straight after**
+
+Checked on 2026-09-21 by opening the PNGs rather than trusting the claim (§4):
+
+- **`3-electoral-map.png` is genuinely stale.** There is no search field under the "Electoral Map"
+  title, so it predates `a7dfe10`'s pinned-open `.searchable`. Re-shoot it.
+- **`1-vote-results.png` is *not* stale.** Production answers `zip=90210` with the same two
+  Beverly Hills libraries it shows. The HANDOFF previously said that ZIP "no longer returns"
+  them; Nominatim's index simply comes and goes (§4 again).
+
+**Do not re-shoot until the §8A/§8D server work is deployed.** The app points at
+`https://vote4ucyl.vercel.app` directly, so a capture run today would bake the *old* unscoped news
+feed — Turkey, the Philippines — into the App Store set, which is the exact 4.2.2 risk §8D exists
+to remove. Sequence: push → Vercel deploys → `./scripts/capture-screenshots.sh` → check all five
+by opening them.
+
+**Do not use `-stubPolling` for App Store screenshots.** The suggestion below was mine and I now
+think it is wrong: those venues are fabricated, and putting fabricated polling places into store
+marketing is precisely what rule #1 exists to prevent. Shoot against a real ZIP and re-check it
+on the day. The stub is for tests and QA, not for the listing.
+
+<details>
+<summary>The original note</summary>
 
 Screenshot 1 shows Beverly Hills venues that ZIP no longer returns, and the Map shot predates the
 pinned-open search field. The owner's steer above means the Vote screenshot should show a
@@ -467,6 +541,7 @@ pinned-open search field. The owner's steer above means the Vote screenshot shou
 estimated` if you want it reproducible forever. Note `capture-screenshots.sh` defaults to
 `iPhone 18 Pro Max` for the 1320×2868 size and sleeps 12s per shot for cold serverless starts.
 If the listing copy in `ios/APP_STORE.md` names Beverly Hills, update it to match.
+</details>
 
 ### C. A WidgetKit extension
 
@@ -474,11 +549,36 @@ Countdown or saved polling place. Genuinely useful, needs no Apple account to bu
 materially strengthens the 4.2 "elevates beyond a website" argument. The highest-value *new*
 feature. Adding a target means hand-editing the pbxproj — copy the existing pattern carefully.
 
-### D. Scope the news feed to US elections
+### D. Scope the news feed to US elections — **DONE 2026-09-21**
 
-The Google News RSS query is not US-scoped; the tab currently leads with foreign politics. Tighten
-the query (consider `gl=US&hl=en-US&ceid=US:en` plus stricter terms) so the last tab looks like an
-election app's news tab rather than a general aggregator. 4.2.2 risk reduction.
+The `gl`/`hl`/`ceid` parameters were **already** on the request. They bias the Google News
+*edition*, not the subject, which is why they did nothing: the query itself was
+`"2028 election" OR "2028 presidential race"`, and Turkey's April 2028 election and the
+Philippines' 2028 race match that perfectly. Confirmed by fetching the live feed — Erdoğan and
+Teodoro were both in the top ten.
+
+What shipped:
+
+- **`newsQuery()` builds the terms from `nextFederalElectionYear()`**, which mirrors
+  `nextFederalElection` in `client/src/lib/format.js` (same `(8 - weekday) % 7` arithmetic) so the
+  feed doesn't go stale the morning after an election. A midterm year leads with the midterms and
+  keeps the presidential race two years out; a presidential year drops the midterm terms.
+  **Every term is year-qualified** — that is the rule, and a test enforces it.
+- **`toArticle`'s relevance gate was silently undoing the fix.** It required the literal string
+  `"2028"` in the title, so every midterm headline the new query returns was being thrown away
+  ("Early voting begins in U.S. midterm elections" has no year in it at all). It now matches
+  word-bounded election vocabulary. Word-bounded because a substring test matches "pollution".
+- **`candidate` is now null** when no watchlist candidate is named. It used to be the placeholder
+  string `"2028 Election"`, which `NewsCard.jsx` then had to compare against by hand to hide.
+
+Measured on the live feed, before → after: 8 articles, several foreign → **15 (the `MAX_ARTICLES`
+cap), all US, all election-related**, and now leading with early voting, mail-in ballots and voter
+guides rather than 2028 horse-race speculation. That is a much better answer to 4.2.2 as well: the
+tab now reads like a voting tool's news feed.
+
+Left alone deliberately: near-duplicate headlines from different outlets covering the same event
+("Early voting in Virginia begins ahead of 2026 midterms" / "…for 2026 midterms"). `dedupeAndSort`
+matches exact titles only. Normalising harder risks collapsing genuinely different stories.
 
 ### E. Snapshot tests for the electoral map
 

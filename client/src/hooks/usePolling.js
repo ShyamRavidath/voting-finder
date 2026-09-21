@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 
-const INITIAL = { status: 'idle', zip: null, locations: [], dataSource: null, place: null, election: null, error: null };
+const INITIAL = {
+  status: 'idle',
+  zip: null,
+  locations: [],
+  dataSource: null,
+  place: null,
+  election: null,
+  searchRadiusKm: null,
+  error: null,
+};
 
 export function usePolling() {
   const [state, setState] = useState(INITIAL);
@@ -23,6 +32,7 @@ export function usePolling() {
         dataSource: data.dataSource,
         place: data.place || null,
         election: data.election || null,
+        searchRadiusKm: data.searchRadiusKm ?? null,
         error: null,
       });
     } catch (err) {

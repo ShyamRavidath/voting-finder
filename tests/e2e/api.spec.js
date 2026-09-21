@@ -35,7 +35,12 @@ test.describe('API', () => {
     const res = await request.get('/api/polling?zip=90210');
     expect(res.status()).toBe(200);
     const body = await res.json();
-    expect(['official', 'estimated', 'none']).toContain(body.dataSource);
+    // 'nearby' is the widened civic-building tier, added 2026-09-21.
+    expect(['official', 'estimated', 'nearby', 'none']).toContain(body.dataSource);
+    // Only the unofficial tiers report how far they looked.
+    if (body.dataSource === 'estimated' || body.dataSource === 'nearby') {
+      expect(typeof body.searchRadiusKm).toBe('number');
+    }
     expect(body.place).toMatchObject({ city: 'Beverly Hills', stateAbbr: 'CA' });
     for (const loc of body.locations) {
       expect(loc.name).toBeTruthy();
