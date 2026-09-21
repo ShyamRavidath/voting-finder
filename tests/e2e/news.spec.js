@@ -35,7 +35,7 @@ test.describe('news', () => {
             contentType: 'application/json',
             body: JSON.stringify({
               articles: [
-                { id: 'x', title: 'Test headline about 2028', url: 'https://example.com/x', source: 'Example', date: new Date().toISOString(), party: null, candidate: '2028 Election' },
+                { id: 'x', title: 'Test headline about 2028', url: 'https://example.com/x', source: 'Example', date: new Date().toISOString(), party: null, candidate: null },
               ],
             }),
           })

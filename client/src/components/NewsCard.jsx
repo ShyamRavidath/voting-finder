@@ -33,7 +33,7 @@ export default function NewsCard({ article }) {
             </a>
           </h3>
           {article.excerpt && <p className="mt-1.5 line-clamp-2 text-[15px] text-slate-600 sm:line-clamp-3">{article.excerpt}</p>}
-          {article.candidate && article.candidate !== '2028 Election' && (
+          {article.candidate && (
             <p className="mt-2 text-xs font-semibold text-slate-700">{article.candidate}</p>
           )}
         </div>

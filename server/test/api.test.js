@@ -7,7 +7,13 @@ process.env.GOOGLE_CIVIC_API_KEY = '';
 process.env.DATABASE_URL = '';
 require('dotenv').config = () => ({});
 
-const { decodeEntities, detectParty } = require('../services/newsService');
+const {
+  decodeEntities,
+  detectParty,
+  newsQuery,
+  nextFederalElectionYear,
+  isElectionRelevant,
+} = require('../services/newsService');
 const { parseLocations } = require('../services/civicService');
 const app = require('../app');
 
@@ -48,12 +54,78 @@ describe('newsService helpers', () => {
     assert.equal(decodeEntities('<![CDATA[Raw <b>text</b>]]>'), 'Raw <b>text</b>');
   });
 
+  // The old query was `"2028 election" OR "2028 presidential race"`, which let Turkey's April
+  // 2028 election and the Philippines' 2028 race lead an American voting app's news tab.
+  test('the news query names the next federal election and rolls over the day after it', () => {
+    const on = (iso) => nextFederalElectionYear(new Date(`${iso}T12:00:00`));
+    assert.equal(on('2026-09-21'), 2026);
+    assert.equal(on('2026-11-03'), 2026, 'election day itself still counts');
+    assert.equal(on('2026-11-04'), 2028, 'the morning after rolls to the next one');
+    assert.equal(on('2028-11-07'), 2028);
+    assert.equal(on('2028-11-08'), 2030);
+
+    // A midterm year leads with the midterms and keeps the presidential race two years out.
+    const midterm = newsQuery(new Date('2026-09-21T12:00:00'));
+    assert.match(midterm, /"2026 midterm elections"/);
+    assert.match(midterm, /"2028 presidential race"/);
+    assert.match(midterm, /when:14d$/);
+
+    // A presidential year drops the midterm terms entirely.
+    const presidential = newsQuery(new Date('2028-03-01T12:00:00'));
+    assert.match(presidential, /"2028 presidential election"/);
+    assert.doesNotMatch(presidential, /midterm/);
+
+    // Every term is year-qualified — a bare "election" is what let foreign coverage in.
+    for (const q of [midterm, presidential]) {
+      for (const term of q.match(/"[^"]+"/g)) {
+        assert.match(term, /\b20\d\d\b/, `unqualified term: ${term}`);
+      }
+    }
+  });
+
+  // The gate used to require the literal "2028" in the title, which threw away every midterm
+  // headline the widened query returns. These are real headlines from the live feed.
+  test('election relevance follows the vocabulary, not one hardcoded year', () => {
+    const on = new Date('2026-09-21T12:00:00');
+    assert.ok(isElectionRelevant('Early voting begins in U.S. midterm elections', on));
+    assert.ok(isElectionRelevant('What to Know About Mail-In Voting for the 2026 Midterms', on));
+    assert.ok(isElectionRelevant('2028 Democratic Presidential Primary: Latest Polls', on));
+    assert.ok(isElectionRelevant('Groups prepare to counter potential voter intimidation', on));
+    assert.ok(!isElectionRelevant('Local bakery wins national pastry award', on));
+    // Word-bounded: a substring test would let these through on "poll" and "campaign".
+    assert.ok(!isElectionRelevant('City reports record pollution levels', on));
+    assert.ok(!isElectionRelevant('Pollen counts spike across the valley', on));
+  });
+
   test('party comes only from a named 2028 candidate', () => {
     assert.equal(detectParty("Democrats Are Laughing at Trump's Midterm Plan", ''), null);
     assert.equal(detectParty('Harrisburg council votes on budget', ''), null);
     assert.equal(detectParty('Newsom weighs 2028 bid', ''), 'Democrat');
     assert.equal(detectParty('AOC tours Midwest', ''), 'Democrat');
     assert.equal(detectParty('JD Vance speaks in Ohio', ''), 'Republican');
+  });
+});
+
+// Real rows from Nominatim. Every rejected one was being shown to voters as a polling place.
+describe('geocodeService.isPlausibleVenue', () => {
+  const { isPlausibleVenue } = require('../services/geocodeService');
+
+  test('rejects things a voter cannot walk into', () => {
+    assert.ok(!isPlausibleVenue({ class: 'highway', type: 'bus_stop' }), 'bus stop named "…Town Hall"');
+    assert.ok(!isPlausibleVenue({ class: 'amenity', type: 'public_bookcase' }), 'Little Free Library');
+    assert.ok(!isPlausibleVenue({ class: 'amenity', type: 'recycling' }), 'Community Compost Center');
+    assert.ok(!isPlausibleVenue({ class: 'leisure', type: 'garden' }));
+  });
+
+  test('keeps real civic buildings, including the loosely tagged ones', () => {
+    assert.ok(isPlausibleVenue({ class: 'amenity', type: 'library' }));
+    assert.ok(isPlausibleVenue({ class: 'amenity', type: 'townhall' }));
+    assert.ok(isPlausibleVenue({ class: 'amenity', type: 'community_centre' }));
+    assert.ok(isPlausibleVenue({ class: 'amenity', type: 'school' }));
+    assert.ok(isPlausibleVenue({ class: 'amenity', type: 'fire_station' }));
+    // A denylist, not an allowlist: real community centers are often only tagged building=yes.
+    assert.ok(isPlausibleVenue({ class: 'building', type: 'yes' }));
+    assert.ok(isPlausibleVenue({}), 'a row with no class/type at all is not evidence against it');
   });
 });
 
@@ -121,6 +193,7 @@ describe('API routes', () => {
     const body = await res.json();
     assert.equal(body.dataSource, 'none');
     assert.deepEqual(body.locations, []);
+    assert.equal(body.searchRadiusKm, null);
     assert.equal(body.place.stateAbbr, 'DE');
     assert.match(res.headers.get('cache-control'), /s-maxage=3600/);
   });
@@ -139,6 +212,63 @@ describe('API routes', () => {
     assert.equal(body.locations[0].name, 'Dover Public Library');
     assert.equal(body.locations[0].addr, '35 Loockerman Plaza, Dover, Delaware, 19901');
     assert.ok(body.locations[0].isEstimated);
+    assert.equal(body.searchRadiusKm, 10);
+  });
+
+  // Tier 1 puts the city and state in the query text; tier 2 drops them and leans on the
+  // bounding box, because Nominatim's text index for a given place comes and goes (see HANDOFF
+  // §4). A stub that answers only the bare query is exactly that failure mode.
+  test('polling widens to nearby civic buildings when the tight search finds nothing', async () => {
+    upstream = (u) => {
+      if (u.includes('zippopotam'))
+        return json({ places: [{ 'place name': 'Dover', state: 'Delaware', 'state abbreviation': 'DE', latitude: '39.15', longitude: '-75.52' }] });
+      if (!u.includes('nominatim')) return undefined;
+      if (u.includes('Dover')) return json([]); // every tier-1, place-scoped query
+      if (u.includes('q=school'))
+        return json([{ name: 'Dover High School', lat: '39.19', lon: '-75.55', display_name: 'Dover High School, Dover', address: { house_number: '1', road: 'Pat Lynn Drive', city: 'Dover', postcode: '19904' } }]);
+      return json([]);
+    };
+    const res = await fetch(`${base}/api/polling?zip=19901`);
+    const body = await res.json();
+    assert.equal(body.dataSource, 'nearby');
+    assert.equal(body.searchRadiusKm, 25);
+    assert.equal(body.locations.length, 1);
+    assert.equal(body.locations[0].name, 'Dover High School');
+    // Rule #1: a weaker source must be labelled more cautiously, never less.
+    assert.equal(body.locations[0].type, 'Civic Building');
+    assert.ok(body.locations[0].isEstimated);
+    assert.match(res.headers.get('cache-control'), /s-maxage=86400/);
+  });
+
+  test('polling prefers the tight tier and never widens when it already has results', async () => {
+    upstream = (u) => {
+      if (u.includes('zippopotam'))
+        return json({ places: [{ 'place name': 'Dover', state: 'Delaware', 'state abbreviation': 'DE', latitude: '39.15', longitude: '-75.52' }] });
+      if (u.includes('nominatim') && u.includes('Dover') && u.includes('library'))
+        return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { city: 'Dover', postcode: '19901' } }]);
+      if (u.includes('nominatim') && u.includes('Dover')) return json([]);
+      // A bare (tier-2) query reaching Nominatim at all would mean we widened unnecessarily.
+      if (u.includes('nominatim')) throw new Error('tier 2 must not run when tier 1 found venues');
+    };
+    const res = await fetch(`${base}/api/polling?zip=19901`);
+    const body = await res.json();
+    assert.equal(body.dataSource, 'estimated');
+    assert.equal(body.searchRadiusKm, 10);
+  });
+
+  test('polling drops widened venues that are beyond the widened radius', async () => {
+    upstream = (u) => {
+      if (u.includes('zippopotam'))
+        return json({ places: [{ 'place name': 'Dover', state: 'Delaware', 'state abbreviation': 'DE', latitude: '39.15', longitude: '-75.52' }] });
+      if (!u.includes('nominatim')) return undefined;
+      if (u.includes('Dover')) return json([]);
+      // ~55 km north of the ZIP centroid — inside the wider viewbox, outside the 25 km cap.
+      return json([{ name: 'Far Away Library', lat: '39.65', lon: '-75.52', display_name: 'Far Away Library, Somewhere', address: { city: 'Somewhere', postcode: '19700' } }]);
+    };
+    const res = await fetch(`${base}/api/polling?zip=19901`);
+    const body = await res.json();
+    assert.equal(body.dataSource, 'none');
+    assert.deepEqual(body.locations, []);
   });
 
   test('polling rejects malformed coordinates', async () => {
