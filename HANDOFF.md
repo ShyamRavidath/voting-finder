@@ -115,9 +115,9 @@ voting-finder/
 | Suite | Command | Result |
 |---|---|---|
 | Server | `npm test --prefix server` | **20 pass** |
-| Web e2e local | `npm run test:e2e` | 87 passed, 9 skipped *(not re-run this session)* |
+| Web e2e local | `npm run test:e2e` | **90 passed, 9 skipped** (2026-09-21, first run actually performed on this Mac) |
 | Web e2e prod | `BASE_URL=https://vote4ucyl.vercel.app npx playwright test` | 88 passed, 8 skipped *(not re-run)* |
-| iOS on iOS 27.0 | `./scripts/test-ios.sh` | **41 tests, 0 failures, 0 skipped** (2026-09-21, after the §8A/§8D work) |
+| iOS on iOS 27.0 | `./scripts/test-ios.sh` | **52 tests, 0 failures, 0 skipped** (2026-09-21, after the widget) |
 | iOS on iOS 17.5 | `DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' ./scripts/test-ios.sh` | **38 tests, 0 failures, 0 skipped** |
 
 `test-ios.sh` now ends with a Release build and greps the binary to prove no DEBUG launch-argument
@@ -255,6 +255,34 @@ out what it was. Redirect if you must, but always print the tail on failure.
 - **A failed UI test costs ten extra minutes.** Xcode tries to collect simulator diagnostics and
   gives up only after a 600 s timeout (`Failure collecting diagnostics from simulator`). A run
   that seems hung after a failure is usually just this.
+### WidgetKit (all three cost real time on 2026-09-21)
+
+- **`INFOPLIST_KEY_NSExtensionPointIdentifier` is accepted and then silently ignored.**
+  `INFOPLIST_KEY_*` only writes *top-level* Info.plist keys, and this one has to be nested inside
+  `NSExtension`. The first widget built cleanly, embedded its `.appex`, and could never have
+  appeared in anyone's widget gallery. A real Info.plist file is the only way.
+  **Verify with `xcrun simctl spawn <device> pluginkit -m -v -p com.apple.widgetkit-extension`** —
+  if the bundle id is not in that list, iOS does not think it is a widget.
+- **That Info.plist must live *outside* the target's synchronized group folder.** A
+  `PBXFileSystemSynchronizedRootGroup` sweeps everything in its directory into Copy Bundle
+  Resources, and a file that is both the target's `INFOPLIST_FILE` and a copied resource fails
+  the build with *"Multiple commands produce ... Info.plist"*. Hence `ios/Vote4UWidgets-Info.plist`
+  sitting beside `ios/Vote4UWidgets/` rather than inside it.
+- **`.frame(maxWidth:)` does not clamp a `Text`.** Frames do not clip, so a string that wants more
+  room just draws past the edge — "Tomorrow" ran straight off the medium widget. A *definite*
+  width gives `minimumScaleFactor` something to scale against. Small needed the number stacked
+  over its unit; "43 days" on one line was already edge to edge before three digits.
+- **`\.widgetFamily` is a read-only environment key**, so a test cannot set it. The family has to
+  be an explicit parameter if the layouts are ever to be rendered outside a real widget.
+- **Simulating WidgetKit's content margins matters when reviewing renders.** My first
+  `ImageRenderer` dump showed medium overflowing; the layout was fine and the *harness* was wrong,
+  because a real widget insets its content by ~16 pt. Fix the harness before the layout.
+- **Springboard automation to the widget gallery was abandoned.** It never reached jiggle mode and
+  cost ten minutes a run. `pluginkit` proves registration and `ImageRenderer` proves rendering;
+  between them the gallery adds nothing but flakiness.
+
+### Other iOS / Xcode
+
 - **A `LazyVStack` keeps off-screen cards out of the accessibility tree.** The reminder-toggle
   helper scrolls before it looks, and checks `isHittable`, because XCTest reports a partially
   clipped control as existing.
@@ -543,11 +571,32 @@ estimated` if you want it reproducible forever. Note `capture-screenshots.sh` de
 If the listing copy in `ios/APP_STORE.md` names Beverly Hills, update it to match.
 </details>
 
-### C. A WidgetKit extension
+### C. A WidgetKit extension — **DONE 2026-09-21**
 
-Countdown or saved polling place. Genuinely useful, needs no Apple account to build and test, and
-materially strengthens the 4.2 "elevates beyond a website" argument. The highest-value *new*
-feature. Adding a target means hand-editing the pbxproj — copy the existing pattern carefully.
+`Vote4UWidgets`, an app-extension target holding an Election Countdown widget in five families:
+`.systemSmall`, `.systemMedium`, and the three Lock Screen accessories.
+
+- **No network and no App Group.** Everything is computed offline from `ElectionCalendar`, which
+  is compiled into the widget by an **explicit `PBXFileReference`** rather than duplicated — the
+  same date arithmetic already drives the Home countdown and the reminder schedule, and a third
+  copy would be a third chance to disagree. No App Group also means no entitlement, so none of
+  this is blocked on the Apple account.
+- **A widget that can fail is a widget showing a spinner on someone's Home Screen**, which is why
+  polling places stay in the app. The countdown needs nothing but the calendar.
+- **Timeline is one entry per local midnight**, seven ahead, then `.atEnd`. WidgetKit budgets
+  refreshes per app per day; asking to be woken hourly for a number that moves once a day is how
+  a widget gets throttled and goes stale.
+- **The views live in the app target** (`Vote4U/Features/Widget/`) and are compiled into the
+  extension the same way. A test bundle cannot import an app extension, so anything that lives
+  only in the widget can never be rendered in a test.
+- 11 new tests: 8 for the logic, 3 rendering every family through `ImageRenderer`, including a
+  bitmap check for a rendered-but-blank view that a size assertion would sail straight past.
+
+Deliberately not done: a custom URL scheme for deep-linking a tap to a particular tab. It needs
+`CFBundleURLTypes`, which has no `INFOPLIST_KEY_*` equivalent, so it would mean introducing a
+hand-written Info.plist for the **app** target as well. Tapping the widget opens the app, which
+is the standard behaviour and needs no plumbing. A saved-polling-place widget is the other
+obvious follow-up and *does* need an App Group, so it is genuinely blocked on the Team ID.
 
 ### D. Scope the news feed to US elections — **DONE 2026-09-21**
 

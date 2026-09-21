@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The one key that cannot be expressed as a build setting.
+
+  `GENERATE_INFOPLIST_FILE` handles everything else, but `INFOPLIST_KEY_*` only writes top-level
+  keys, and `NSExtensionPointIdentifier` has to be nested inside `NSExtension`. Setting
+  `INFOPLIST_KEY_NSExtensionPointIdentifier` is accepted and then silently ignored: the build
+  succeeds, the .appex is embedded, and iOS simply never offers the widget in the gallery.
+
+  Xcode merges the generated keys into this file, so this stays minimal on purpose — anything
+  added here stops being driven by the build settings.
+
+  It lives beside the Vote4UWidgets folder rather than inside it: the target uses a
+  file-system-synchronized group, which sweeps everything in that folder into Copy Bundle
+  Resources, and a file that is both the target's Info.plist and a copied resource fails the
+  build with "Multiple commands produce ... Info.plist".
+-->
+<plist version="1.0">
+<dict>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.widgetkit-extension</string>
+	</dict>
+</dict>
+</plist>
