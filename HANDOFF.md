@@ -73,6 +73,7 @@ a7dfe10 fix(ios): repair a scheduling race, an unreachable search, and silent te
 
 | PR | Branch | What | State |
 |---|---|---|---|
+| **#7** | `feat/coordinate-aware-cache` | Device lookups get a real cache (§9E) | OPEN, no checks — see §9B |
 | **#6** | `test/electoral-map-render` | Electoral-map render tests (§9C) | OPEN, no checks — see §9B |
 | **#5** | `ci/github-actions` | GitHub Actions CI (§9B) | OPEN, **both workflows green** |
 | **#4** | `feat/election-countdown-widget` | The WidgetKit extension + every handoff update | OPEN, mergeable |
@@ -703,7 +704,21 @@ None exists; 54 Swift files is still small enough that adding one now won't be n
 
 ### E. Server odds and ends
 
-- A coordinate-aware cache key so device lookups aren't cache-bypassed.
+- ~~A coordinate-aware cache key so device lookups aren't cache-bypassed.~~ **DONE, PR #7.**
+  The key is now the bare ZIP for a ZIP lookup and `@lat,lng` (3dp) for a device one, so the two
+  kinds of row cannot collide. **The device key carries no ZIP on purpose:** including one forces
+  a reverse geocode before the cache can be read, which is the exact request a hit is supposed to
+  save. The first version did that and the test caught it — a hit still cost one upstream call.
+  The cache read now happens before anything touches an upstream, and the ZIP comes back out of
+  the cached payload's `place.zip`. Device rows live a day, ZIP rows a week.
+  `zip_code CHAR(5)` became `cache_key VARCHAR(32)`; **existing rows need no rewriting** because
+  their keys are already bare ZIPs. Migration in `server/db/migrations/`.
+  Eleven tests in `server/test/pollingCache.test.js`, which installs a fake pool into the require
+  cache before loading the app — without that the cache path is **dead code in tests**, since
+  `DATABASE_URL` is unset and every request looks like a miss. `node --test` gives each file its
+  own process, so the stub cannot leak into `api.test.js`.
+  *Caveat worth keeping in mind:* Vercel's CDN already caches `?lat=&lng=` by URL for 24h, so the
+  win is across regions and evictions, and in Nominatim load — the budget that actually binds.
 - Structured logging.
 - Wire up `/api/elections` once the Civic key lands, so official-vs-estimated becomes visible.
 - **Near-duplicate news headlines.** `dedupeAndSort` matches exact titles only, so two outlets
