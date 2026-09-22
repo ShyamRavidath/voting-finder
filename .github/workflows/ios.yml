@@ -73,17 +73,46 @@ jobs:
           DEVICE_TYPE: ${{ steps.sim.outputs.device }}
           RUNTIME: ${{ steps.sim.outputs.runtime }}
         run: |
-          # A green build does not prove this: without Vote4UWidgets-Info.plist the extension
-          # builds, embeds, and never appears in the widget gallery. See HANDOFF.md §5.
+          set -euo pipefail
           APP="$DERIVED/Build/Products/Debug-iphonesimulator/Vote4U.app"
+
+          # Gate on the project, not on the build output. Branches without the widget target
+          # (anything cut from main before PR #4) legitimately have no extension to check, but
+          # a build that DROPS the extension while the target still exists is exactly the
+          # regression this step is for — so a missing appex with the target present is a
+          # failure, never a skip.
+          if ! grep -q 'Vote4UWidgets' ios/Vote4U.xcodeproj/project.pbxproj; then
+            echo "No Vote4UWidgets target in the project on this branch — nothing to check."
+            exit 0
+          fi
+          if [ ! -d "$APP/PlugIns/Vote4UWidgets.appex" ]; then
+            echo "::error::The widget target exists but Vote4UWidgets.appex was not embedded in the app."
+            ls -la "$APP/PlugIns" || true
+            exit 1
+          fi
+
+          # A green build does not prove registration: without Vote4UWidgets-Info.plist the
+          # extension builds, embeds, and never appears in the widget gallery. See HANDOFF.md §5.
           UDID=$(xcrun simctl create "Vote4U-WidgetCheck" "$DEVICE_TYPE" "$RUNTIME")
           trap 'xcrun simctl delete "$UDID" >/dev/null 2>&1 || true' EXIT
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl launch "$UDID" com.shyamravidath.Vote4U
-          xcrun simctl spawn "$UDID" pluginkit -m -v -p com.apple.widgetkit-extension \
-            | grep 'com.shyamravidath.Vote4U.Widgets'
+
+          # LaunchServices registers plug-ins asynchronously, so poll rather than assume the
+          # answer is ready the instant the app is up.
+          for attempt in $(seq 1 15); do
+            if xcrun simctl spawn "$UDID" pluginkit -m -v -p com.apple.widgetkit-extension \
+                 | grep 'com.shyamravidath.Vote4U.Widgets'; then
+              echo "Registered after ${attempt} attempt(s)."
+              exit 0
+            fi
+            sleep 4
+          done
+          echo "::error::Vote4UWidgets.appex is embedded but never registered as a widget extension."
+          xcrun simctl spawn "$UDID" pluginkit -m -v -p com.apple.widgetkit-extension || true
+          exit 1
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
