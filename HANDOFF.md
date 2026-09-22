@@ -510,6 +510,18 @@ xcrun simctl io 'iPhone 15 Pro' screenshot /tmp/shot.png     # then actually loo
 **Screenshotting the running app after every meaningful change has now caught four bugs that were
 invisible to both the compiler and a green test run.** Do it.
 
+**CI runs the same commands** (`.github/workflows/`, added 2026-09-21 — see §9B):
+
+```bash
+gh run list --limit 5                 # did it pass?
+gh run view <id> --log-failed         # why not
+gh workflow run ios.yml --ref <branch>   # iOS is path-filtered; force it by hand
+```
+
+`test-ios.sh` takes three environment variables: `DEVICE_TYPE`, `RUNTIME`, and now **`DERIVED`**
+(the DerivedData path, previously hardcoded to `$TMPDIR/vote4u-test`). CI pins `DERIVED` because
+`TMPDIR` on a hosted runner is per-process and does not survive into the next workflow step.
+
 ---
 
 ## 7. Rules that are not negotiable
@@ -583,13 +595,52 @@ deleted afterwards.
 
 What this still does **not** prove: a widget actually sitting on a real Home Screen (§10).
 
-### B. CI on GitHub Actions — **the highest-value new work**
+### B. CI on GitHub Actions — **DONE 2026-09-21, but unproven until it runs**
 
-A macOS runner (free for public repos) running server tests, Playwright and `test-ios.sh`. It
-would have caught **by machine** at least two things I caught by hand: the `-destination` bug that
-no human would think to check twice, and the `containing`/`matching` selector failure. Start with
-the server + Playwright jobs on `ubuntu-latest` (fast, free, high signal) and add the macOS iOS job
-second, since macOS minutes are the expensive ones even when free.
+Two workflows, deliberately split because macOS minutes are the expensive ones even when free
+for a public repo (this repo is public, so both tiers are free):
+
+- **`.github/workflows/ci.yml`** — every push to `main` and every PR. Three ubuntu jobs:
+  `server` (`npm test --prefix server`, hermetic, no keys), `client` (oxlint + `vite build`),
+  and `e2e` (Playwright, chromium + webkit only — firefox is not in any device profile).
+- **`.github/workflows/ios.yml`** — `runs-on: macos-26`, **path-filtered** to `ios/**`,
+  `scripts/test-ios.sh`, `scripts/export-ios-data.mjs` and the workflow itself. Runs
+  `test-ios.sh`, then repeats the `pluginkit` widget-registration check as its own step.
+
+Opened as **PR #5**. Three things about it that are not obvious, plus one trap:
+
+1. **It must be `macos-26`, not `macos-15`.** `Vote4UActionStyle` calls `.glassProminent` behind
+   `if #available(iOS 26, *)`, and availability is a runtime check — the symbol still has to
+   exist at compile time, so an Xcode without the iOS 26 SDK fails to build. The pbxproj is also
+   `objectVersion = 77` with synchronized groups, which needs Xcode 16+.
+2. **The runner's simulators are not this Mac's.** `test-ios.sh` defaults to `DEVICE_TYPE='iPhone 17'`,
+   which need not exist there, so the workflow resolves the newest installed iOS runtime and an
+   available iPhone in it, and *asserts* rather than falling back to a wrong destination — the
+   §5 `-destination` lesson, applied.
+3. **`DERIVED` is now overridable in `test-ios.sh`** (it was hardcoded to `$TMPDIR/vote4u-test`).
+   `TMPDIR` on a hosted runner is per-process and need not survive into the next workflow step,
+   so CI pins it to `$GITHUB_WORKSPACE/DerivedData`, which the widget-check step and the
+   failure-artifact upload can both reach. The override was verified locally with a full run.
+4. **Merge order matters, once.** The widget-registration step greps for `Vote4UWidgets.appex`,
+   which exists only on `feat/election-countdown-widget` (PR #4). If PR #5 lands on `main`
+   **before** PR #4, the first iOS run on `main` that touches `ios/**` fails on that step.
+   Merge PR #4 first, or expect one red run.
+
+**`main`'s `HANDOFF.md` is the pre-rewrite version.** The cold-restart rewrite (`cf7a95f`) is on
+the widget branch only, which is why the CI PR carries no handoff changes — they are in PR #4
+instead. Anything documenting CI must be written here, not on a branch cut from `main`, or it
+conflicts.
+
+**What is still unproven:** neither workflow has ever executed. The YAML parses and the local
+commands it wraps all pass here, but runner image contents, `macos-26` availability and the
+Playwright network behaviour can only be confirmed by a real run. **Check it:**
+`gh run list --limit 5` and `gh run view <id> --log-failed`.
+
+The e2e job runs with `--retries=2` on purpose: two specs deliberately hit live upstreams
+(Google News RSS and Nominatim) through the local API, and a CI runner's IP gets rate-limited in
+ways a laptop does not. A genuine regression still fails all three attempts. If that proves noisy
+anyway, the honest fix is a recorded-fixture mode for those two specs, **not** deleting them —
+they are the only check that the real upstreams still answer in the shape the UI expects.
 
 ### C. Snapshot tests for the electoral map
 
