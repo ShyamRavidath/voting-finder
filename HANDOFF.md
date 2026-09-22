@@ -73,10 +73,16 @@ a7dfe10 fix(ios): repair a scheduling race, an unreachable search, and silent te
 
 | PR | Branch | What | State |
 |---|---|---|---|
-| **#4** | `feat/election-countdown-widget` | The WidgetKit extension (§9 was §8C) | OPEN, mergeable |
+| **#6** | `test/electoral-map-render` | Electoral-map render tests (§9C) | OPEN, no checks — see §9B |
+| **#5** | `ci/github-actions` | GitHub Actions CI (§9B) | OPEN, **both workflows green** |
+| **#4** | `feat/election-countdown-widget` | The WidgetKit extension + every handoff update | OPEN, mergeable |
 | **#3** | `docs/screenshots-post-deploy` | Re-shot App Store screenshots + `APP_STORE.md` rules | OPEN, mergeable |
 
-They do not depend on each other; merge order does not matter. **#2 is merged and deployed.**
+None of them depend on each other and merge order does not matter. **Merge #5 first anyway**: no
+other PR gets CI until the workflows are on `main` (§9B). **#2 is merged and deployed.**
+
+**`HANDOFF.md` on `main` is the pre-rewrite version** — the cold-restart rewrite is in PR #4, so
+every handoff update since lands there too. That is why PR #4's diff is wider than "the widget".
 
 `gh` is installed and authenticated as `ShyamRavidath` (the owner set it up 2026-09-21), so
 `gh pr create` / `gh pr view` work directly. Earlier in that session it was missing and PR bodies
@@ -621,20 +627,39 @@ Opened as **PR #5**. Three things about it that are not obvious, plus one trap:
    `TMPDIR` on a hosted runner is per-process and need not survive into the next workflow step,
    so CI pins it to `$GITHUB_WORKSPACE/DerivedData`, which the widget-check step and the
    failure-artifact upload can both reach. The override was verified locally with a full run.
-4. **Merge order matters, once.** The widget-registration step greps for `Vote4UWidgets.appex`,
-   which exists only on `feat/election-countdown-widget` (PR #4). If PR #5 lands on `main`
-   **before** PR #4, the first iOS run on `main` that touches `ios/**` fails on that step.
-   Merge PR #4 first, or expect one red run.
+4. **Merge order does *not* matter** — but only because the first run forced the fix. The
+   widget-registration step originally grepped for `Vote4UWidgets.appex` unconditionally and
+   went red on a branch cut from `main`. It now gates on the pbxproj, so it is correct on any
+   branch, with or without the widget.
 
 **`main`'s `HANDOFF.md` is the pre-rewrite version.** The cold-restart rewrite (`cf7a95f`) is on
 the widget branch only, which is why the CI PR carries no handoff changes — they are in PR #4
 instead. Anything documenting CI must be written here, not on a branch cut from `main`, or it
 conflicts.
 
-**What is still unproven:** neither workflow has ever executed. The YAML parses and the local
-commands it wraps all pass here, but runner image contents, `macos-26` availability and the
-Playwright network behaviour can only be confirmed by a real run. **Check it:**
-`gh run list --limit 5` and `gh run view <id> --log-failed`.
+**Both workflows have now run and both are green** (PR #5, 2026-09-21). What the first real runs
+taught, none of which was predictable from here:
+
+- The runner resolved **Xcode 26.6 / iOS 26.5 / iPhone 17** by itself, so the dynamic simulator
+  lookup does its job. `macos-26` exists and works.
+- **Web CI takes 2m24s including the full Playwright suite** — and the two specs that hit live
+  Google News and Nominatim passed from a GitHub IP on the first attempt. The `--retries=2` hedge
+  has not been needed yet.
+- The iOS job takes **~24 minutes**, nearly all of it simulator creation and boot. That is the
+  argument for keeping it path-filtered.
+- **The first iOS run failed, correctly**, on the widget-registration step: that branch is cut
+  from `main`, which has no widget target, so there was no `.appex` to find. The 30-vs-41
+  unit-test count says the same thing. The fix was to gate the step on the **pbxproj** rather than
+  on the build output — no widget target means nothing to check, but a target present with no
+  embedded `.appex` is now a hard failure, never a skip, because a build that drops the extension
+  is exactly the regression the step exists for. It also polls now, since LaunchServices registers
+  plug-ins asynchronously.
+
+**Until PR #5 merges, no other PR gets CI.** A `pull_request` run uses the workflow files on the
+PR's own branch, and every other open branch was cut from `main` before CI existed — PR #6 opened
+with no checks at all for this reason. Merge #5 and the rest pick it up on their next push.
+
+**Check runs with:** `gh run list --limit 5`, then `gh run view <id> --log-failed`.
 
 The e2e job runs with `--retries=2` on purpose: two specs deliberately hit live upstreams
 (Google News RSS and Nominatim) through the local API, and a CI runner's IP gets rate-limited in
@@ -642,11 +667,35 @@ ways a laptop does not. A genuine regression still fails all three attempts. If 
 anyway, the honest fix is a recorded-fixture mode for those two specs, **not** deleting them —
 they are the only check that the real upstreams still answer in the shape the UI expects.
 
-### C. Snapshot tests for the electoral map
+### C. Snapshot tests for the electoral map — **DONE 2026-09-21, PR #6**
 
-A silent `SVGPath` regression would render a wrong-but-not-crashing map that only a human notices.
-The widget work just proved the technique: `ImageRenderer` plus a bitmap check, no simulator UI
-automation needed. `ElectionCountdownRenderTests.swift` is the template.
+`ios/Vote4UTests/ElectoralMapRenderTests.swift`, five tests on `test/electoral-map-render`
+(cut from `main`; it needs nothing from the widget). `ImageRenderer` plus a bitmap check, no
+simulator UI automation — `ElectionCountdownRenderTests.swift` was the template.
+
+Visible, on-canvas, not-squashed, geographically-arranged, and **painted the right party colour**,
+that last one sampled from the rendered bitmap at a point inside each state's path.
+
+**Verified by mutation rather than by going green** — this is the part worth copying:
+
+| mutation | result |
+|---|---|
+| transpose x/y in `SVGPath` | 4 of 5 new tests fail (2 existing `SVGPathTests` also catch it) |
+| `.fill(state.party.color)` -> `.fill(.gray)` | **only** the new colour test fails; all 30 pre-existing tests pass a map that paints every state wrong |
+
+The second row is the coverage this actually adds. The first row also shows that *"did it render"*
+passes a **fully transposed map**, so a bare render check is close to worthless on its own.
+
+Two facts about the data that only showed up by looking at it first:
+
+- **us-atlas places the Alaska inset partly off-canvas** — bounding box starts at x ~ -58 of a
+  975-wide viewBox. Strict containment fails on *correct* data; the web app clips it identically.
+  The test asserts overlap plus a 10% margin.
+- **A bounding-box centroid is not reliably inside a concave state**, so the colour test scans for
+  a point the `Path` actually contains.
+
+No pbxproj edit was needed: `Vote4UTests` is a `PBXFileSystemSynchronizedRootGroup`, so new test
+files are picked up automatically. Worth remembering — it makes adding tests cheap.
 
 ### D. SwiftLint or swift-format
 
