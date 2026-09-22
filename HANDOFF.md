@@ -137,7 +137,7 @@ knowledge. Anything important enough to survive belongs here too.
 | Web e2e local | `npm run test:e2e` | **90 passed, 9 skipped** — first run ever performed on this Mac |
 | Web e2e prod | `BASE_URL=https://vote4ucyl.vercel.app npx playwright test` | 88 passed, 8 skipped *(inherited from the old machine, not re-run here)* |
 | iOS on iOS 27.0 | `./scripts/test-ios.sh` | **52 tests, 0 failures, 0 skipped** |
-| iOS on iOS 17.5 | `DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' ./scripts/test-ios.sh` | 38 tests *(last run 2026-09-20; **not re-run since the widget landed** — do this)* |
+| iOS on iOS 17.5 | `DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' ./scripts/test-ios.sh` | **52 tests, 0 failures, 0 skipped** — re-run 2026-09-21 on `feat/election-countdown-widget`, so the widget is now proven on the deployment target, not just on 27.0 |
 
 **Playwright browsers are now installed** (chromium + webkit, 2026-09-21). §10 used to list this
 as a blocker; it no longer is.
@@ -559,15 +559,29 @@ an iOS 17 project. **Treat as inspiration, not instruction.**
 
 ## 9. The next step I would take
 
-**First: check whether PRs #3 and #4 merged.** If they did, pull `main` and re-run
-`./scripts/test-ios.sh` plus the iOS 17.5 variant — the 17.5 run has not happened since the widget
-landed, and that is the deployment target.
+**First: check whether PRs #3 and #4 merged.** As of 2026-09-21 both are still OPEN, so the
+widget lives only on `feat/election-countdown-widget`. When they merge, pull `main` and re-run
+`./scripts/test-ios.sh` plus the iOS 17.5 variant to confirm nothing changed in the merge.
 
-### A. Re-run the iOS 17.5 regression — **do this first, it is cheap**
+### A. Re-run the iOS 17.5 regression — **DONE 2026-09-21**
 
-The widget is new code on the actual deployment target and has only ever run on iOS 27.
-`.containerBackground`, the accessory families and `ImageRenderer` all behave slightly differently
-on 17.x. One command, already documented in §6.
+Run on `feat/election-countdown-widget` (not `main` — the widget is not there yet):
+`DEVICE_TYPE='iPhone 15 Pro' RUNTIME='…iOS-17-5' ./scripts/test-ios.sh` → **52 tests, 0 failures,
+0 skipped**, the same count as iOS 27.0. The 17.5 number used to be 38; the widget accounts for
+11 of the 14 new tests (`ElectionCountdownTests` 8 + `ElectionCountdownRenderTests` 3) and the
+other 3 predate it — don't read the delta as widget-only.
+`ElectionCountdownRenderTests` ran unskipped and rendered all five families
+(`systemSmall`, `systemMedium`, `accessoryRectangular`, `accessoryCircular`, `accessoryInline`)
+on 17.5, so the `.containerBackground` / accessory / `ImageRenderer` worry is closed. Both
+notification-permission directions passed and the Release-build stub grep was clean.
+
+Also verified on 17.5 what a green build does not prove — the extension **registers as a widget**
+on the deployment target, not just on 27.0:
+`xcrun simctl spawn <udid> pluginkit -m -v -p com.apple.widgetkit-extension` lists
+`com.shyamravidath.Vote4U.Widgets(1.0)` from the app's `PlugIns/`. The throwaway simulator was
+deleted afterwards.
+
+What this still does **not** prove: a widget actually sitting on a real Home Screen (§10).
 
 ### B. CI on GitHub Actions — **the highest-value new work**
 
