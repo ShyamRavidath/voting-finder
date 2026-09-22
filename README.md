@@ -1,17 +1,21 @@
 # Vote4U
 
-A free, nonpartisan civic-engagement app for U.S. voters, built for the 2028 presidential cycle (and useful for every election before it). Three tools in one place: a polling-place finder, an Electoral College map, and a 2028 election news feed. It's mobile-first and set up to become an iOS app.
+A free, nonpartisan civic-engagement app for U.S. voters, built for the 2028 presidential cycle (and useful for every election before it). Three tools in one place: a polling-place finder, an Electoral College map, and a US election news feed. It's mobile-first and set up to become an iOS app.
 
 Live: https://vote4ucyl.vercel.app
+
+[![CI](https://github.com/ShyamRavidath/voting-finder/actions/workflows/ci.yml/badge.svg)](https://github.com/ShyamRavidath/voting-finder/actions/workflows/ci.yml)
+[![iOS](https://github.com/ShyamRavidath/voting-finder/actions/workflows/ios.yml/badge.svg)](https://github.com/ShyamRavidath/voting-finder/actions/workflows/ios.yml)
 
 ## What it does
 
 - **Polling place finder** (`/tools?tab=booths`): enter a 5-digit ZIP and get nearby voting locations, each with a Directions button (Apple Maps on iOS, Google Maps elsewhere) and a map. Results are shareable via `?zip=`. The server tries, in order:
   1. **Google Civic Information API**: official polling, early-voting, and drop-off locations for upcoming elections in the user's state (usually published a few weeks before an election).
-  2. **OpenStreetMap Nominatim**: nearby libraries, community centers, and town halls, clearly labeled *not confirmed*.
-  3. **Nothing found**: an honest empty state. The app never invents locations. Official lookup links (USA.gov, NASS, Vote.gov) are always shown.
+  2. **OpenStreetMap Nominatim, tight search** (`estimated`): nearby libraries, community centers, and town halls within 10 km, clearly labeled *not confirmed*.
+  3. **OpenStreetMap Nominatim, widened search** (`nearby`): the same idea out to 25 km, plus schools and fire stations. These are labeled *Civic Building* rather than *Likely Polling Place* — the labeling gets **more** cautious as the tier gets weaker, never less.
+  4. **Nothing found**: an honest empty state. The app never invents locations. Official lookup links (USA.gov, NASS, Vote.gov) are always shown.
 - **Electoral map** (`/tools?tab=map`): an SVG map of all 50 states + DC (no map-tile service needed), a 538-vote tally with the 270 line, and a tappable state list. Data lives in `client/src/data/stateData.js`.
-- **Election news** (`/news`): 2028 headlines from Google News RSS (keyless). Party labels come only from a watchlist of named 2028 candidates.
+- **Election news** (`/news`): headlines from Google News RSS (keyless), scoped to the **next federal election** rather than a hardcoded year — the query is built from the same Tuesday-after-the-first-Monday arithmetic the countdown uses, so it follows the calendar (2026 midterms today, the 2028 presidential race after that) instead of going stale the morning after an election. Party labels come only from a watchlist of named candidates.
 
 ## Architecture
 
