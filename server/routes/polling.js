@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/client');
 const { fetchOfficialLocations } = require('../services/civicService');
+const { pollingCacheKey } = require('../lib/pollingCacheKey');
 const {
   zipToCoords,
   coordsToZip,
@@ -38,7 +39,36 @@ router.get('/', async (req, res) => {
     }
 
     device = { lat: roundCoord(lat), lng: roundCoord(lng) };
+  } else {
+    if (typeof zip !== 'string' || !/^\d{5}$/.test(zip)) {
+      return res.status(400).json({ error: 'Please enter a valid 5-digit US ZIP code.' });
+    }
+    zipCode = zip;
+  }
 
+  // Read the cache before anything talks to an upstream. For a device lookup that ordering is
+  // the whole benefit: the key needs no ZIP, so a hit costs zero Nominatim requests instead of
+  // paying for a reverse geocode it is about to throw away.
+  const cacheKey = pollingCacheKey(zipCode, device);
+  try {
+    const cached = await pool.query(
+      'SELECT locations, data_source FROM polling_cache WHERE cache_key = $1 AND expires_at > NOW()',
+      [cacheKey]
+    );
+    if (cached.rows.length > 0) {
+      const stored = cached.rows[0].locations;
+      // Older cache rows stored a bare array of locations
+      const payload = Array.isArray(stored) ? { locations: stored, place: null, election: null } : stored;
+      // A device row carries no ZIP in its key, so recover it from the payload.
+      const cachedZip = zipCode || payload.place?.zip;
+      res.set('Cache-Control', CACHE_FOUND);
+      return res.json({ ...payload, zip: cachedZip, device, dataSource: cached.rows[0].data_source, cached: true });
+    }
+  } catch (_) {
+    // DB unavailable — continue to live lookup
+  }
+
+  if (device) {
     try {
       zipCode = await coordsToZip(device.lat, device.lng);
     } catch (err) {
@@ -55,31 +85,6 @@ router.get('/', async (req, res) => {
       console.error('Reverse geocode error:', err);
       res.set('Cache-Control', 'no-store');
       return res.status(502).json({ error: 'Location lookup is unavailable right now. Please try again shortly.' });
-    }
-  } else {
-    if (typeof zip !== 'string' || !/^\d{5}$/.test(zip)) {
-      return res.status(400).json({ error: 'Please enter a valid 5-digit US ZIP code.' });
-    }
-    zipCode = zip;
-  }
-
-  // The ZIP cache is deliberately bypassed for device lookups: its stored distances are measured
-  // from the ZIP centroid, and writing device-relative ones back would poison later ZIP requests.
-  if (!device) {
-    try {
-      const cached = await pool.query(
-        'SELECT locations, data_source FROM polling_cache WHERE zip_code = $1 AND expires_at > NOW()',
-        [zipCode]
-      );
-      if (cached.rows.length > 0) {
-        const stored = cached.rows[0].locations;
-        // Older cache rows stored a bare array of locations
-        const payload = Array.isArray(stored) ? { locations: stored, place: null, election: null } : stored;
-        res.set('Cache-Control', CACHE_FOUND);
-        return res.json({ ...payload, zip: zipCode, device, dataSource: cached.rows[0].data_source, cached: true });
-      }
-    } catch (_) {
-      // DB unavailable — continue to live lookup
     }
   }
 
@@ -144,14 +149,17 @@ router.get('/', async (req, res) => {
     searchRadiusKm,
   };
 
-  if (dataSource !== 'none' && !device) {
+  if (dataSource !== 'none') {
+    // Device rows expire in a day rather than a week: someone who was standing here is unlikely
+    // to still be, and a stale device row is far less reusable than a stale ZIP row.
+    const ttl = device ? '1 day' : '7 days';
     try {
       await pool.query(
-        `INSERT INTO polling_cache (zip_code, locations, data_source, expires_at)
-         VALUES ($1, $2, $3, NOW() + INTERVAL '7 days')
-         ON CONFLICT (zip_code) DO UPDATE
-         SET locations = $2, data_source = $3, cached_at = NOW(), expires_at = NOW() + INTERVAL '7 days'`,
-        [zipCode, JSON.stringify(payload), dataSource]
+        `INSERT INTO polling_cache (cache_key, locations, data_source, expires_at)
+         VALUES ($1, $2, $3, NOW() + $4::interval)
+         ON CONFLICT (cache_key) DO UPDATE
+         SET locations = $2, data_source = $3, cached_at = NOW(), expires_at = NOW() + $4::interval`,
+        [cacheKey, JSON.stringify(payload), dataSource, ttl]
       );
     } catch (_) {
       // Cache write failed — still return results
