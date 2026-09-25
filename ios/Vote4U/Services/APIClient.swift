@@ -38,10 +38,17 @@ struct APIClient {
 
     func polling(latitude: Double, longitude: Double) async throws -> PollingResult {
         if let stubbed = try stubbedPolling() { return stubbed }
-        return try await get("/api/polling", query: [
-            URLQueryItem(name: "lat", value: String(latitude)),
-            URLQueryItem(name: "lng", value: String(longitude)),
-        ])
+        return try await get("/api/polling", query: Self.locationQueryItems(latitude: latitude, longitude: longitude))
+    }
+
+    /// The request URL is visible to the host's runtime logs. Limit it to the same 3-decimal
+    /// precision the server uses before the coordinates leave the device.
+    static func locationQueryItems(latitude: Double, longitude: Double) -> [URLQueryItem] {
+        let scale = 1_000.0
+        return [
+            URLQueryItem(name: "lat", value: String((latitude * scale).rounded() / scale)),
+            URLQueryItem(name: "lng", value: String((longitude * scale).rounded() / scale)),
+        ]
     }
 
     func news() async throws -> [Article] {
