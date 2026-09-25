@@ -20,6 +20,21 @@ env:
   DERIVED: ${{ github.workspace }}/DerivedData
 
 jobs:
+  format:
+    name: Swift format
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select the newest installed Xcode
+        run: |
+          newest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Using $newest"
+          sudo xcode-select -s "$newest"
+          xcodebuild -version
+      - name: Lint Swift sources
+        working-directory: ios
+        run: xcrun swift-format lint --strict --parallel --recursive Vote4U Vote4UTests Vote4UUITests
+
   test:
     name: Unit + UI tests (Simulator)
     # Needs an Xcode with the iOS 26 SDK: Vote4UActionStyle uses .glassProminent behind
