@@ -1,0 +1,126 @@
+# iOS CI. Separate from ci.yml and path-filtered: macOS runners are the expensive minutes even
+# when they are free for a public repo, and most changes never touch ios/.
+name: iOS
+
+on:
+  push:
+    branches: [main]
+    paths: ['ios/**', 'scripts/test-ios.sh', 'scripts/export-ios-data.mjs', '.github/workflows/ios.yml']
+  pull_request:
+    paths: ['ios/**', 'scripts/test-ios.sh', 'scripts/export-ios-data.mjs', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned rather than left to TMPDIR so the build products and logs are in a known place
+  # that later steps and the artifact upload can both reach. test-ios.sh honours $DERIVED.
+  DERIVED: ${{ github.workspace }}/DerivedData
+
+jobs:
+  test:
+    name: Unit + UI tests (Simulator)
+    # Needs an Xcode with the iOS 26 SDK: Vote4UActionStyle uses .glassProminent behind
+    # `if #available(iOS 26, *)`, and availability still requires the symbol at compile time.
+    # The pbxproj is objectVersion 77 (Xcode 16+) and uses synchronized groups.
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select the newest installed Xcode
+        run: |
+          newest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Using $newest"
+          sudo xcode-select -s "$newest"
+          xcodebuild -version
+
+      # The runner's simulators are not this Mac's. scripts/test-ios.sh defaults to
+      # DEVICE_TYPE='iPhone 17', which need not exist here, so resolve both from what is
+      # actually installed and fail loudly rather than fall back to a wrong destination.
+      - name: Resolve a simulator
+        id: sim
+        run: |
+          RUNTIME=$(xcrun simctl list runtimes -j | python3 -c "
+          import json,sys
+          rs=[r for r in json.load(sys.stdin)['runtimes'] if r['isAvailable'] and r['platform']=='iOS']
+          rs.sort(key=lambda r:[int(x) for x in r['version'].split('.')])
+          assert rs, 'no iOS runtime installed'
+          print(rs[-1]['identifier'])")
+          DEVICE=$(R="$RUNTIME" python3 -c "
+          import json,os,subprocess
+          d=json.loads(subprocess.run(['xcrun','simctl','list','devices','-j'],capture_output=True,text=True).stdout)
+          names=[x['name'] for x in d['devices'].get(os.environ['R'],[]) if x.get('isAvailable') and x['name'].startswith('iPhone')]
+          assert names, 'no iPhone simulator for '+os.environ['R']
+          print(names[-1])")
+          echo "Runtime: $RUNTIME / Device: $DEVICE"
+          echo "runtime=$RUNTIME" >> "$GITHUB_OUTPUT"
+          echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
+
+      # Not plain `xcodebuild test`: the two notification-permission directions each need a
+      # throwaway simulator, the allow test must precede the unit tests, and the script ends
+      # with a Release build it greps to prove no DEBUG stub shipped. See HANDOFF.md §6.
+      - name: Run the iOS suite
+        env:
+          DEVICE_TYPE: ${{ steps.sim.outputs.device }}
+          RUNTIME: ${{ steps.sim.outputs.runtime }}
+        run: ./scripts/test-ios.sh
+
+      - name: Confirm the widget registers as a widget
+        env:
+          DEVICE_TYPE: ${{ steps.sim.outputs.device }}
+          RUNTIME: ${{ steps.sim.outputs.runtime }}
+        run: |
+          set -euo pipefail
+          APP="$DERIVED/Build/Products/Debug-iphonesimulator/Vote4U.app"
+
+          # Gate on the project, not on the build output. Branches without the widget target
+          # (anything cut from main before PR #4) legitimately have no extension to check, but
+          # a build that DROPS the extension while the target still exists is exactly the
+          # regression this step is for — so a missing appex with the target present is a
+          # failure, never a skip.
+          if ! grep -q 'Vote4UWidgets' ios/Vote4U.xcodeproj/project.pbxproj; then
+            echo "No Vote4UWidgets target in the project on this branch — nothing to check."
+            exit 0
+          fi
+          if [ ! -d "$APP/PlugIns/Vote4UWidgets.appex" ]; then
+            echo "::error::The widget target exists but Vote4UWidgets.appex was not embedded in the app."
+            ls -la "$APP/PlugIns" || true
+            exit 1
+          fi
+
+          # A green build does not prove registration: without Vote4UWidgets-Info.plist the
+          # extension builds, embeds, and never appears in the widget gallery. See HANDOFF.md §5.
+          UDID=$(xcrun simctl create "Vote4U-WidgetCheck" "$DEVICE_TYPE" "$RUNTIME")
+          trap 'xcrun simctl delete "$UDID" >/dev/null 2>&1 || true' EXIT
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" com.shyamravidath.Vote4U
+
+          # LaunchServices registers plug-ins asynchronously, so poll rather than assume the
+          # answer is ready the instant the app is up.
+          for attempt in $(seq 1 15); do
+            if xcrun simctl spawn "$UDID" pluginkit -m -v -p com.apple.widgetkit-extension \
+                 | grep 'com.shyamravidath.Vote4U.Widgets'; then
+              echo "Registered after ${attempt} attempt(s)."
+              exit 0
+            fi
+            sleep 4
+          done
+          echo "::error::Vote4UWidgets.appex is embedded but never registered as a widget extension."
+          xcrun simctl spawn "$UDID" pluginkit -m -v -p com.apple.widgetkit-extension || true
+          exit 1
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ios-test-logs
+          # test-ios.sh writes one log per phase here and only prints the tail on failure.
+          path: |
+            ${{ env.DERIVED }}/*.log
+            ${{ env.DERIVED }}/Logs/Test/*.xcresult
+          retention-days: 7
