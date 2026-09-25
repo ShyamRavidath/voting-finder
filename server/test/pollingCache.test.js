@@ -14,9 +14,15 @@ const { pollingCacheKey } = require('../lib/pollingCacheKey');
 // A stand-in for polling_cache: enough of Postgres to answer the two statements the route runs.
 const rows = new Map();
 const queries = [];
+let simulateLegacySchema = false;
 const fakePool = {
   query: async (sql, params) => {
     queries.push(sql);
+    if (simulateLegacySchema) {
+      const error = new Error('private coordinate @39.158,-75.522');
+      error.code = '42703';
+      throw error;
+    }
     if (/^SELECT/.test(sql.trim())) {
       const row = rows.get(params[0]);
       return { rows: row ? [row] : [] };
@@ -68,6 +74,7 @@ beforeEach(() => {
   rows.clear();
   queries.length = 0;
   upstreamCalls = 0;
+  simulateLegacySchema = false;
 
   // Dover, DE with one library nearby, plus reverse geocoding for the device path.
   upstream = (u) => {
@@ -133,11 +140,13 @@ describe('polling cache behaviour', () => {
     const firstBody = await first.json();
     assert.equal(firstBody.cached, false);
     assert.deepEqual(firstBody.device, { lat: 39.158, lng: -75.522 });
+    assert.equal(first.headers.get('cache-control'), 'public, max-age=0, s-maxage=86400');
     const afterFirst = upstreamCalls;
 
     const second = await fetch(`${base}/api/polling?${q}`);
     const secondBody = await second.json();
     assert.equal(secondBody.cached, true);
+    assert.equal(second.headers.get('cache-control'), 'public, max-age=0, s-maxage=86400');
     assert.deepEqual(secondBody.device, { lat: 39.158, lng: -75.522 });
     // Including the reverse geocode: the key needs no ZIP, so a hit costs nothing upstream.
     assert.equal(upstreamCalls, afterFirst, 'a cache hit must not reach upstream');
@@ -183,5 +192,23 @@ describe('polling cache behaviour', () => {
     const res = await fetch(`${base}/api/polling?zip=19901`);
     assert.equal((await res.json()).dataSource, 'none');
     assert.equal(rows.size, 0);
+  });
+
+  test('an unmigrated database falls back safely and warns without location values', async () => {
+    simulateLegacySchema = true;
+    const originalWarn = console.warn;
+    const warnings = [];
+    console.warn = (...parts) => warnings.push(parts.join(' '));
+    try {
+      const response = await fetch(`${base}/api/polling?lat=39.158&lng=-75.522`);
+      const body = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(body.cached, false);
+      assert.equal(body.dataSource, 'estimated');
+      assert.deepEqual(warnings, ['Polling cache schema is outdated; run npm run db:migrate.']);
+      assert.equal(warnings.join(' ').includes('39.158'), false);
+    } finally {
+      console.warn = originalWarn;
+    }
   });
 });

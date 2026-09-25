@@ -104,7 +104,9 @@ WHERE THE DATA COMES FROM
 LOCATION
 Location is optional and used only to resolve the user's ZIP code so we can
 look up nearby polling places. Coordinates are rounded to roughly 110 metres
-before leaving the device and are not stored on our server. If the user
+before leaving the device. They are sent to our server and can appear in Vercel
+request logs; an optional database cache may retain the rounded pair until
+daily cleanup (normally within two days, longer if cleanup fails). If the user
 declines the permission, ZIP code entry remains fully available — you can test
 the whole app without granting location.
 
@@ -126,26 +128,35 @@ HOW TO TEST
 
 ## Privacy nutrition labels (App Store Connect → App Privacy)
 
-Answer **"Yes, we collect data from this app"**, then declare exactly one type:
+Answer **"Yes, we collect data from this app"**. Use these conservative draft answers until
+the host's actual log retention and linkage are confirmed in App Store Connect:
 
 | Data type | Linked to identity | Used for tracking | Purpose |
 |---|---|---|---|
-| **Coarse Location** | **No** | **No** | App Functionality |
+| **Precise Location** (three-decimal coordinates from "Use my location") | **Yes** | **No** | App Functionality |
+| **Coarse Location** (searched ZIP) | **Yes** | **No** | App Functionality |
+| **Search History** (polling lookups in request URLs) | **Yes** | **No** | App Functionality |
+| **Other Diagnostic Data** (host request logs) | **Yes** | **No** | App Functionality |
 
-Everything else is **not collected**: no contact info, no identifiers, no usage data, no
-diagnostics, no purchases, no search history. Specifically:
+No contact information, account identifiers, purchases, or tracking data are collected. In
+particular:
 
 - The saved polling place and the reminder setting never leave the device, so they are **not
   collected** — on-device-only data is explicitly excluded from the labels.
-- ZIP codes typed into the app are sent to our server but are not associated with a user or
-  device identifier. If App Review pushes on this, the honest answer is that it is Search History
-  used for App Functionality, not linked to identity and not used for tracking; declaring it that
-  way is the safer choice and costs nothing.
-- Vercel's routine request logs (IP, user agent) are operational logs held by the host, not data
-  the app collects.
+- ZIP codes and rounded device coordinates are request search parameters. Vercel's Runtime Logs
+  display those parameters alongside request metadata; our own application logging cannot remove
+  them from the platform view. A coordinate-aware database cache, if enabled, serves a
+  three-decimal coordinate key for one day and deletes expired rows daily. Physical retention is
+  normally less than two days, but failed cleanup can extend it.
+- The host may associate request parameters with IP or other request metadata. Until that
+  retention is audited, answer "linked" conservatively rather than asserting anonymity.
 
-**Do not** declare Precise Location. The app requests when-in-use authorisation but immediately
-coarsens the coordinate, and "Coarse Location" is the accurate answer.
+Apple defines **Precise Location** as latitude and longitude with **three or more decimal
+places**. Rounding to three decimals (roughly 110 m) is still Precise Location under that
+definition. `kCLLocationAccuracyHundredMeters` limits the requested fix but does not change the
+classification of the transmitted coordinates. See [Apple's App Privacy Details](https://developer.apple.com/app-store/app-privacy-details/)
+and [Vercel's Runtime Logs](https://vercel.com/docs/logs/runtime). Recheck the final production
+configuration before submission; do not paste the old Coarse-Location-only answer.
 
 ## Screenshots
 

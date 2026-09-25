@@ -13,9 +13,20 @@ const {
   OutsideUsError,
 } = require('../services/geocodeService');
 
-// Cached per ZIP at Vercel's CDN; keeps Nominatim/Civic traffic well inside their fair-use limits.
+// CDN caching is keyed by the full request URL; keeps upstream traffic inside fair-use limits.
 const CACHE_FOUND = 'public, max-age=300, s-maxage=86400, stale-while-revalidate=604800';
+// Do not serve device-coordinate URLs from the CDN's week-long stale window.
+const CACHE_DEVICE_FOUND = 'public, max-age=0, s-maxage=86400';
 const CACHE_NONE = 'public, max-age=0, s-maxage=3600';
+let warnedAboutLegacySchema = false;
+
+function noteCacheFailure(error) {
+  // Never log a DB error object or SQL parameters: cache keys contain rounded coordinates.
+  if (error?.code === '42703' && !warnedAboutLegacySchema) {
+    warnedAboutLegacySchema = true;
+    console.warn('Polling cache schema is outdated; run npm run db:migrate.');
+  }
+}
 
 // Accepts either ?zip=XXXXX or ?lat=&lng= (the iOS app's "use my location"). Coordinates are
 // reverse-geocoded to a ZIP and then run through the identical pipeline, so both entry points
@@ -61,10 +72,11 @@ router.get('/', async (req, res) => {
       const payload = Array.isArray(stored) ? { locations: stored, place: null, election: null } : stored;
       // A device row carries no ZIP in its key, so recover it from the payload.
       const cachedZip = zipCode || payload.place?.zip;
-      res.set('Cache-Control', CACHE_FOUND);
+      res.set('Cache-Control', device ? CACHE_DEVICE_FOUND : CACHE_FOUND);
       return res.json({ ...payload, zip: cachedZip, device, dataSource: cached.rows[0].data_source, cached: true });
     }
-  } catch (_) {
+  } catch (error) {
+    noteCacheFailure(error);
     // DB unavailable — continue to live lookup
   }
 
@@ -161,12 +173,13 @@ router.get('/', async (req, res) => {
          SET locations = $2, data_source = $3, cached_at = NOW(), expires_at = NOW() + $4::interval`,
         [cacheKey, JSON.stringify(payload), dataSource, ttl]
       );
-    } catch (_) {
+    } catch (error) {
+      noteCacheFailure(error);
       // Cache write failed — still return results
     }
   }
 
-  res.set('Cache-Control', dataSource === 'none' ? CACHE_NONE : CACHE_FOUND);
+  res.set('Cache-Control', dataSource === 'none' ? CACHE_NONE : device ? CACHE_DEVICE_FOUND : CACHE_FOUND);
   res.json({ ...payload, zip: zipCode, device, dataSource, cached: false });
 });
 

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS news_cache (
   expires_at TIMESTAMPTZ NOT NULL
 );
 
--- cache_key is the ZIP for a ZIP lookup, or "ZIP@lat,lng" (3dp) for a device lookup, because the
+-- cache_key is the ZIP for a ZIP lookup, or "@lat,lng" (3dp) for a device lookup, because the
 -- cached distances are measured from that origin. See server/lib/pollingCacheKey.js.
 CREATE TABLE IF NOT EXISTS polling_cache (
   id SERIAL PRIMARY KEY,
