@@ -2,7 +2,7 @@ import SwiftUI
 
 struct NewsView: View {
     @State private var model = NewsViewModel()
-    @State private var reading: URL?
+    @State private var reading: ReadingDestination?
 
     var body: some View {
         NavigationStack {
@@ -14,7 +14,7 @@ struct NewsView: View {
                     ContentUnavailableView("No headlines right now", systemImage: "newspaper")
                 case .loaded(let articles):
                     List(articles) { article in
-                        Button { reading = URL(string: article.url) } label: {
+                        Button { reading = URL(string: article.url).map(ReadingDestination.init) } label: {
                             NewsRow(article: article)
                         }
                         .buttonStyle(.plain)
@@ -42,7 +42,7 @@ struct NewsView: View {
             }
             .navigationTitle("Election News")
             .task { if case .loading = model.state { await model.load() } }
-            .sheet(item: $reading) { SafariView(url: $0).ignoresSafeArea() }
+            .sheet(item: $reading) { SafariView(url: $0.url).ignoresSafeArea() }
         }
     }
 }
@@ -107,8 +107,9 @@ private struct NewsRow: View {
     }
 }
 
-extension URL: @retroactive Identifiable {
-    public var id: String { absoluteString }
+private struct ReadingDestination: Identifiable {
+    let url: URL
+    var id: URL { url }
 }
 
 #Preview { NewsView() }

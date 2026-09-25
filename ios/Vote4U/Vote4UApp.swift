@@ -36,7 +36,7 @@ struct RootView: View {
     }
 }
 
-extension Tab {
+private extension Tab {
     /// Debug builds accept `-startTab vote` so screenshots and QA runs can land on a tab directly
     /// instead of needing UI automation to tap one. Compiled out of release builds entirely.
     static var initialFromLaunchArguments: Tab {
