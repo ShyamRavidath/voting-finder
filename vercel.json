@@ -7,6 +7,9 @@
   "functions": {
     "api/index.js": { "maxDuration": 30 }
   },
+  "crons": [
+    { "path": "/api/internal/cache-maintenance", "schedule": "0 0 * * *" }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api?__path=$1" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
