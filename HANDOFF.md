@@ -700,7 +700,11 @@ files are picked up automatically. Worth remembering — it makes adding tests c
 
 ### D. SwiftLint or swift-format
 
-None exists; 54 Swift files is still small enough that adding one now won't be noisy.
+**In draft PR #9 (`chore/swift-format`), not merged.** `ios/.swift-format` sets 4 spaces and 120
+columns; a separate mechanical commit is listed in `.git-blame-ignore-revs`; the CI job uses
+`xcrun swift-format lint --strict` on `macos-26`. Local full iOS tests and PR CI passed. PR #4
+and #6 add Swift files after its branch point, so rebase and format those files once they land.
+Do not add SwiftLint or use swift-format's 2-space defaults.
 
 ### E. Server odds and ends
 
@@ -711,15 +715,23 @@ None exists; 54 Swift files is still small enough that adding one now won't be n
   save. The first version did that and the test caught it — a hit still cost one upstream call.
   The cache read now happens before anything touches an upstream, and the ZIP comes back out of
   the cached payload's `place.zip`. Device rows live a day, ZIP rows a week.
-  `zip_code CHAR(5)` became `cache_key VARCHAR(32)`; **existing rows need no rewriting** because
-  their keys are already bare ZIPs. Migration in `server/db/migrations/`.
+  `zip_code CHAR(5)` became `cache_key VARCHAR(32)`; **existing row values need no rewriting**
+  because their keys are already bare ZIPs, but the **schema migration must run before the new
+  route is deployed**. On an existing database, `CREATE TABLE IF NOT EXISTS` does not rename the
+  column; without the migration, cache queries fail and are silently skipped. Also add a purge
+  path for expired device-coordinate rows: expiry currently prevents reads but does not delete
+  stored location keys. Both are review blockers on PR #7, along with coordinating privacy copy.
+  Migration in `server/db/migrations/`.
   Eleven tests in `server/test/pollingCache.test.js`, which installs a fake pool into the require
   cache before loading the app — without that the cache path is **dead code in tests**, since
   `DATABASE_URL` is unset and every request looks like a miss. `node --test` gives each file its
   own process, so the stub cannot leak into `api.test.js`.
   *Caveat worth keeping in mind:* Vercel's CDN already caches `?lat=&lng=` by URL for 24h, so the
   win is across regions and evictions, and in Nominatim load — the budget that actually binds.
-- Structured logging.
+- **Structured logging is in draft PR #10**, not merged. It adds request correlation, latency,
+  cache/tier telemetry, and redacts location, key, URL, ZIP and IP from application logs. It
+  cannot remove search parameters from Vercel Runtime Logs. PR #7 changes the route being
+  instrumented, so integrate/retest after #7 is fixed and merged.
 - Wire up `/api/elections` once the Civic key lands, so official-vs-estimated becomes visible.
 - **Near-duplicate news headlines.** `dedupeAndSort` matches exact titles only, so two outlets
   covering the same event both appear ("Early voting in Virginia begins ahead of 2026 midterms" /
@@ -733,9 +745,12 @@ None exists; 54 Swift files is still small enough that adding one now won't be n
   `INFOPLIST_KEY_*` equivalent, so it would mean introducing a hand-written Info.plist for the
   **app** target too. Tapping currently opens the app, which is standard.
 
-**Things to verify rather than trust** (I wrote them in one session):
-`geocodeService.coordsToZip` edge cases (ZIP+4 narrowing, outside-US); the Coarse-Location-only
-privacy label argument in `APP_STORE.md`; whether iPhone-only is right.
+**The three earlier "verify rather than trust" items were checked in PR #11** (not merged):
+`coordsToZip` now requires unambiguous US country/ZIP evidence, with mutation-tested cases;
+the Coarse-Location-only argument was wrong because three-decimal coordinates are still Precise
+Location under Apple's definition, and raw coordinates had been sent before server rounding;
+and an iPhone-only build did launch in scaled compatibility mode on an iPad simulator. Native
+iPad work remains substantial and does not itself solve guideline 4.2. See §12.
 *(`ElectionCalendar`'s fidelity to `client/src/lib/format.js` is **verified** — the Swift port
 matches the JS line for line, and `nextFederalElectionYear` in `newsService.js` now mirrors it too.)*
 
@@ -786,3 +801,88 @@ testable without hardware.
   welcome, not punished.**
 - Asks for a written handoff before ending a session, and asked for this one to be filled "till you
   can't anymore". Write it as if the next session starts with no memory at all, because it does.
+
+---
+
+## 12. Codex session, 2026-09-24 — PRs #9–#11 and open-PR review
+
+The owner-provided `~/codex-vote4u-prompt.md` asked for Tasks 1–5 in order, one PR per
+implementation task, with no merge by Codex. `AGENTS.md` and §5/§7/§9 above were read first.
+`origin/main` contained merged PR #8 at `e282e30` when these branches were cut. **No PR was
+merged.** This section is on the newer `feat/election-countdown-widget` branch / PR #4, not on
+the older `main` copy of this file; that is deliberate so the notes survive the rewrite.
+
+### Work and evidence
+
+- **Task 1:** Asked the owner whether the leaked Civic key was rotated / whether history needs
+  rewriting, which existing PRs to merge, and whether the four App Store skills were installed
+  manually. No answer had arrived by this handoff. No Apple account work was attempted.
+- **Task 2 — [PR #9](https://github.com/ShyamRavidath/voting-finder/pull/9), draft:**
+  4-space/120-column swift-format config, genuine code fixes for retroactive `URL` conformance
+  and extension access, a separate formatting commit (`b16e8228190ffcbe8f6d71450a8b4124b3c10b39`)
+  in `.git-blame-ignore-revs`, and a separate strict `macos-26` CI commit. Verified dirty lint
+  exits 0 without `--strict` and 1 with it; clean strict lint exits 0. Required iOS script
+  passed all notifications, 30 unit and 9 UI tests, and Release stub grep; PR CI is green.
+  The bundled tool prints version `main`, so local Xcode 27 vs CI Xcode 26 is an ongoing risk.
+  Wait for the new Swift files in PRs #4, #6 and #11, then rebase, format them, rerun.
+- **Task 3 — [PR #10](https://github.com/ShyamRavidath/voting-finder/pull/10), draft:**
+  dependency-free JSON-line API logging with Vercel request IDs, request timing and polling
+  tier/cache telemetry. Application log values and Error objects are scrubbed by key and free
+  text; warn goes to stdout; tests are silent under `NODE_ENV=test`. A deliberate bypass of
+  the text scrubber failed the privacy test with ZIP, coordinates, URL and key visible; reverted.
+  Server tests 30/30, Playwright 90 passed / 9 expected skips, PR CI green. Initial local
+  server test was blocked by loopback sandboxing; escalated rerun passed. Vercel independently
+  captures query parameters, so the PR **does not** mean location is absent from platform logs.
+  Rebase/integrate route instrumentation after PR #7 is fixed and merged.
+- **Task 4 — [PR #11](https://github.com/ShyamRavidath/voting-finder/pull/11):**
+  `coordsToZip` rejects a missing/non-US country and ambiguous postcodes, accepts a complete US
+  ZIP+4; the new hermetic tests failed against deliberate loose-regex and missing-country
+  mutations. Native device coordinates had been sent at full precision; `APIClient` now rounds
+  to three decimals before constructing the URL, and its test failed against deliberately raw
+  coordinates. Updated `ios/APP_STORE.md` and the web privacy page because Vercel logs search
+  params and three decimals still meet Apple's **Precise Location** definition. Labels are
+  conservative drafts pending production host retention/linkage review. Server tests 31/31,
+  Playwright 90 passed / 9 expected skips, required iOS script on iOS 17.5 passed 31 unit,
+  9 UI, both notification directions, and Release stub grep. Initial iOS runner could not
+  reach CoreSimulator from the sandbox; escalated reruns passed. An iPhone-only Debug build
+  installed/launched on an iOS 17.5 iPad Pro 11-inch simulator; Map rendered in a centered,
+  scaled iPhone compatibility canvas with wide black margins. Native iPad support would need
+  actual layout and accessibility work and does not independently fix App Review 4.2.
+
+### Open PR review (comments already posted on GitHub)
+
+- **#3 screenshots: mergeable.** All five assets opened; real venues are visibly hedged “Not
+  confirmed”, Map has the pinned search UI, News remains last. Native `codex review` found no
+  actionable issue. Recheck live data, countdown and headlines near App Store submission.
+- **#6 electoral-map render tests: mergeable.** The test-only diff, mutation evidence and CI
+  are sound. Native review built tests (after a Swift macro sandbox workaround) and found no
+  actionable issue, but could not run a simulator there; CI did run them. Formatting will be
+  needed for PR #9.
+- **#4 widget: hold.** The widget extension targets device family `1` only; Apple's App
+  Extension Programming Guide says extensions must target iPhone and iPad even when the app is
+  iPhone-only. The circular accessory also displays `0 days` on Election Day while other
+  families say `Today`. Fix both and rerun the required iOS script; the widget actually being
+  placed on a Home Screen remains unverified. Comments are on PR #4.
+- **#7 coordinate-aware cache: hold.** Existing database deployments need the included
+  migration **before** the new route; `schema.sql` alone leaves the old column and silently
+  disables caching. Expired one-day device-coordinate rows are never deleted. Coordinate keys
+  and request params contradict old privacy claims, addressed in PR #11 but requiring merge
+  coordination. `codex review` independently found the migration and retention issues.
+
+Suggested owner-controlled order: merge #3 and #6 when convenient; merge #11 before enabling
+the coordinate cache; fix and merge #4 and #7 in either order after their blockers clear;
+then rebase/format #9 over all incoming Swift files and integrate/retest #10 over #7. Do not
+merge #9 or #10 as-is while their dependencies remain open. Do not infer green CI means the
+widget can appear or the existing database was migrated.
+
+### Still unverified / owner decisions
+
+- Civic key rotation, Vercel environment setting and any desired history rewrite; until fixed,
+  the official tier remains unavailable in production. Never commit the key.
+- Actual Vercel log retention/linkage and the final App Store Connect privacy answers; app-level
+  redaction cannot alter platform request logs. Any PR #7 coordinate-cache deployment needs a
+  migration and deletion/retention verification.
+- Apple Developer account, device build, GPS, real scheduled notification delivery, widget Home
+  Screen placement, full iPad interactions/accessibility, TestFlight and submission.
+- `ios/.swift-format` must be checked again after PR #4/#6/#11 Swift files arrive. Do not run
+  the formatter with its 2-space default or replace `scripts/test-ios.sh` with a bare build.
