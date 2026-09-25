@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/client');
 const { fetchAndProcessNews } = require('../services/newsService');
+const logger = require('../lib/logger');
 
 const QUERY_KEY = 'election-2028';
 // Vercel's CDN caches the response per URL, so Google News sees roughly one request per window
@@ -68,7 +69,7 @@ router.get('/', async (req, res) => {
     res.set('Cache-Control', articles.length === 0 ? CACHE_EMPTY : forceRefresh ? CACHE_REFRESH : CACHE_OK);
     res.json({ articles, provider, cached: false });
   } catch (err) {
-    console.error('News route error:', err);
+    logger.log('error', 'news.upstream_failed', { requestId: req.requestId, error: err });
     res.set('Cache-Control', 'no-store');
     res.status(502).json({ error: 'News sources are unavailable right now. Please try again in a few minutes.' });
   }

@@ -1,7 +1,9 @@
 const express = require('express');
+const { performance } = require('node:perf_hooks');
 const router = express.Router();
 const pool = require('../db/client');
 const { fetchOfficialLocations } = require('../services/civicService');
+const logger = require('../lib/logger');
 const {
   zipToCoords,
   coordsToZip,
@@ -22,6 +24,20 @@ const CACHE_NONE = 'public, max-age=0, s-maxage=3600';
 router.get('/', async (req, res) => {
   const { zip, lat: latParam, lng: lngParam } = req.query;
   const hasCoords = latParam !== undefined || lngParam !== undefined;
+  const telemetry = {
+    mode: hasCoords ? 'device' : 'zip',
+    dataSource: 'none',
+    searchRadiusKm: null,
+    cacheHit: false,
+    upstreamMs: 0,
+    locationCount: 0,
+  };
+  res.locals.pollingTelemetry = telemetry;
+  const upstream = async (work) => {
+    const started = performance.now();
+    try { return await work(); }
+    finally { telemetry.upstreamMs += Math.round(performance.now() - started); }
+  };
 
   let zipCode;
   let device = null;
@@ -40,7 +56,7 @@ router.get('/', async (req, res) => {
     device = { lat: roundCoord(lat), lng: roundCoord(lng) };
 
     try {
-      zipCode = await coordsToZip(device.lat, device.lng);
+      zipCode = await upstream(() => coordsToZip(device.lat, device.lng));
     } catch (err) {
       if (err instanceof OutsideUsError) {
         res.set('Cache-Control', 'public, s-maxage=86400');
@@ -52,7 +68,7 @@ router.get('/', async (req, res) => {
           error: "We couldn't find a ZIP code for your location. Please enter one instead.",
         });
       }
-      console.error('Reverse geocode error:', err);
+      logger.log('error', 'polling.reverse_geocode_failed', { requestId: req.requestId, error: err });
       res.set('Cache-Control', 'no-store');
       return res.status(502).json({ error: 'Location lookup is unavailable right now. Please try again shortly.' });
     }
@@ -75,6 +91,13 @@ router.get('/', async (req, res) => {
         const stored = cached.rows[0].locations;
         // Older cache rows stored a bare array of locations
         const payload = Array.isArray(stored) ? { locations: stored, place: null, election: null } : stored;
+        Object.assign(telemetry, {
+          stateAbbr: payload.place?.stateAbbr,
+          dataSource: cached.rows[0].data_source,
+          searchRadiusKm: payload.searchRadiusKm ?? null,
+          cacheHit: true,
+          locationCount: payload.locations?.length ?? 0,
+        });
         res.set('Cache-Control', CACHE_FOUND);
         return res.json({ ...payload, zip: zipCode, device, dataSource: cached.rows[0].data_source, cached: true });
       }
@@ -85,18 +108,19 @@ router.get('/', async (req, res) => {
 
   let place;
   try {
-    place = await zipToCoords(zipCode);
+    place = await upstream(() => zipToCoords(zipCode));
   } catch (err) {
     if (err instanceof ZipNotFoundError) {
       res.set('Cache-Control', 'public, s-maxage=86400');
       return res.status(404).json({ error: `We couldn't find ZIP code ${zipCode}. Please check it and try again.` });
     }
-    console.error('Zip lookup error:', err);
+    logger.log('error', 'polling.zip_lookup_failed', { requestId: req.requestId, error: err });
     res.set('Cache-Control', 'no-store');
     return res.status(502).json({ error: 'Location lookup is unavailable right now. Please try again shortly.' });
   }
 
   const { city, state, stateAbbr, lat, lng } = place;
+  telemetry.stateAbbr = stateAbbr;
   // Measure from where the user actually is when they shared it; the ZIP centroid otherwise.
   const originLat = device ? device.lat : lat;
   const originLng = device ? device.lng : lng;
@@ -108,7 +132,7 @@ router.get('/', async (req, res) => {
   const civicKey = process.env.GOOGLE_CIVIC_API_KEY;
   if (civicKey) {
     try {
-      const official = await fetchOfficialLocations(`${city}, ${stateAbbr} ${zipCode}`, stateAbbr, civicKey);
+      const official = await upstream(() => fetchOfficialLocations(`${city}, ${stateAbbr} ${zipCode}`, stateAbbr, civicKey));
       if (official.locations.length > 0) {
         locations = official.locations.map((l) => ({
           ...l,
@@ -118,7 +142,7 @@ router.get('/', async (req, res) => {
         dataSource = 'official';
       }
     } catch (err) {
-      console.warn('Civic API failed, trying Nominatim:', err.message);
+      logger.log('warn', 'polling.civic_fallback', { requestId: req.requestId, error: err });
     }
   }
 
@@ -126,14 +150,14 @@ router.get('/', async (req, res) => {
   // sweep. It reports which one answered so the UI can hedge harder as the data gets weaker.
   if (locations.length === 0) {
     try {
-      const nearby = await findNearbyPollingVenues(originLat, originLng, city, state);
+      const nearby = await upstream(() => findNearbyPollingVenues(originLat, originLng, city, state));
       if (nearby.locations.length > 0) {
         locations = nearby.locations;
         dataSource = nearby.dataSource;
         searchRadiusKm = nearby.searchRadiusKm;
       }
     } catch (err) {
-      console.warn('Nominatim failed:', err.message);
+      logger.log('warn', 'polling.nominatim_failed', { requestId: req.requestId, error: err });
     }
   }
 
@@ -159,6 +183,7 @@ router.get('/', async (req, res) => {
   }
 
   res.set('Cache-Control', dataSource === 'none' ? CACHE_NONE : CACHE_FOUND);
+  Object.assign(telemetry, { dataSource, searchRadiusKm, locationCount: locations.length });
   res.json({ ...payload, zip: zipCode, device, dataSource, cached: false });
 });
 

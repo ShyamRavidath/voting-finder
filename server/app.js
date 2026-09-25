@@ -4,6 +4,8 @@ require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 const express = require('express');
 const corsMiddleware = require('./middleware/cors');
 const rateLimit = require('./middleware/rateLimit');
+const requestLog = require('./middleware/requestLog');
+const logger = require('./lib/logger');
 
 const app = express();
 
@@ -13,6 +15,7 @@ app.disable('x-powered-by');
 
 app.use(corsMiddleware);
 app.use(express.json());
+app.use('/api', requestLog);
 app.use('/api', rateLimit);
 
 app.use('/api/news', require('./routes/news'));
@@ -25,7 +28,7 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
+  logger.log('error', 'request.unhandled_error', { requestId: req.requestId, error: err });
   res.status(500).json({ error: 'Something went wrong. Please try again.' });
 });
 

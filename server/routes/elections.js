@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { fetchWithTimeout } = require('../lib/fetchWithTimeout');
+const logger = require('../lib/logger');
 
 router.get('/', async (req, res) => {
   const apiKey = process.env.GOOGLE_CIVIC_API_KEY;
@@ -14,7 +15,7 @@ router.get('/', async (req, res) => {
     res.set('Cache-Control', 'public, max-age=300, s-maxage=21600, stale-while-revalidate=86400');
     res.json({ elections });
   } catch (err) {
-    console.error('Elections route error:', err);
+    logger.log('error', 'elections.upstream_failed', { requestId: req.requestId, error: err });
     res.set('Cache-Control', 'no-store');
     res.status(502).json({ error: 'Election data is unavailable right now.' });
   }
