@@ -38,10 +38,12 @@ struct APIClient {
 
     func polling(latitude: Double, longitude: Double) async throws -> PollingResult {
         if let stubbed = try stubbedPolling() { return stubbed }
-        return try await get("/api/polling", query: [
-            URLQueryItem(name: "lat", value: String(latitude)),
-            URLQueryItem(name: "lng", value: String(longitude)),
-        ])
+        return try await get(
+            "/api/polling",
+            query: [
+                URLQueryItem(name: "lat", value: String(latitude)),
+                URLQueryItem(name: "lng", value: String(longitude)),
+            ])
     }
 
     func news() async throws -> [Article] {
@@ -54,25 +56,25 @@ struct APIClient {
     // depend on a third-party geocoder being in a good mood. `APIStub` does not exist in Release.
     private func stubbedPolling() throws -> PollingResult? {
         #if DEBUG
-        switch APIStub.polling() {
-        case .value(let result): return result
-        case .failure(let error): throw error
-        case nil: return nil
-        }
+            switch APIStub.polling() {
+            case .value(let result): return result
+            case .failure(let error): throw error
+            case nil: return nil
+            }
         #else
-        return nil
+            return nil
         #endif
     }
 
     private func stubbedNews() throws -> [Article]? {
         #if DEBUG
-        switch APIStub.news() {
-        case .value(let articles): return articles
-        case .failure(let error): throw error
-        case nil: return nil
-        }
+            switch APIStub.news() {
+            case .value(let articles): return articles
+            case .failure(let error): throw error
+            case nil: return nil
+            }
         #else
-        return nil
+            return nil
         #endif
     }
 

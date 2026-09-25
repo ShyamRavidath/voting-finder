@@ -35,7 +35,8 @@ struct PollingMapView: View {
         let lats = pins.compactMap(\.lat)
         let lngs = pins.compactMap(\.lng)
         guard let minLat = lats.min(), let maxLat = lats.max(),
-              let minLng = lngs.min(), let maxLng = lngs.max() else {
+            let minLng = lngs.min(), let maxLng = lngs.max()
+        else {
             return MKCoordinateRegion()
         }
 

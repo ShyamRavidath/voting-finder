@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Vote4U
 
 final class PollingResultTests: XCTestCase {
@@ -26,10 +27,10 @@ final class PollingResultTests: XCTestCase {
         // Captured from https://vote4ucyl.vercel.app/api/polling?zip=90210 — note `distance`
         // arrives as an integer, which must still decode into a Double.
         let json = """
-        {"locations":[{"name":"Beverly Hills Public Library","addr":"North Rexford Drive, Beverly Hills, California, 90210","type":"Likely Polling Place","lat":34.072877,"lng":-118.3991019,"distance":2,"isReal":true,"isEstimated":true}],
-         "place":{"city":"Beverly Hills","state":"California","stateAbbr":"CA","zip":"90210","lat":34.0901,"lng":-118.4065},
-         "zip":"90210","dataSource":"estimated","cached":false}
-        """.data(using: .utf8)!
+            {"locations":[{"name":"Beverly Hills Public Library","addr":"North Rexford Drive, Beverly Hills, California, 90210","type":"Likely Polling Place","lat":34.072877,"lng":-118.3991019,"distance":2,"isReal":true,"isEstimated":true}],
+             "place":{"city":"Beverly Hills","state":"California","stateAbbr":"CA","zip":"90210","lat":34.0901,"lng":-118.4065},
+             "zip":"90210","dataSource":"estimated","cached":false}
+            """.data(using: .utf8)!
 
         let result = try JSONDecoder().decode(PollingResult.self, from: json)
         XCTAssertEqual(result.zip, "90210")
@@ -44,10 +45,10 @@ final class PollingResultTests: XCTestCase {
         // finds nothing and the server widens. `searchRadiusKm` is the new field; pinning a real
         // payload is how the last silent field-name mismatch would have been caught.
         let json = """
-        {"locations":[{"name":"Swan Valley Elementary School","addr":"Swan Valley Highway, Irwin, Idaho, 83428","type":"Civic Building","lat":43.4057955,"lng":-111.2932119,"distance":3.9,"isReal":true,"isEstimated":true}],
-         "place":{"city":"Irwin","state":"Idaho","stateAbbr":"ID","zip":"83428","lat":43.3861,"lng":-111.2527},
-         "election":null,"searchRadiusKm":25,"zip":"83428","device":null,"dataSource":"nearby","cached":false}
-        """.data(using: .utf8)!
+            {"locations":[{"name":"Swan Valley Elementary School","addr":"Swan Valley Highway, Irwin, Idaho, 83428","type":"Civic Building","lat":43.4057955,"lng":-111.2932119,"distance":3.9,"isReal":true,"isEstimated":true}],
+             "place":{"city":"Irwin","state":"Idaho","stateAbbr":"ID","zip":"83428","lat":43.3861,"lng":-111.2527},
+             "election":null,"searchRadiusKm":25,"zip":"83428","device":null,"dataSource":"nearby","cached":false}
+            """.data(using: .utf8)!
 
         let result = try JSONDecoder().decode(PollingResult.self, from: json)
         XCTAssertTrue(result.isWidened)
@@ -62,8 +63,8 @@ final class PollingResultTests: XCTestCase {
     func testTierFlagsAreMutuallyExclusive() throws {
         // An older cached payload predates `searchRadiusKm`; it must still decode.
         let json = """
-        {"locations":[],"place":null,"zip":"19901","dataSource":"none"}
-        """.data(using: .utf8)!
+            {"locations":[],"place":null,"zip":"19901","dataSource":"none"}
+            """.data(using: .utf8)!
 
         let result = try JSONDecoder().decode(PollingResult.self, from: json)
         XCTAssertNil(result.searchRadiusKm)
@@ -77,10 +78,10 @@ final class PollingResultTests: XCTestCase {
         // Field names must match server/services/newsService.js. They silently did not once
         // already, and because every field is optional it decoded fine and rendered blanks.
         let json = """
-        {"articles":[{"id":"abc","candidate":"Gavin Newsom","title":"Options in the 2028 race",
-         "excerpt":null,"date":"2026-09-20T06:50:00.000Z","source":"Gazette",
-         "url":"https://example.com/a","category":"election","party":null,"imageUrl":null}]}
-        """.data(using: .utf8)!
+            {"articles":[{"id":"abc","candidate":"Gavin Newsom","title":"Options in the 2028 race",
+             "excerpt":null,"date":"2026-09-20T06:50:00.000Z","source":"Gazette",
+             "url":"https://example.com/a","category":"election","party":null,"imageUrl":null}]}
+            """.data(using: .utf8)!
 
         let response = try JSONDecoder().decode(NewsResponse.self, from: json)
         let article = try XCTUnwrap(response.articles.first)

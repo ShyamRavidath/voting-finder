@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Vote4U
 
 final class FormattingTests: XCTestCase {

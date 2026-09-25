@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Vote4U
 
 /// The electoral map is 109 KB of generated path data rendered through this parser, so a silent
@@ -39,7 +40,7 @@ final class SVGPathTests: XCTestCase {
     func testMalformedInputReturnsWithoutCrashing() {
         XCTAssertTrue(SVGPath.parse("").isEmpty)
         XCTAssertTrue(SVGPath.parse("Z").isEmpty)
-        _ = SVGPath.parse("M0")          // truncated coordinate pair
+        _ = SVGPath.parse("M0")  // truncated coordinate pair
         _ = SVGPath.parse("M0,0Lgarbage")
         _ = SVGPath.parse("Q5,5 10,10")  // command the exporter never emits
     }

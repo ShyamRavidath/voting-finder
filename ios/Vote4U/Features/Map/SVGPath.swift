@@ -51,7 +51,7 @@ enum SVGPath {
                 // it. Generated data never does this, but malformed input should be a no-op.
                 if !path.isEmpty { path.closeSubpath() }
             default:
-                break // Unknown command: the exporter never emits one, so skip rather than fail.
+                break  // Unknown command: the exporter never emits one, so skip rather than fail.
             }
         }
 

@@ -102,8 +102,9 @@ final class AppSmokeUITests: XCTestCase {
         stateSearch.typeText("District of Columbia")
 
         let district = app.buttons.containing(NSPredicate(format: "label CONTAINS 'District of Columbia'")).firstMatch
-        XCTAssertTrue(district.waitForExistence(timeout: 5),
-                      "DC must be reachable through search even though it is unhittable on the map")
+        XCTAssertTrue(
+            district.waitForExistence(timeout: 5),
+            "DC must be reachable through search even though it is unhittable on the map")
     }
 
     func testNewsTabLoadsHeadlines() {

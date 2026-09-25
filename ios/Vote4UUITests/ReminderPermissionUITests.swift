@@ -99,7 +99,8 @@ final class ReminderPermissionUITests: XCTestCase {
         // is a real assertion that scheduling was authorised — not just that a switch moved.
         XCTAssertEqual(toggle.value as? String, "1", "toggle should remain on after allowing")
         XCTAssertFalse(
-            app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Notifications are turned off'")).firstMatch.exists,
+            app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Notifications are turned off'")).firstMatch
+                .exists,
             "no denial warning should be shown after allowing"
         )
     }

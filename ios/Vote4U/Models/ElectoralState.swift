@@ -73,7 +73,8 @@ enum BundledData {
 
     private static func load<T: Decodable>(_ name: String) -> T {
         guard let url = Bundle.main.url(forResource: name, withExtension: nil),
-              let data = try? Data(contentsOf: url) else {
+            let data = try? Data(contentsOf: url)
+        else {
             // These files are compiled into the app; absence is a build error, not a runtime state.
             fatalError("Missing bundled resource \(name) — run scripts/export-ios-data.mjs")
         }
