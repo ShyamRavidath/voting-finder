@@ -37,6 +37,19 @@ xcrun simctl shutdown all >/dev/null 2>&1 || true
 BUNDLE_ID="com.shyamravidath.Vote4U"
 APP_PATH="$DERIVED/Build/Products/Debug-iphonesimulator/Vote4U.app"
 
+check_widget_device_family() {
+  local plist="$1/PlugIns/Vote4UWidgets.appex/Info.plist"
+  # This branch has a widget; the containing app remains iPhone-only, but Apple's extension
+  # submission rule requires the extension itself to support both iPhone and iPad.
+  if [ -d "$(dirname "$plist")" ]; then
+    if [ ! -f "$plist" ] || ! python3 -c 'import plistlib, sys; families = plistlib.load(open(sys.argv[1], "rb"))["UIDeviceFamily"]; sys.exit(0 if set(families) == {1, 2} else 1)' "$plist"; then
+      echo "✗ Widget extension must declare iPhone and iPad: $plist" >&2
+      exit 1
+    fi
+    echo "  Widget extension supports iPhone and iPad"
+  fi
+}
+
 fresh_simulator() {
   FRESH_UDID=$(xcrun simctl create "Vote4U-Test-$$-${#CREATED[@]}" "$DEVICE_TYPE" "$RUNTIME")
   CREATED+=("$FRESH_UDID")
@@ -71,6 +84,7 @@ xcodebuild build-for-testing -project "$PROJECT" -scheme Vote4U \
     tail -40 "$BUILD_LOG" >&2
     exit 1
   }
+check_widget_device_family "$APP_PATH"
 
 run() {
   local label="$1" udid="$2" status log
@@ -121,6 +135,7 @@ if xcodebuild build -project "$PROJECT" -scheme Vote4U -configuration Release \
      -destination "generic/platform=iOS Simulator" \
      -derivedDataPath "$RELEASE_DERIVED" >"$DERIVED/release-build.log" 2>&1; then
   BINARY="$RELEASE_DERIVED/Build/Products/Release-iphonesimulator/Vote4U.app/Vote4U"
+  check_widget_device_family "$RELEASE_DERIVED/Build/Products/Release-iphonesimulator/Vote4U.app"
   if strings "$BINARY" | grep -qE "Roxbury Community Center|-stubPolling|-startTab"; then
     echo "✗ DEBUG-only strings survived into the Release binary" >&2
     exit 1

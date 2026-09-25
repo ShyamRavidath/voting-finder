@@ -578,8 +578,8 @@ an iOS 17 project. **Treat as inspiration, not instruction.**
 
 ## 9. The next step I would take
 
-**First: check whether PRs #3 and #4 merged.** As of 2026-09-21 both are still OPEN, so the
-widget lives only on `feat/election-countdown-widget`. When they merge, pull `main` and re-run
+**Current status (2026-09-24):** PRs #3 and #6 are merged; #4 remains open, so the
+widget lives only on `feat/election-countdown-widget`. After #4 merges, pull `main` and re-run
 `./scripts/test-ios.sh` plus the iOS 17.5 variant to confirm nothing changed in the merge.
 
 ### A. Re-run the iOS 17.5 regression — **DONE 2026-09-21**
@@ -667,6 +667,16 @@ The e2e job runs with `--retries=2` on purpose: two specs deliberately hit live 
 ways a laptop does not. A genuine regression still fails all three attempts. If that proves noisy
 anyway, the honest fix is a recorded-fixture mode for those two specs, **not** deleting them —
 they are the only check that the real upstreams still answer in the shape the UI expects.
+
+### B2. App Store screenshots — **merged PR #3, 2026-09-24**
+
+The five captured images were opened and reviewed, not merely generated. The Map shot now shows
+the pinned search field; the News shot shows US midterm coverage; and the Vote shot shows real
+90210 venues with the required “Not confirmed” label. The official-sources image is unchanged.
+The capture date and copy in `ios/APP_STORE.md` came from PR #3. Always capture against the
+deployed server and real data, never `-stubPolling`; re-check changing locations, countdowns and
+headlines shortly before App Store submission. Earlier pre-capture theories in the old `main`
+handoff were superseded by opening the actual images and are not carried forward here.
 
 ### C. Snapshot tests for the electoral map — **DONE 2026-09-21, PR #6**
 
@@ -763,16 +773,10 @@ matches the JS line for line, and `nextFederalElectionYear` in `newsService.js` 
   progressing until something genuinely needs it. When it clears: Xcode ▸ Settings ▸ Accounts →
   add the account, set the team, or set `DEVELOPMENT_TEAM` and build with
   `-allowProvisioningUpdates`.
-- **Rotate the leaked Google Civic key** into Vercel as `GOOGLE_CIVIC_API_KEY`. It was public in
-  the removed legacy `index.html` and remains in git history. The old NewsAPI key no longer matters
-  here (integration removed) but should be rotated if reused elsewhere.
-- **Install the App Store skills** (auto-install was blocked by the permission classifier):
-  ```
-  ! npx skills add eronred/aso-skills --skill aso-audit -g -a claude-code -y
-  ! npx skills add eronred/aso-skills --skill apple-search-ads -g -a claude-code -y
-  ! npx skills add truongduy2611/app-store-preflight-skills -g -a claude-code -y
-  ! npx skills add https://github.com/code-with-beto/skills --skill app-icon -g -a claude-code -y
-  ```
+- **Google Civic key rotation and App Store skills are done:** the owner reports the key was
+  rotated/replaced, and all four requested Claude Code skills were verified installed locally.
+  The old key remains in git history; do not reuse it. Production `/api/elections` behavior and
+  the upstream credential have not been independently verified here.
 
 ### Still genuinely device-only
 
@@ -814,9 +818,8 @@ the older `main` copy of this file; that is deliberate so the notes survive the 
 
 ### Work and evidence
 
-- **Task 1:** Asked the owner whether the leaked Civic key was rotated / whether history needs
-  rewriting, which existing PRs to merge, and whether the four App Store skills were installed
-  manually. No answer had arrived by this handoff. No Apple account work was attempted.
+- **Task 1:** The owner confirmed the leaked Civic key was rotated/replaced, installed all four
+  App Store skills (verified locally), and merged PRs #3 and #6. No Apple account work was attempted.
 - **Task 2 — [PR #9](https://github.com/ShyamRavidath/voting-finder/pull/9), draft:**
   4-space/120-column swift-format config, genuine code fixes for retroactive `URL` conformance
   and extension access, a separate formatting commit (`b16e8228190ffcbe8f6d71450a8b4124b3c10b39`)

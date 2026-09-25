@@ -25,6 +25,13 @@ extension FederalElection {
         }
     }
 
+    /// Compact display for the circular Lock Screen accessory. Keep its Election Day wording
+    /// tied to the same source as the other widget families.
+    var circularCountdown: (value: String, unit: String?) {
+        if daysAway == 0 { return (countdownPhrase, nil) }
+        return ("\(daysAway)", daysAway == 1 ? "day" : "days")
+    }
+
     /// The tight-space label. "Midterm elections" does not fit a small widget.
     func shortKind(calendar: Calendar = .current) -> String {
         isPresidential(calendar: calendar) ? "Presidential" : "Midterms"

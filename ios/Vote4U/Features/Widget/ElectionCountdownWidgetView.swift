@@ -149,16 +149,19 @@ struct ElectionCountdownContent: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Roughly 76 pt across, so it shows the bare number and unit — never "Tomorrow", which
-    /// cannot fit legibly at this size.
+    /// Roughly 76 pt across: numbers and units on ordinary days, "Today" on Election Day.
+    /// "Tomorrow" cannot fit legibly at this size.
     private var circular: some View {
-        VStack(spacing: -1) {
-            Text("\(election.daysAway)")
-                .font(.title2.weight(.bold))
+        let display = election.circularCountdown
+        return VStack(spacing: -1) {
+            Text(display.value)
+                .font(display.unit == nil ? .caption.weight(.bold) : .title2.weight(.bold))
                 .minimumScaleFactor(0.4)
                 .lineLimit(1)
-            Text(election.daysAway == 1 ? "day" : "days")
-                .font(.system(size: 10))
+            if let unit = display.unit {
+                Text(unit)
+                    .font(.system(size: 10))
+            }
         }
     }
 }

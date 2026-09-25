@@ -26,6 +26,20 @@ final class ElectionCountdownTests: XCTestCase {
         XCTAssertEqual(election(from: date(2026, 11, 1)).countdownPhrase, "2 days")
     }
 
+    func testCircularAccessoryDoesNotSayZeroDaysOnElectionDay() {
+        let today = election(from: date(2026, 11, 3)).circularCountdown
+        XCTAssertEqual(today.value, "Today")
+        XCTAssertNil(today.unit)
+
+        let tomorrow = election(from: date(2026, 11, 2)).circularCountdown
+        XCTAssertEqual(tomorrow.value, "1")
+        XCTAssertEqual(tomorrow.unit, "day")
+
+        let soon = election(from: date(2026, 11, 1)).circularCountdown
+        XCTAssertEqual(soon.value, "2")
+        XCTAssertEqual(soon.unit, "days")
+    }
+
     func testShortKindFitsATinyWidgetAndFollowsTheYear() {
         XCTAssertEqual(election(from: date(2026, 9, 21)).shortKind(calendar: calendar), "Midterms")
         XCTAssertEqual(election(from: date(2028, 1, 1)).shortKind(calendar: calendar), "Presidential")
