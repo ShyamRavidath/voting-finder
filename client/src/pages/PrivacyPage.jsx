@@ -55,9 +55,11 @@ export default function PrivacyPage() {
           <strong>Location (optional).</strong> If you tap &ldquo;Use my location&rdquo;, the app asks for permission to
           read your location while you're using it. Your coordinates are rounded to roughly 110 metres before they
           leave your device, then sent to our server and Nominatim to work out which ZIP code you're in. The rounded
-          coordinates can appear in Vercel request logs and may be used as a short-lived cache key for up to one day.
-          We don't use them to track you across apps or websites. You can decline, or turn the permission off later
-          in Settings, and the app keeps working normally &mdash; ZIP code entry is always available.
+          coordinates can appear in Vercel request logs. If database caching is enabled, the coordinate pair is a
+          cache key for one day of serving and is deleted by a daily cleanup job, normally within two days of the
+          search; a failed cleanup may delay deletion. We don't use coordinates to track you across apps or websites.
+          You can decline, or turn the permission off later in Settings, and the app keeps working normally &mdash;
+          ZIP code entry is always available.
         </li>
         <li>
           <strong>Election reminders and your saved polling place (optional).</strong> Reminders are scheduled by your

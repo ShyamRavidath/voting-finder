@@ -105,9 +105,10 @@ LOCATION
 Location is optional and used only to resolve the user's ZIP code so we can
 look up nearby polling places. Coordinates are rounded to roughly 110 metres
 before leaving the device. They are sent to our server for ZIP resolution and
-can appear in Vercel request logs; a short-lived server cache may also use the
-rounded coordinate pair. If the user declines the permission, ZIP code entry
-remains fully available — you can test the whole app without granting location.
+can appear in Vercel request logs; an optional database cache may retain the
+rounded coordinate pair until daily cleanup (normally within two days, longer
+if cleanup fails). If the user declines the permission, ZIP code entry remains
+fully available — you can test the whole app without granting location.
 
 NOTIFICATIONS
 Optional. Scheduled locally with UNUserNotificationCenter; there is no push
@@ -144,8 +145,9 @@ particular:
   collected** — on-device-only data is explicitly excluded from the labels.
 - ZIP codes and rounded device coordinates are request search parameters. Vercel's Runtime Logs
   display those parameters alongside request metadata; our own application logging cannot remove
-  them from the platform view. A coordinate-aware database cache, if enabled, also retains a
-  three-decimal coordinate key for up to one day.
+  them from the platform view. A coordinate-aware database cache, if enabled, serves a
+  three-decimal coordinate key for one day and deletes expired rows daily. Physical retention is
+  normally less than two days, but failed cleanup can extend it.
 - The host may associate request parameters with IP or other request metadata. Until that
   retention is audited, answer "linked" conservatively rather than asserting anonymity.
 
