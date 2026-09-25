@@ -510,7 +510,31 @@ naive "try everything" could exceed the serverless limit. Run later tiers only w
 one is empty.
 </details>
 
-### B. Re-shoot the App Store screenshots — **blocked on the deploy, do it straight after**
+### B. Re-shoot the App Store screenshots — **DONE 2026-09-21**
+
+Captured after PR #2 merged and Vercel had deployed, so the set reflects the shipped server.
+All five checked by opening them, not by trusting the script's exit code (§4):
+
+- **`3-electoral-map.png`** now shows the "Search states" field — it really was stale, predating
+  `a7dfe10`'s pinned-open `.searchable`.
+- **`5-news.png`** is the big change and the reason the ordering mattered: it now leads with
+  "2026 Midterm Elections: The races that will decide control of Congress" and "Voting in the
+  2026 midterms? Here's what you need to know before Nov. 3". Shooting before the deploy would
+  have put foreign-election headlines in the App Store listing — the exact 4.2.2 risk.
+- **`1-vote-results.png`** shows 90210 with real venues, the "Not confirmed" badge and the
+  MapKit map.
+- **`4-official-sources.png`** is byte-identical to the previous capture, which is expected: it
+  is a purely static screen.
+
+`ios/APP_STORE.md` updated: the capture date, an accurate description of shot 3, the two
+live-data rules below, and the news blurb now says "about the current US election".
+
+**Two rules now written into `APP_STORE.md`:** capture only after the server is deployed (the app
+points at production directly), and never use `-stubPolling` for store screenshots — those venues
+are fabricated, and marketing is the last place rule #1 should bend.
+
+<details>
+<summary>The pre-capture analysis</summary>
 
 Checked on 2026-09-21 by opening the PNGs rather than trusting the claim (§4):
 
@@ -530,6 +554,8 @@ by opening them.
 think it is wrong: those venues are fabricated, and putting fabricated polling places into store
 marketing is precisely what rule #1 exists to prevent. Shoot against a real ZIP and re-check it
 on the day. The stub is for tests and QA, not for the listing.
+
+</details>
 
 <details>
 <summary>The original note</summary>
