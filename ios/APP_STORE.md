@@ -59,8 +59,8 @@ An interactive map of all 50 states and DC with electoral vote counts and the
 270 line.
 
 ELECTION NEWS
-Headlines from across the political spectrum, opening on the publisher's own
-page.
+Headlines about the current US election, from across the political spectrum,
+opening on the publisher's own page.
 
 BUILT TO BE TRUSTED
 Vote4U is independent and nonpartisan. It is not affiliated with any government
@@ -153,7 +153,7 @@ Required: **6.9" iPhone** (1320 × 2868 or 1290 × 2796). Apple scales these dow
 devices, so one set is enough for an iPhone-only app. iPad is not required — the target is
 `TARGETED_DEVICE_FAMILY = 1`.
 
-**Captured 2026-09-20 and committed to `ios/screenshots/`** at 1320 × 2868. Regenerate with:
+**Captured 2026-09-21 and committed to `ios/screenshots/`** at 1320 × 2868. Regenerate with:
 
 ```
 ./scripts/capture-screenshots.sh
@@ -167,12 +167,23 @@ The order, voting tools first and news last, mirrors the app's own priorities:
 
 1. Vote tab with results for 90210, map and cards visible.
 2. Home tab countdown with the reminder toggle.
-3. Map tab with a state selected.
+3. Map tab: tally, national map and the state-ratings list, with the search field visible.
 4. Vote tab empty state showing the official-source links.
 5. News tab.
 
 Use a real search, never a mock-up: screenshots must show the actual app (2.3.3). The committed
 set uses live production data for exactly that reason.
+
+**Two consequences of using live data, both learned the hard way:**
+
+- **Capture only after the server is deployed.** The app points at
+  `https://vote4ucyl.vercel.app` directly, so a capture run reflects whatever production is
+  serving at that moment, not what is on `main`. Shooting before the 2026-09-21 news-scoping
+  deploy would have baked foreign-election headlines into the store set.
+- **Never use `-stubPolling` for these.** The stub's venues are fabricated. They exist for tests
+  and QA and are compiled out of Release; putting them in store marketing is exactly what rule #1
+  forbids. Shoot a real ZIP and re-check it on the day — Nominatim's coverage of any given ZIP
+  comes and goes.
 
 **Screenshot 4 is the weakest** — it is mostly empty space. It earns its place by showing that
 the app sends people to official sources, which is the trust story, but swap it for a second
