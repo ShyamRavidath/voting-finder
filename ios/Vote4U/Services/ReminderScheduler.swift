@@ -43,8 +43,9 @@ enum ReminderScheduler {
 
         // A week out, 9am: enough time to still register or plan early voting.
         if let weekBefore = calendar.date(byAdding: .day, value: -7, to: election.date),
-           let fireDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: weekBefore),
-           fireDate > now {
+            let fireDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: weekBefore),
+            fireDate > now
+        {
             let content = UNMutableNotificationContent()
             content.title = "\(election.kind) in one week"
             content.body = "Check your polling place and hours before Election Day."
@@ -60,7 +61,8 @@ enum ReminderScheduler {
         if let fireDate = calendar.date(bySettingHour: 7, minute: 0, second: 0, of: election.date), fireDate > now {
             let content = UNMutableNotificationContent()
             content.title = "Polls are open today"
-            content.body = place.map { "Your saved polling place: \($0.name), \($0.addr)." }
+            content.body =
+                place.map { "Your saved polling place: \($0.name), \($0.addr)." }
                 ?? "Today is Election Day. Find your polling place in Vote4U."
             content.sound = .default
 

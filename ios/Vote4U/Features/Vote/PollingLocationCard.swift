@@ -61,7 +61,7 @@ struct PollingLocationCard: View {
                         isSaved ? "Saved" : "Save",
                         systemImage: isSaved ? "bookmark.fill" : "bookmark"
                     )
-                        .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .disabled(isSaved)

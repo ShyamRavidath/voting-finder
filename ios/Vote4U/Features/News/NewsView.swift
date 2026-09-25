@@ -14,7 +14,9 @@ struct NewsView: View {
                     ContentUnavailableView("No headlines right now", systemImage: "newspaper")
                 case .loaded(let articles):
                     List(articles) { article in
-                        Button { reading = URL(string: article.url).map(ReadingDestination.init) } label: {
+                        Button {
+                            reading = URL(string: article.url).map(ReadingDestination.init)
+                        } label: {
                             NewsRow(article: article)
                         }
                         .buttonStyle(.plain)

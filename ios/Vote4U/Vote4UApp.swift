@@ -36,30 +36,31 @@ struct RootView: View {
     }
 }
 
-private extension Tab {
+extension Tab {
     /// Debug builds accept `-startTab vote` so screenshots and QA runs can land on a tab directly
     /// instead of needing UI automation to tap one. Compiled out of release builds entirely.
-    static var initialFromLaunchArguments: Tab {
+    fileprivate static var initialFromLaunchArguments: Tab {
         #if DEBUG
-        let arguments = ProcessInfo.processInfo.arguments
-        guard let index = arguments.firstIndex(of: "-startTab"),
-              let name = arguments[safe: index + 1] else { return .home }
-        switch name {
-        case "vote": return .vote
-        case "map": return .map
-        case "news": return .news
-        default: return .home
-        }
+            let arguments = ProcessInfo.processInfo.arguments
+            guard let index = arguments.firstIndex(of: "-startTab"),
+                let name = arguments[safe: index + 1]
+            else { return .home }
+            switch name {
+            case "vote": return .vote
+            case "map": return .map
+            case "news": return .news
+            default: return .home
+            }
         #else
-        return .home
+            return .home
         #endif
     }
 }
 
 #if DEBUG
-private extension Array {
-    subscript(safe index: Int) -> Element? {
-        indices.contains(index) ? self[index] : nil
+    extension Array {
+        fileprivate subscript(safe index: Int) -> Element? {
+            indices.contains(index) ? self[index] : nil
+        }
     }
-}
 #endif

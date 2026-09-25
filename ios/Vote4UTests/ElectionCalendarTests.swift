@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Vote4U
 
 /// `nextFederalElection()` drives both the countdown and the reminder schedule, and it is a
