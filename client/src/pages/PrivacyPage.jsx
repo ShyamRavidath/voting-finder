@@ -1,6 +1,6 @@
 import { usePageTitle } from '../hooks/usePageTitle';
 
-const UPDATED = 'September 20, 2026';
+const UPDATED = 'September 24, 2026';
 
 export default function PrivacyPage() {
   usePageTitle('Privacy policy');
@@ -19,21 +19,21 @@ export default function PrivacyPage() {
       <h2 className="pt-2 text-xl font-bold text-slate-900">What we process</h2>
       <ul className="list-disc space-y-2 pl-5">
         <li>
-          <strong>ZIP codes you search.</strong> Sent to our server to look up nearby voting locations. We don't
-          link them to you. Results may be cached by ZIP code so repeat searches are fast.
+          <strong>ZIP codes you search.</strong> Sent to our server to look up nearby voting locations. Results may
+          be cached by ZIP code so repeat searches are fast. The ZIP can also appear in hosting request logs.
         </li>
         <li>
           <strong>Your last searched ZIP code</strong> is saved only on your device so it's pre-filled next time. You
           can clear it by clearing your browser's site data.
         </li>
         <li>
-          <strong>Standard request logs.</strong> Our hosting provider (Vercel) keeps routine technical logs, such as
-          IP address and browser type, to operate and secure the service.
+          <strong>Standard request logs.</strong> Our hosting provider (Vercel) keeps technical request information,
+          including search parameters, IP address, browser type, status, and timing, to operate and secure the service.
         </li>
       </ul>
 
       <h2 className="pt-2 text-xl font-bold text-slate-900">Third-party services</h2>
-      <p>To answer your searches, our server contacts these services on your behalf, sending only the ZIP code or the city and state it resolves to:</p>
+      <p>To answer ZIP searches, our server contacts these services on your behalf with the ZIP code or the city and state it resolves to. An optional location search also sends rounded coordinates to Nominatim for reverse geocoding:</p>
       <ul className="list-disc space-y-2 pl-5">
         <li>Zippopotam.us (ZIP code to city and coordinates)</li>
         <li>Google Civic Information API (official polling locations)</li>
@@ -54,10 +54,10 @@ export default function PrivacyPage() {
         <li>
           <strong>Location (optional).</strong> If you tap &ldquo;Use my location&rdquo;, the app asks for permission to
           read your location while you're using it. Your coordinates are rounded to roughly 110 metres before they
-          leave your device, sent to our server once to work out which ZIP code you're in, and then used exactly like a
-          ZIP code you typed. They are not stored on our server and are never linked to you or used to track you across
-          apps or websites. You can decline, or turn the permission off later in Settings, and the app keeps working
-          normally &mdash; ZIP code entry is always available.
+          leave your device, then sent to our server and Nominatim to work out which ZIP code you're in. The rounded
+          coordinates can appear in Vercel request logs and may be used as a short-lived cache key for up to one day.
+          We don't use them to track you across apps or websites. You can decline, or turn the permission off later
+          in Settings, and the app keeps working normally &mdash; ZIP code entry is always available.
         </li>
         <li>
           <strong>Election reminders and your saved polling place (optional).</strong> Reminders are scheduled by your

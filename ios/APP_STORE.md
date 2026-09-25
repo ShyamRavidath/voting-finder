@@ -104,9 +104,10 @@ WHERE THE DATA COMES FROM
 LOCATION
 Location is optional and used only to resolve the user's ZIP code so we can
 look up nearby polling places. Coordinates are rounded to roughly 110 metres
-before leaving the device and are not stored on our server. If the user
-declines the permission, ZIP code entry remains fully available — you can test
-the whole app without granting location.
+before leaving the device. They are sent to our server for ZIP resolution and
+can appear in Vercel request logs; a short-lived server cache may also use the
+rounded coordinate pair. If the user declines the permission, ZIP code entry
+remains fully available — you can test the whole app without granting location.
 
 NOTIFICATIONS
 Optional. Scheduled locally with UNUserNotificationCenter; there is no push
@@ -126,32 +127,55 @@ HOW TO TEST
 
 ## Privacy nutrition labels (App Store Connect → App Privacy)
 
-Answer **"Yes, we collect data from this app"**, then declare exactly one type:
+Answer **"Yes, we collect data from this app"**. Use these conservative draft answers until
+the host's actual log retention and linkage are confirmed in App Store Connect:
 
 | Data type | Linked to identity | Used for tracking | Purpose |
 |---|---|---|---|
-| **Coarse Location** | **No** | **No** | App Functionality |
+| **Precise Location** (three-decimal coordinates from "Use my location") | **Yes** | **No** | App Functionality |
+| **Coarse Location** (searched ZIP) | **Yes** | **No** | App Functionality |
+| **Search History** (polling lookups in request URLs) | **Yes** | **No** | App Functionality |
+| **Other Diagnostic Data** (host request logs) | **Yes** | **No** | App Functionality |
 
-Everything else is **not collected**: no contact info, no identifiers, no usage data, no
-diagnostics, no purchases, no search history. Specifically:
+No contact information, account identifiers, purchases, or tracking data are collected. In
+particular:
 
 - The saved polling place and the reminder setting never leave the device, so they are **not
   collected** — on-device-only data is explicitly excluded from the labels.
-- ZIP codes typed into the app are sent to our server but are not associated with a user or
-  device identifier. If App Review pushes on this, the honest answer is that it is Search History
-  used for App Functionality, not linked to identity and not used for tracking; declaring it that
-  way is the safer choice and costs nothing.
-- Vercel's routine request logs (IP, user agent) are operational logs held by the host, not data
-  the app collects.
+- ZIP codes and rounded device coordinates are request search parameters. Vercel's Runtime Logs
+  display those parameters alongside request metadata; our own application logging cannot remove
+  them from the platform view. A coordinate-aware database cache, if enabled, also retains a
+  three-decimal coordinate key for up to one day.
+- The host may associate request parameters with IP or other request metadata. Until that
+  retention is audited, answer "linked" conservatively rather than asserting anonymity.
 
-**Do not** declare Precise Location. The app requests when-in-use authorisation but immediately
-coarsens the coordinate, and "Coarse Location" is the accurate answer.
+Apple defines **Precise Location** as latitude and longitude with **three or more decimal
+places**. Rounding to three decimals (roughly 110 m) is still Precise Location under that
+definition. `kCLLocationAccuracyHundredMeters` limits the requested fix but does not change the
+classification of the transmitted coordinates. See [Apple's App Privacy Details](https://developer.apple.com/app-store/app-privacy-details/)
+and [Vercel's Runtime Logs](https://vercel.com/docs/logs/runtime). Recheck the final production
+configuration before submission; do not paste the old Coarse-Location-only answer.
 
 ## Screenshots
 
 Required: **6.9" iPhone** (1320 × 2868 or 1290 × 2796). Apple scales these down for smaller
 devices, so one set is enough for an iPhone-only app. iPad is not required — the target is
 `TARGETED_DEVICE_FAMILY = 1`.
+
+### iPad scope for version 1
+
+Keep the containing app iPhone-only for the first submission. The current four-tab layout uses
+single-column Home and Vote screens, a 220-point polling map, and a full-width electoral map;
+turning on native iPad support would need deliberate wide/landscape layouts, map-and-results
+placement, resizing and accessibility checks, plus iPad screenshots. Adding iPad device support
+alone does not add the functionality Apple asks for in guideline 4.2. Apple says iPhone apps
+should run on iPad where possible (2.4.1). On 2026-09-24 the iPhone-only build installed and
+launched on an iOS 17.5 iPad Pro 11-inch simulator: the Map view rendered in Apple's centered,
+scaled iPhone compatibility canvas with wide black margins, not a native iPad layout. This is a
+functional spot-check, not a full iPad interaction or accessibility test. The **widget extension
+has its own device-family requirement**:
+Apple's [App Extension Programming Guide](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/ExtensionCreation.html)
+says extensions must target both iPhone and iPad even when the containing app is iPhone-only.
 
 **Captured 2026-09-20 and committed to `ios/screenshots/`** at 1320 × 2868. Regenerate with:
 
