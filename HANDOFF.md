@@ -1,32 +1,36 @@
 # Vote4U — Handoff
 
-**Audience: future me (Claude), resuming this project cold.** Rewritten 2026-09-20, late evening,
-at the end of the session that reviewed Codex's first commit and fixed what the review found.
-Owner: Shyam Ravidath (`ShyamRavidath/voting-finder`), git user `vote4u`.
+**Audience: future me (Claude), resuming this project cold with no memory of it.** Rewritten
+2026-09-21, after the session that shipped the polling fallback, the US news scoping, the
+re-shot screenshots and the Home Screen widget.
 
-Read this first, then `CODEX_HANDOFF.md` (Codex has been working and will again), then `CLAUDE.md`
-for web architecture. `ios/APP_STORE.md` holds the submission copy. `TRANSFER.md` is the record of
-the Windows→Mac move and is now mostly historical.
+Owner: Shyam Ravidath (`ShyamRavidath/voting-finder`), git user `vote4u`, email
+`dpti0904@gmail.com`.
 
-**If you read only one thing:** the app is finished and unshipped, `main` is green and pushed at
-`08e4bc7`, the only hard blocker is Apple's account verification, and the most valuable work
-available right now is §8A — making the polling search degrade gracefully when Nominatim returns
-nothing, which is a real user-facing hole the owner asked for by name.
+**Reading order:** this file, then `CODEX_HANDOFF.md` (Codex has worked here and will again),
+then `CLAUDE.md` for architecture. `ios/APP_STORE.md` holds the submission copy.
+`ios/IOS_DEVELOPMENT_GUIDE.md` is Codex's notes — inspiration, not instruction (§7).
+`TRANSFER.md` is the Windows→Mac record and is now historical.
+
+> ### If you read only one thing
+>
+> The app is **functionally complete and unshipped**. The only hard blocker is Apple's account
+> verification. `main` is green at `6e00b86`; **two PRs are open and unmerged — #3 (screenshots)
+> and #4 (widget)** — and the first thing to do is check whether they landed. Everything the
+> owner asked for by name is done. The next work is §9: CI (§9B) is the highest-value item
+> because it would have caught, by machine, two bugs I caught by hand.
 
 ---
 
 ## 1. The goal, and the constraints that shape every decision
 
 Ship **Vote4U** to the iOS App Store as a **native Swift/SwiftUI** app while keeping the website
-live. Two UIs, one Express backend.
+live. Two UIs, one Express backend, one deployment.
 
 **Everything must stay free except the $99/yr Apple Developer Program.** The owner set this
-explicitly and has reaffirmed it. It is the reason for: Vercel Hobby, keyless APIs, MapKit instead
-of paid tiles, local notifications instead of a push server, no third-party Swift dependencies.
-**Flag anything with a recurring cost rather than adopting it.**
-
-The app is **functionally complete and unshipped.** Every feature works in the Simulator against
-the live production API.
+explicitly and has reaffirmed it more than once. It is the reason for: Vercel Hobby, keyless
+APIs, MapKit instead of paid tiles, local notifications instead of a push server, no third-party
+Swift dependencies, no paid CI. **Flag anything with a recurring cost rather than adopting it.**
 
 ### Decision log — don't relitigate these without new information
 
@@ -35,11 +39,13 @@ the live production API.
 | Native Swift/SwiftUI, not Expo/React Native | 2026-09-20 | Expo existed only because the old dev machine was Windows with no Mac. That constraint is gone. Native is also the strongest answer to guideline 4.2. |
 | Build locally in Xcode, not EAS | 2026-09-20 | A Mac removes the entire cloud-build apparatus. No 15-builds/month quota, no 90-min queue, no App Store Connect API key juggling. |
 | `shared/` JS extraction **cancelled** | 2026-09-20 | It only existed so JS could be shared with React Native. With Swift on the other side there is nothing to share. **Do not refactor `client/` for the app's benefit.** |
-| iPhone only (`TARGETED_DEVICE_FAMILY = 1`) | 2026-09-20 | Avoids maintaining a second set of iPad screenshots. Revisit only if the owner wants iPad. |
+| iPhone only (`TARGETED_DEVICE_FAMILY = 1`) | 2026-09-20 | Avoids maintaining a second set of iPad screenshots. Revisit only if the owner asks for iPad. |
 | iOS 17 deployment target | 2026-09-20 | ~95%+ of devices, and unlocks `@Observable`, `.sensoryFeedback`, `ContentUnavailableView`, modern MapKit-in-SwiftUI. |
-| NewsAPI removed entirely | 2026-09-20 | Free plan is development-only under its own terms → guideline 5.2.2 violation. Production had always used the Google News RSS fallback. |
+| NewsAPI removed entirely | 2026-09-20 | Free plan is development-only under its own terms → guideline 5.2.2 violation. Production had always used the Google News RSS fallback anyway. |
 | News is the **last** tab | 2026-09-19 | 4.2.2 treats news aggregators as thin. This is the single biggest rejection risk. |
-| UI tests drive stubs, not production | 2026-09-20 | A live third-party geocoder made a correct build fail. See §4 and §8A. |
+| UI tests drive stubs, not production | 2026-09-20 | A live third-party geocoder made a correct build fail. See §5 and §9. |
+| Widget is offline-only, no App Group | 2026-09-21 | A widget that can fail shows a spinner on someone's Home Screen. It also keeps the widget unblocked by the missing Team ID. |
+| Never use `-stubPolling` for App Store screenshots | 2026-09-21 | Those venues are fabricated. Store marketing is the last place rule #1 should bend. This reverses an earlier suggestion of mine. |
 
 ---
 
@@ -47,30 +53,41 @@ the live production API.
 
 ### Where the repo is
 
-`main`, **pushed**, clean worktree. Newest-first:
+`main` is at **`6e00b86`** (merge of PR #2), pushed, clean. Newest-first:
 
 ```
-08e4bc7 fix(ios): repair the iOS 17.5 test command and decouple UI tests from the live API  ← me
+bdec208 feat(ios): add an Election Countdown widget                    ← PR #4, OPEN
+6e00b86 Merge pull request #2 …                                        ← main
+445b269 docs: record the §8A/§8D work and three new lessons
+dd72cb0 feat(api)!: scope the news feed to US elections
+cad58f6 feat(api): widen the polling search instead of dead-ending
+d4d93e0 fix(ios): answer system alerts by matching the button's own label
+61b4aa9 docs: rewrite HANDOFF.md for a cold restart after the Codex review
+08e4bc7 fix(ios): repair the iOS 17.5 test command and decouple UI tests from the live API
 452bc0b docs: record the Codex review outcome and four new iOS lessons
-a7dfe10 fix(ios): repair a scheduling race, an unreachable search, and silent test skips    ← me
-8a3613b docs: rewrite HANDOFF.md as a cold-restart record for myself
-1da4c8d feat(ios): harden iOS 17 and polish SwiftUI experience                              ← Codex
-16410db docs: add a handoff to Codex for the work that needs no Apple Team ID
-c9285f3 docs: record the iOS test suite and what still needs hardware
-3af60a9 test(ios): add unit and UI tests, and fix two bugs they found
-84ea4cc feat(api)!: remove NewsAPI; Google News RSS is now the only news source
-d4b0993 feat(ios): capture the App Store screenshot set, reproducibly
-a595aa8 docs: draft the App Store listing and record what is left
-d8aefd6 feat: harden the iOS app and document the app in the privacy policy
-3bfaa9d feat(ios): add location, reminders, saved place, sharing and haptics
-c431de0 feat(ios): build the Vote and News tabs against the live API
-54b2781 feat(ios): scaffold the native SwiftUI app with a working electoral map
-17a7dfa feat(api): accept ?lat=&lng= on /api/polling for the iOS location lookup
-b11d711 docs: pivot to native Swift/SwiftUI on Mac; rewrite handoff and transfer
+a7dfe10 fix(ios): repair a scheduling race, an unreachable search, and silent test skips
+1da4c8d feat(ios): harden iOS 17 and polish SwiftUI experience          ← Codex
 ```
 
-The branch `fix/ios-test-runner-and-live-api-decoupling` was fast-forwarded into `main` and can be
-deleted. **The owner approved that push explicitly; still ask before the next one.**
+### Open pull requests — **check these first**
+
+| PR | Branch | What | State |
+|---|---|---|---|
+| **#7** | `feat/coordinate-aware-cache` | Device lookups get a real cache (§9E) | OPEN, no checks — see §9B |
+| **#6** | `test/electoral-map-render` | Electoral-map render tests (§9C) | OPEN, no checks — see §9B |
+| **#5** | `ci/github-actions` | GitHub Actions CI (§9B) | OPEN, **both workflows green** |
+| **#4** | `feat/election-countdown-widget` | The WidgetKit extension + every handoff update | OPEN, mergeable |
+| **#3** | `docs/screenshots-post-deploy` | Re-shot App Store screenshots + `APP_STORE.md` rules | OPEN, mergeable |
+
+None of them depend on each other and merge order does not matter. **Merge #5 first anyway**: no
+other PR gets CI until the workflows are on `main` (§9B). **#2 is merged and deployed.**
+
+**`HANDOFF.md` on `main` is the pre-rewrite version** — the cold-restart rewrite is in PR #4, so
+every handoff update since lands there too. That is why PR #4's diff is wider than "the widget".
+
+`gh` is installed and authenticated as `ShyamRavidath` (the owner set it up 2026-09-21), so
+`gh pr create` / `gh pr view` work directly. Earlier in that session it was missing and PR bodies
+had to be pasted by hand — that is no longer true.
 
 ### Tree
 
@@ -82,11 +99,11 @@ voting-finder/
 │   ├── routes/{news,polling,elections}.js
 │   ├── services/{news,geocode,civic}Service.js
 │   ├── lib/fetchWithTimeout.js
-│   └── test/api.test.js      20 tests, node:test, upstreams stubbed, no network
+│   └── test/api.test.js      27 tests, node:test, upstreams stubbed, no network
 ├── client/                   React 19 + Vite + Tailwind v4 — the live website
-├── ios/                      the native app, ~2.7k lines of Swift
-│   ├── Vote4U.xcodeproj      HAND-WRITTEN pbxproj — see §5
-│   ├── Vote4U/
+├── ios/                      the native app, 54 Swift files
+│   ├── Vote4U.xcodeproj      HAND-WRITTEN pbxproj — see §6
+│   ├── Vote4U/               the app target
 │   │   ├── Vote4UApp.swift   @main, TabView root, DEBUG launch-arg hook
 │   │   ├── Design/           Vote4UTheme, Vote4UActionStyle        (Codex)
 │   │   ├── Models/           ElectionCalendar, ElectoralState, PollingResult
@@ -94,84 +111,200 @@ voting-finder/
 │   │   │                     ReminderScheduler, SavedPlace, Formatting,
 │   │   │                     SafariView, MapDirections
 │   │   ├── Features/{Home,Vote,Map,News}/   ~20 small views after Codex's split
+│   │   ├── Features/Widget/  ElectionCountdownWidgetView — app target ON PURPOSE (§4)
 │   │   └── Resources/        states.json, statePaths.json, officialLinks.json
-│   ├── Vote4UTests/          28 unit tests
-│   ├── Vote4UUITests/        10 UI tests
-│   ├── screenshots/          5 × 1320×2868 App Store shots — see §8B
-│   ├── APP_STORE.md          listing copy, privacy labels, review notes
-│   └── IOS_DEVELOPMENT_GUIDE.md   Codex's workflow notes — see §7
+│   ├── Vote4UWidgets/        the extension: WidgetBundle + Widget/TimelineProvider only
+│   ├── Vote4UWidgets-Info.plist   OUTSIDE the folder on purpose — see §5
+│   ├── Vote4UTests/          41 unit tests across 7 files
+│   ├── Vote4UUITests/        11 UI tests across 2 files
+│   ├── screenshots/          5 × 1320×2868 App Store shots
+│   ├── APP_STORE.md          listing copy, privacy labels, review notes, capture rules
+│   └── IOS_DEVELOPMENT_GUIDE.md   Codex's notes — inspiration, not instruction
 ├── scripts/
 │   ├── export-ios-data.mjs   regenerates the app's bundled JSON from client/src/data
+│   ├── generate-icons.mjs    PWA/App Store icons from the logo
 │   ├── capture-screenshots.sh
 │   └── test-ios.sh           THE iOS test runner — plain xcodebuild is NOT equivalent
-├── tests/e2e/                Playwright, 3 device profiles, axe
+├── tests/e2e/                Playwright: api, electoral-map, navigation, news, pages, polling
 ├── CODEX_HANDOFF.md          on-ramp written for Codex, with my replies inline
-├── CLAUDE.md                 web architecture + React 19 traps (gitignored, local only)
-└── TRANSFER.md               Windows→Mac move record
+├── CLAUDE.md                 architecture + traps — **GITIGNORED, local to this machine only**
+└── TRANSFER.md               Windows→Mac move record (historical)
 ```
 
-### Test status — all of this was run, not assumed, on 2026-09-20 evening
+**`CLAUDE.md` is gitignored** (`.gitignore:9`). It holds architecture notes including the polling
+tiers, the news-query rules and the widget layout. Those notes do **not** travel with the repo —
+if you are on a different machine they will be missing, and this file is the only copy of that
+knowledge. Anything important enough to survive belongs here too.
+
+### Test status — every number below was run, not assumed, on 2026-09-21
 
 | Suite | Command | Result |
 |---|---|---|
-| Server | `npm test --prefix server` | **20 pass** |
-| Web e2e local | `npm run test:e2e` | 87 passed, 9 skipped *(not re-run this session)* |
-| Web e2e prod | `BASE_URL=https://vote4ucyl.vercel.app npx playwright test` | 88 passed, 8 skipped *(not re-run)* |
-| iOS on iOS 27.0 | `./scripts/test-ios.sh` | **41 tests, 0 failures, 0 skipped** (2026-09-21, after the §8A/§8D work) |
-| iOS on iOS 17.5 | `DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' ./scripts/test-ios.sh` | **38 tests, 0 failures, 0 skipped** |
+| Server | `npm test --prefix server` | **27 pass, 0 fail** |
+| Web e2e local | `npm run test:e2e` | **90 passed, 9 skipped** — first run ever performed on this Mac |
+| Web e2e prod | `BASE_URL=https://vote4ucyl.vercel.app npx playwright test` | 88 passed, 8 skipped *(inherited from the old machine, not re-run here)* |
+| iOS on iOS 27.0 | `./scripts/test-ios.sh` | **52 tests, 0 failures, 0 skipped** |
+| iOS on iOS 17.5 | `DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' ./scripts/test-ios.sh` | **52 tests, 0 failures, 0 skipped** — re-run 2026-09-21 on `feat/election-countdown-widget`, so the widget is now proven on the deployment target, not just on 27.0 |
 
-`test-ios.sh` now ends with a Release build and greps the binary to prove no DEBUG launch-argument
-or stub string shipped. Release build is clean, no warnings.
+**Playwright browsers are now installed** (chromium + webkit, 2026-09-21). §10 used to list this
+as a blocker; it no longer is.
 
-### Live site
+The 52 breaks down as: 41 unit (Vote4UTests) + 9 smoke UI + 1 allow-notifications + 1
+deny-notifications. `test-ios.sh` ends with a Release build and greps the binary to prove no
+DEBUG launch-argument or stub string shipped.
 
-https://vote4ucyl.vercel.app — healthy, auto-deploys from `main` on Vercel Hobby (non-commercial
-use only, worth remembering).
+### Live site — https://vote4ucyl.vercel.app
 
-- `/api/health` 200 · `/api/news` 200 via Google News RSS
-- **`/api/polling?zip=90210` → 200 with `dataSource:"none"` and zero locations.** Verified with a
-  cache-busted `x-vercel-cache: MISS`, so it is not a stale CDN entry. `10001` returns 5 venues and
-  `60601` returns 3, and the device path `?lat=34.0736&lng=-118.4004` resolves ZIP 90212 and
-  returns 4. **This is upstream, not a regression** — see §4 and §8A.
+Healthy, auto-deploys from `main` on Vercel Hobby (non-commercial use only, worth remembering).
+Verified 2026-09-21 after PR #2 deployed:
+
+- `/api/health` → 200
+- `/api/news` → 200, 15 articles, all US, leading with "2026 Midterm Elections: The races that
+  will decide control of Congress" and "Voting in the 2026 midterms? Here's what you need to know
+  before Nov. 3"
+- `/api/polling?zip=90210` → `estimated`, radius 10
+- `/api/polling?zip=83428` → `nearby`, radius 25 — **this ZIP used to dead-end**
+- `/api/polling?zip=59645` → `none`, which is correct; there genuinely is nothing there
 - `/api/elections` → **503 "Election data is not configured"**. Expected: `GOOGLE_CIVIC_API_KEY`
-  is not in Vercel. The owner is rotating a leaked key. The app does not consume this endpoint yet.
+  is not in Vercel. The owner is rotating a leaked key. The app does not consume this endpoint.
 
-### The environment
+### The environment (this machine)
 
-Mac, Apple Silicon, macOS 27 (Darwin 27.0.0). Repo at `~/voting-finder`. Node 26.0.0 / npm 11.12.1
-(project was built on Node 22; everything passes on 26). Homebrew at `/opt/homebrew`.
-**Xcode 27.0** at `/Applications/Xcode.app`, `xcode-select` correctly pointed at it.
-Simulator runtimes: **iOS 27.0 and iOS 17.5** (Codex installed 17.5 — see §7). Devices that exist:
-iPhone 17 / 17e / 18 Pro / 18 Pro Max / Air on 27.0; iPhone 15 / 15 Plus / 15 Pro / 15 Pro Max /
-SE 3 on 17.5. **There is no iPhone 15 Pro on iOS 27, which matters — see §4.**
-No `watchman`, `pod`, `eas`, `expo` — none are needed. Playwright browsers are **not** installed.
-`server/.env` does **not** exist locally. Claude memory lives in
-`~/.claude/projects/-Users-shyamravidath-voting-finder/memory/`.
+Mac, Apple Silicon, macOS 27 (Darwin 27.0.0). Repo at `~/voting-finder`.
+**Node v26.0.0 / npm 11.12.1** (project was built on Node 22; everything passes on 26).
+Homebrew at `/opt/homebrew`. **Xcode 27.0** (build 27A266a) at `/Applications/Xcode.app`,
+`xcode-select` correctly pointed at it.
+
+Simulator runtimes: **iOS 27.0 and iOS 17.5**. Devices: iPhone 17 / 17e / 18 Pro / 18 Pro Max /
+Air on 27.0; iPhone 15 / 15 Plus / 15 Pro / 15 Pro Max / SE 3 on 17.5. **There is no iPhone 15 Pro
+on iOS 27, which matters — see §5.**
+
+`gh` **is** installed and authed. `watchman`, `pod`, `eas`, `expo` are not, and none are needed.
+`server/.env` does **not** exist locally, so local runs are keyless — same as production.
+ImageMagick / PIL are **not** available, so contact-sheeting screenshots is not possible; read
+PNGs one at a time.
+
+Claude memory lives in `~/.claude/projects/-Users-shyamravidath-voting-finder/memory/`.
 
 ---
 
-## 3. Files actively being edited
+## 3. What shipped in the 2026-09-21 session
+
+Four pieces of work. Two are merged and live, two are in open PRs.
+
+### A. The polling search degrades instead of dead-ending (PR #2, **merged + deployed**)
+
+The owner's request, verbatim: *"if there are no results being returned, we can ideally report
+that to the user and then just come up with community centers or something else (the next best
+thing)."*
+
+`findNearbyPollingVenues` now runs in tiers, each running only when the one above came back empty:
+
+| `dataSource` | what it is | box | distance cap |
+|---|---|---|---|
+| `official` | Google Civic | — | — |
+| `estimated` | library / community center / town hall, city+state in the query text | ±0.03° | 10 km |
+| `nearby` | **new** — place name dropped so the bbox does the geography, plus school and fire station | ±0.1° | 25 km |
+| `none` | we say so rather than inventing anything | — | — |
+
+**Dropping the place name mattered more than the wider box.** Re-probing on 2026-09-21 showed
+`library Beverly Hills California` returning venues *again* — the 90210 hole was Nominatim's
+**text index** being flaky, not a geography problem. Tier 2 removes the text dependency entirely.
+
+`searchRadiusKm` rides along in the response so both UIs can say how far the search went.
+**Labelling gets more cautious as the tier weakens, never less** (rule #1): tier-2 venues are
+typed `Civic Building`, never `Likely Polling Place`, and both UIs carry distinct widened-search
+copy. Per-venue "Not confirmed" is unchanged — tier 2 is still `isEstimated: true`.
+
+Nominatim's 1 req/s policy is shared across both tiers, so the worst case is 7 sequential calls,
+inside `vercel.json`'s `maxDuration: 30`.
+
+**Found along the way, not in the plan: we were showing voters a bus stop.** Nominatim matches
+free text, so `town hall` returned the bus stop named "Paterson Plank Rd At Town Hall", `library`
+returned a Little Free Library book box, and `community center` returned the "Community Compost
+Center" — all under "Likely Polling Place". `isPlausibleVenue` rejects them on OSM `class`/`type`.
+It is a **denylist, not an allowlist**, because a real community center is often only tagged
+`building=yes`.
+
+### B. The news feed is scoped to US elections (PR #2, **merged + deployed**)
+
+The tab led with Turkey's April 2028 election and the Philippines' 2028 race. `gl=US&hl=en-US&ceid=US:en`
+were **already** on the request and did nothing about it — they bias the Google News *edition*,
+not the subject. Two real bugs:
+
+1. The query itself was `"2028 election" OR "2028 presidential race"`, which those stories match
+   perfectly. `newsQuery()` now builds year-qualified terms from `nextFederalElectionYear()`,
+   mirroring `nextFederalElection` in `client/src/lib/format.js` down to the `(8 - weekday) % 7`
+   first-Monday arithmetic, so the feed will not go stale the morning after an election.
+   **Every term must be year-qualified**, and a test enforces it.
+2. **`toArticle`'s relevance gate was silently undoing the fix.** It required the literal string
+   `"2028"` in the title, so every midterm headline the new query returns was discarded ("Early
+   voting begins in U.S. midterm elections" has no year in it at all). It now matches
+   word-bounded election vocabulary — word-bounded because a substring test matches "pollution".
+
+Breaking change: `candidate` is now **null** when no watchlist candidate is named. It used to be
+the placeholder string `"2028 Election"`, which `NewsCard.jsx` then had to compare against by hand
+to hide. Nothing else reads it; iOS does not display it.
+
+Measured on the live feed, before → after: **8 articles with foreign politics leading → 15 (the
+`MAX_ARTICLES` cap), all US**, now leading with early voting, mail-in ballots and voter guides.
+
+### C. App Store screenshots re-shot (PR #3, **open**)
+
+Captured *after* #2 deployed, because the app points at production directly. All five opened and
+checked rather than trusting the script's exit code.
+
+- `3-electoral-map.png` was **genuinely stale** — no search field under the title, so it predated
+  `a7dfe10`'s pinned-open `.searchable`. Now fixed.
+- `1-vote-results.png` was **not** stale. The previous HANDOFF claimed that ZIP "no longer
+  returns" Beverly Hills venues; production returns exactly what the shot showed.
+- `4-official-sources.png` is byte-identical to the previous capture, which is correct for a
+  purely static screen.
+
+`APP_STORE.md` gained two rules, both learned rather than assumed: capture only after the server
+is deployed, and never use `-stubPolling` for store screenshots.
+
+### D. An Election Countdown widget (PR #4, **open**)
+
+`Vote4UWidgets`, an app-extension target with one widget in five families: `.systemSmall`,
+`.systemMedium`, `.accessoryRectangular`, `.accessoryCircular`, `.accessoryInline`.
+
+- **Offline by design.** No network, no App Group, so nothing here is blocked on the Apple
+  account. `ElectionCalendar` and the countdown views are compiled into the extension by explicit
+  `PBXFileReference`s rather than duplicated — the same arithmetic already drives the Home
+  countdown and the reminder schedule, and a third copy would be a third chance to disagree.
+- **Timeline is one entry per local midnight**, seven ahead, then `.atEnd`, each computed for
+  *its own* date. WidgetKit budgets refreshes per app per day; asking to be woken hourly for a
+  number that moves once a day is how a widget gets throttled and goes stale.
+- **The views live in the app target** (`Vote4U/Features/Widget/`). A test bundle cannot import an
+  app extension, so anything living only in the widget can never be tested or rendered.
+- 11 new tests: 8 logic, 3 rendering every family through `ImageRenderer`, including a bitmap
+  check for a rendered-but-blank view that a size assertion would sail straight past.
+
+---
+
+## 4. Files actively being edited
 
 | File | State / what to know |
 |---|---|
-| `ios/Vote4U/Services/APIStub.swift` | **New in `08e4bc7`.** DEBUG-only canned API responses. The whole file is inside `#if DEBUG`. It invents polling venues, so it must never ship — `test-ios.sh` proves that on every run. Extend it when you add a state worth testing. |
-| `ios/Vote4U/Services/APIClient.swift` | Now consults `APIStub` first (via two small `#if DEBUG` helpers) before hitting the network. Field names **must** match `server/services/*.js` exactly — this bit me once (§4). Distinguishes offline/unreachable/timeout/server/decoding. |
-| `ios/Vote4UUITests/AppSmokeUITests.swift` | 8 tests. Seven are stub-driven and deterministic; `testLiveAPIReachesATerminalStateOnVoteAndNews` is the only one that touches production and deliberately accepts any terminal state. |
-| `ios/Vote4UUITests/ReminderPermissionUITests.swift` | **Most fragile file in the repo.** Read §4 and §5 before touching. Codex added a coordinate tap at `dx: 0.9` because SwiftUI exposes the whole row as the switch's frame while only the control end is tappable on iOS 17. |
-| `scripts/test-ios.sh` | Rewritten four times now. Its comments explain why plain `xcodebuild test` is wrong, why the build uses a generic destination, and why it ends with a Release grep. |
-| `ios/Vote4U/Features/Home/HomeView.swift` | Contains a **deliberate `Binding` instead of `.onChange`** — reverting that reintroduces a real bug (§4). Codex split it into `ElectionCountdownCard`, `ElectionReminderCard`, `HomeSavedPlaceCard`, `HomeVotingPlanCard`, `NonpartisanNotice`. Takes a `Binding<Tab>` so cards can switch tabs. |
-| `ios/Vote4U/Features/Vote/VoteView.swift` | Was the largest view; Codex decomposed it into `VoteSearchForm`, `VoteStateContent`, `PollingResultsView`, `VoteSearchErrorView`, `SavedPollingPlaceCard`, `OfficialSourcesView`, `PollingSearchLoadingView`. Still holds the `#if DEBUG` `-startZip` hook. |
-| `ios/Vote4U/Features/Map/*` | Codex split `ElectoralMapView` into `ElectoralMapCanvas`, `ElectoralStateShapeView`, `ElectoralTallyView`, `ElectoralStateList`, `ElectoralStateDetail`, `ElectoralMapLegend`. `.searchable` is pinned open with `.navigationBarDrawer(displayMode: .always)` — do not revert that (§4). |
-| `ios/Vote4U/Features/Map/SVGPath.swift` | Hand-rolled parser, ~60 lines, M/L/Z only. Two bugs found in it so far. Every one of the 51 bundled shapes is covered by a test. |
-| `ios/Vote4U/Services/Formatting.swift` | Codex replaced the cached `ISO8601DateFormatter` statics with `Date.ISO8601FormatStyle` for Sendable-safety. Tries fractional seconds first, then plain. Fine; watch for perf only if news lists grow large. |
-| `ios/Vote4U/Services/ReminderScheduler.swift` | Local notifications, fully unit-tested. Never cancel-then-add (§4). |
-| `server/services/geocodeService.js` | **The file §8A is about.** `findNearbyPollingVenues` queries Nominatim three times (library / community center / town hall), 1s apart, `bounded=1` inside a ±0.03° box, discarding anything ≥10 km. |
-| `server/routes/polling.js` | Has `?lat=&lng=`. Device lookups deliberately bypass the Postgres cache (centroid-relative distances would be poisoned). |
-| `server/services/newsService.js` | NewsAPI removed; the domain exclusion moved into `dedupeAndSort` with its own test. |
+| `server/services/geocodeService.js` | **Heavily rewritten in #2.** `VENUE_TIERS` drives the two-tier search; `isPlausibleVenue` is the OSM class/type denylist; `buildVenue` takes the venue's own `address.state`, not the ZIP's, because the widened box can cross a state line. Returns `{ locations, dataSource, searchRadiusKm }` — the shape changed, the route was updated with it. |
+| `server/services/newsService.js` | `newsQuery()` + `nextFederalElectionYear()` + `isElectionRelevant()` are new and exported for tests. **Keep `nextFederalElectionYear` in step with `client/src/lib/format.js`.** `ELECTION_TERMS` is a word-bounded regex, deliberately. |
+| `server/routes/polling.js` | Carries `searchRadiusKm` through to the payload and the Postgres cache. Device lookups still bypass the ZIP cache. |
+| `server/test/api.test.js` | 27 tests. The suite takes ~29 s because Nominatim's 1 req/s pacing is real, not stubbed away. That is deliberate — it proves the budget. |
+| `client/src/components/PollingFinder.jsx` | `SOURCE_NOTICE` now has a `nearby` entry whose body takes `(election, radiusKm)`. The empty state mentions that the search was widened. |
+| `client/src/components/NewsCard.jsx` | No longer compares `candidate` against the magic string `'2028 Election'`. |
+| `ios/Vote4U.xcodeproj/project.pbxproj` | **Hand-written, and now four targets.** The widget added ~90 lines across nine sections. ID scheme is `F4…0001`–`F4…0040`; the widget block is `0030`–`0040`. Uses **file-system-synchronized root groups**, so new `.swift` files under a target's folder need no project edit — but sharing one file between targets needs an explicit `PBXFileReference` + `PBXBuildFile` (that is how `ElectionCalendar.swift` and `ElectionCountdownWidgetView.swift` reach the widget). |
+| `ios/Vote4UWidgets-Info.plist` | Carries the one key that cannot be a build setting. **Do not move it into `ios/Vote4UWidgets/`** — see §5. |
+| `ios/Vote4U/Features/Widget/ElectionCountdownWidgetView.swift` | Holds `ElectionCountdownEntry` and both view structs. `ElectionCountdownContent` takes `family` explicitly so tests can render it. The medium layout's countdown column uses a **fixed** width; reverting that to `maxWidth` reintroduces the overflow. |
+| `ios/Vote4U/Models/ElectionCalendar.swift` | Gained `countdownPhrase`, `shortKind`, `isPresidential`, `spokenSummary` and `countdownRefreshDates`. All are used by the widget and all are tested. |
+| `ios/Vote4UUITests/ReminderPermissionUITests.swift` | **Still the most fragile file in the repo.** Now uses `matching(_:)`; do not revert to `containing(_:)` (§5). Codex's `dx: 0.9` coordinate tap is still needed. |
+| `ios/Vote4U/Services/APIStub.swift` | DEBUG-only, entirely inside `#if DEBUG`. Gained a `nearby` case. It invents venues, so it must never ship — `test-ios.sh` proves that every run. |
+| `scripts/test-ios.sh` | Rewritten four times. Its comments explain why plain `xcodebuild test` is wrong. **Not yet updated for the widget target** — it still only tests Vote4U's schemes, which is correct, but see §9. |
+| `ios/APP_STORE.md` | Updated in #3 with the capture-ordering and no-stub rules. |
 
 ---
 
-## 4. Everything that failed — the expensive lessons
+## 5. Everything that failed — the expensive lessons
 
 **This is the section I would most regret losing.** Each cost real time, and several were my own
 misreporting rather than genuine obstacles.
@@ -185,168 +318,180 @@ exposed a wrong assumption plus two real bugs. **Treat scepticism as a gift and 
 declaring.**
 
 **I reviewed an artefact by reading its commit message.** I wrote in HANDOFF that Codex's
-screenshots were "stale, showing the pre-redesign UI". They were not: all five had been
-regenerated inside that same commit, and I could have seen it by opening one PNG or checking the
-file mtimes. **Open the artefact. A commit message is a claim, not evidence.**
+screenshots were "stale, showing the pre-redesign UI". They were not. Later I repeated the same
+class of error in the opposite direction: HANDOFF claimed `1-vote-results.png` was stale because
+90210 "no longer returns" venues — production returns exactly what it shows. **Open the artefact.
+A commit message is a claim, and so is a previous handoff.**
 
 **A skip is not a pass.** `XCTSkipUnless` turned a broken selector into a silent green run for
-several iterations. I removed it from the permission tests; a missing alert now `XCTFail`s and
-prints the actual springboard button labels. Keep it that way.
+several iterations. Removed; a missing alert now `XCTFail`s and prints the actual springboard
+button labels. Keep it that way — that diagnostic is what solved the 2026-09-21 failure.
+
+**A green build is not a working feature.** This bit twice in one session. The widget built
+cleanly, embedded its `.appex`, and could never have appeared in anyone's gallery. **Ask what
+observable thing proves the feature works, then check that thing.**
+
+**I understated the blast radius of a failure.** I called the iOS suite failure "a pre-existing
+test, not my changes" — true, but `test-ios.sh` runs that test *first*, so its failure aborted the
+run before the unit tests and `AppSmokeUITests` ever executed. **A red run says nothing about
+anything downstream of the red test.**
 
 **I overstated a blocker.** I claimed notifications couldn't be tested without a physical device.
-Wrong: XCUITest taps system alerts, and **Simulator tests need no signing identity at all**. Most
-of what I'd filed under "device testing" was never blocked. Before declaring something blocked,
-check empirically.
+Wrong: XCUITest taps system alerts, and **Simulator tests need no signing identity at all**.
 
 **I chased three confident wrong theories in a row** (grants survive uninstall → grants survive
 privacy reset → cold-start timing) when the actual cause was a typographic apostrophe. **Dump the
-actual state early** instead of theorising; the diagnostic that printed real button labels solved
-it in one run.
+actual state early** instead of theorising.
 
 **I corrupted two test runs by launching concurrent `xcodebuild` processes** against the same
 `derivedDataPath`, then misreported the results as real. And I **exhausted system memory** by
-leaving four simulators booted, which killed a run.
+leaving four simulators booted. On 2026-09-21 I repeated a softer version: I left **five**
+overlapping background watchers polling the same process, and the harness killed them for memory.
+**One watcher, not five.**
+
+**I fixed the wrong thing first.** My `ImageRenderer` dump showed the medium widget overflowing.
+The layout was fine; the *harness* was wrong, because it did not simulate WidgetKit's ~16 pt
+content margins. **When a render looks wrong, check the harness before changing the design.**
+
+**I hid a build failure behind `>/dev/null 2>&1`** and had to reproduce it by hand. Redirect if
+you must, but always print the tail on failure.
 
 **I committed directly to `main` twice without branching** before asking. The owner was fine with
-it, and approved the `08e4bc7` push when asked, but ask every time.
+it. On 2026-09-21 the owner chose "branch, commit, push, open PR" when offered the options — **that
+is the preferred flow now.**
 
-**I hid a build failure behind `>/dev/null 2>&1`** and then had to reproduce it by hand to find
-out what it was. Redirect if you must, but always print the tail on failure.
+### WidgetKit (all learned 2026-09-21)
+
+- **`INFOPLIST_KEY_NSExtensionPointIdentifier` is accepted and then silently ignored.**
+  `INFOPLIST_KEY_*` only writes *top-level* Info.plist keys, and this one must be nested inside
+  `NSExtension`. A real Info.plist file is the only way.
+  **Verify with `xcrun simctl spawn <device> pluginkit -m -v -p com.apple.widgetkit-extension`** —
+  if the bundle id is not in that list, iOS does not think it is a widget.
+- **That Info.plist must live *outside* the target's synchronized group folder.** A
+  `PBXFileSystemSynchronizedRootGroup` sweeps everything in its directory into Copy Bundle
+  Resources, and a file that is both the target's `INFOPLIST_FILE` and a copied resource fails
+  with *"Multiple commands produce … Info.plist"*. Hence `ios/Vote4UWidgets-Info.plist` beside
+  `ios/Vote4UWidgets/`.
+- **`.frame(maxWidth:)` does not clamp a `Text`.** Frames do not clip, so a string that wants more
+  room draws past the edge — "Tomorrow" ran straight off the medium widget. A *definite* width
+  gives `minimumScaleFactor` something to scale against.
+- **`\.widgetFamily` is a read-only environment key**, so a test cannot set it. Pass the family as
+  an explicit parameter if the layouts are ever to be rendered outside a real widget.
+- **Springboard automation to the widget gallery does not work and is not worth fixing.** It never
+  reached jiggle mode and cost ten minutes per attempt. `pluginkit` proves registration and
+  `ImageRenderer` proves rendering; the gallery adds only flakiness.
 
 ### iOS / Xcode
 
-- **A bare device name in `-destination` is resolved against the newest installed runtime.**
-  `platform=iOS Simulator,name=iPhone 15 Pro` fails with *"no available devices matched"* when the
-  newest runtime is iOS 27 and that device only exists on 17.5. This made the **documented** iOS
-  17.5 command unable to run at all — my bug in `a7dfe10`, and it silently invalidated a result
-  Codex had reported honestly. Build with `generic/platform=iOS Simulator`, or append `,OS=17.5`.
+- **`XCUIElementQuery.containing(_:)` is not `matching(_:)`.** `containing` keeps elements that
+  have a **descendant** satisfying the predicate and ignores the element's own attributes, so it
+  can never match a leaf button by its label. The failure was self-refuting — the diagnostic
+  printed `springboard buttons: ["Don't Allow", "Allow"]` while claiming no button started with
+  "Allow". **When a selector and its own diagnostic disagree, suspect the query API.** Note this
+  file passed 38/38 the day before with identical code, so the hierarchy it relied on is not
+  stable across runs.
+- **A failed UI test costs ten extra minutes.** Xcode tries to collect simulator diagnostics and
+  gives up only after a 600 s timeout (`Failure collecting diagnostics from simulator`). A run
+  that looks hung after a failure is usually just this.
+- **A bare device name in `-destination` resolves against the newest installed runtime.**
+  `platform=iOS Simulator,name=iPhone 15 Pro` fails when the newest runtime is iOS 27 and that
+  device only exists on 17.5. Build with `generic/platform=iOS Simulator`, or append `,OS=17.5`.
 - **`simctl privacy` has no `notifications` service.** Only a UI-test tap can grant it. It *does*
   have `location`.
 - **A notification grant survives both `simctl uninstall` and `simctl privacy reset`.** The only
-  reliable reset is a **freshly created simulator**. `scripts/test-ios.sh` creates and destroys
-  throwaway ones for exactly this.
-- **iOS writes "Don’t Allow" with U+2019**, not an ASCII apostrophe. Match on a prefix.
+  reliable reset is a **freshly created simulator**. `test-ios.sh` creates and destroys throwaway
+  ones for exactly this.
+- **iOS writes "Don't Allow" with U+2019**, not an ASCII apostrophe. Match on a prefix.
 - **A cold, freshly created simulator needs warming** — `app.wait(for: .runningForeground)` is
-  *not* sufficient, it returns before SwiftUI has settled. `test-ios.sh` does a throwaway
-  install/launch/terminate before the real run.
+  *not* sufficient. `test-ios.sh` does a throwaway install/launch/terminate first.
 - **Never share a `derivedDataPath` between concurrent `xcodebuild` runs.** Result bundles collide
-  (`mkstemp: No such file or directory`) and tests report `Executed 0 tests` while looking fine.
+  and tests report `Executed 0 tests` while looking fine.
 - **`xcrun simctl shutdown all`** when done.
-- **`CGFloat.init` is overloaded enough to break Swift type inference** —
-  `Double(sub).map(CGFloat.init)` produced *"failed to produce diagnostic for expression"*. Spell
-  conversions out.
+- **`CGFloat.init` is overloaded enough to break Swift type inference.** Spell conversions out.
 - **SwiftUI `Path.closeSubpath()` on an empty path leaves it non-empty.** Guard it.
-- **A SwiftUI `Link` wrapping a `VStack` exposes one element whose label is the combined text**
-  ("Find your official polling place, USA.gov"). Exact-match XCUITest queries fail; use `CONTAINS`.
+- **A SwiftUI `Link` wrapping a `VStack` exposes one element** whose label is the combined text.
+  Use `CONTAINS`, not exact match.
 - **SwiftUI exposes the whole row as a `Toggle`'s accessibility frame**, but only the control end
   is tappable on iOS 17. Tap `coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))`.
-- **`XCUIElementQuery.containing(_:)` is not `matching(_:)`.** `containing` keeps elements that
-  have a **descendant** satisfying the predicate and ignores the element's own attributes, so it
-  can never match a leaf button by its own label. `ReminderPermissionUITests` used
-  `springboard.buttons.containing(label BEGINSWITH "Allow")` and failed on 2026-09-21 with a
-  diagnostic that printed `springboard buttons: ["Don’t Allow", "Allow"]` while claiming no
-  button started with "Allow" — the contradiction *was* the clue. Fixed by switching both
-  lookups to `matching(_:)`. Note this file passed 38/38 on 2026-09-20 with the same code, so
-  the hierarchy it depended on is not stable across runs: **when a selector and its own
-  diagnostic disagree, suspect the query API, not the app.**
-- **A failing first phase hides the rest of the suite.** `test-ios.sh` runs the allow-permission
-  test first and stops there, so that one failure meant the unit tests and `AppSmokeUITests`
-  never executed at all. A red run is not evidence about anything downstream of the red test.
-- **A failed UI test costs ten extra minutes.** Xcode tries to collect simulator diagnostics and
-  gives up only after a 600 s timeout (`Failure collecting diagnostics from simulator`). A run
-  that seems hung after a failure is usually just this.
-- **A `LazyVStack` keeps off-screen cards out of the accessibility tree.** The reminder-toggle
-  helper scrolls before it looks, and checks `isHittable`, because XCTest reports a partially
-  clipped control as existing.
-- **Electoral map state shapes are useless as VoiceOver targets** — several are a few points wide,
-  DC is effectively invisible. The map is one summary element; the state list is the real
-  interaction surface. Don't "fix" this by making shapes focusable.
-- **A fixed `.font(.system(size: 72))` ignores Dynamic Type entirely.** Use `@ScaledMetric`, cap
-  with `.dynamicTypeSize(...)`, add `minimumScaleFactor`.
-- **`removePendingNotificationRequests` is processed asynchronously by the notification daemon.**
-  `ReminderScheduler.schedule()` used to `cancelAll()` then add; the removal could land *after*
-  the adds and wipe them, so toggling reminders on silently scheduled nothing — intermittently.
-  **Adding a request with an existing identifier already replaces it atomically**, so never
-  cancel-then-add. Remove only what you deliberately did not schedule, afterwards.
+- **A `LazyVStack` keeps off-screen cards out of the accessibility tree.** Scroll before looking,
+  and check `isHittable` — XCTest reports a partially clipped control as existing.
+- **Electoral map state shapes are useless as VoiceOver targets.** The map is one summary element;
+  the state list is the real interaction surface. Don't "fix" this.
+- **A fixed `.font(.system(size: 72))` ignores Dynamic Type.** Use `@ScaledMetric`, cap with
+  `.dynamicTypeSize(...)`, add `minimumScaleFactor`.
+- **`removePendingNotificationRequests` is processed asynchronously.** `ReminderScheduler` used to
+  `cancelAll()` then add; the removal could land *after* the adds. **Adding a request with an
+  existing identifier already replaces it atomically**, so never cancel-then-add.
 - **A single green run does not prove the absence of a race.** That bug passed once and I took it
   as verified. It only surfaced after I removed the skips.
-- **`.searchable` with default placement collapses behind the title until the user scrolls.** The
-  field is unreachable to UI tests and easy to miss as a user. Use
+- **`.searchable` with default placement collapses behind the title.** Use
   `.navigationBarDrawer(displayMode: .always)` when it should always be visible.
 - **`.onChange` cannot distinguish a programmatic revert from a user action.** Denying
   notification permission set a warning flag *and* flipped the toggle back; the revert re-fired
-  `.onChange`, re-entered the handler, and wiped the flag — so denial was completely unexplained.
-  Fixed with an explicit `Binding`. **This is the class of bug to watch for in SwiftUI.**
+  `.onChange` and wiped the flag. Fixed with an explicit `Binding`. **This is the class of bug to
+  watch for in SwiftUI.**
 - **An all-`Optional` `Codable` model decodes successfully with wrong field names.** The `Article`
   model used `publishedAt`/`image`; the API sends `date`/`imageUrl`. No crash, no compiler error,
-  timestamps silently blank. Caught only by looking at the running app. **There are decoding tests
-  pinned to real captured payloads — add one whenever you touch a model.**
-- Hand-written `project.pbxproj` works and uses **file-system-synchronized root groups**, so new
-  `.swift` files under `ios/Vote4U/` need no project edit (`APIStub.swift` was picked up with no
-  project change at all). Adding a *target* means copying the existing pattern carefully. An empty
-  `<TestPlans></TestPlans>` in a scheme silently disables the whole `Testables` list — that
-  produced *"Scheme is not currently configured for the test action"*.
+  blank timestamps. **There are decoding tests pinned to real captured payloads — add one whenever
+  you touch a model.**
+- **An empty `<TestPlans></TestPlans>` in a scheme silently disables the whole `Testables` list**,
+  producing *"Scheme is not currently configured for the test action"*.
 
 ### Product / infrastructure
 
 - **Nominatim's venue results come and go, and 90210 is not a safe example.** On 2026-09-20 the
-  exact query the server sends started returning `[]`:
-  ```sh
-  curl -s -A 'Vote4U-PollingFinder/1.1 (+https://vote4ucyl.vercel.app)' \
-    "https://nominatim.openstreetmap.org/search?q=library%20Beverly%20Hills%20California&format=json&limit=3&addressdetails=1&bounded=1&viewbox=-118.4365,34.0601,-118.3765,34.1201&dedupe=1&countrycodes=us"
-  # → []
-  ```
-  So `/api/polling?zip=90210` answers `dataSource:"none"` while 10001 and 60601 are fine. Earlier
-  the same afternoon it returned Beverly Hills Public Library — the screenshots prove it. **Never
-  assert live third-party data in a test, and check a ZIP before featuring it anywhere.**
+  exact query the server sends returned `[]`; on 2026-09-21 the same query returned venues again.
+  **Never assert live third-party data in a test, and re-check any ZIP before featuring it.**
+- **Nominatim matches free text, so it returns things that are not buildings.** Bus stops, book
+  boxes, compost drop-offs. Filter on `class`/`type` (`isPlausibleVenue`).
+- **`gl`/`hl`/`ceid` bias the Google News *edition*, not the subject.** They were already present
+  and did nothing to stop foreign coverage. The query terms are the only real lever.
 - **Railway is dead** ("Application not found"), free tier gone. Don't revive it.
 - **CARTO basemap tiles now stamp "API KEY REQUIRED"** across every tile.
 - **OSM's tile policy discourages app traffic** — hence MapKit on iOS. Nominatim (server-side
   geocoding) is a different service, fine at low volume with a proper `User-Agent`.
-- **Google Civic with a ZIP-only address always returns zero polling locations.** "Failed to parse
-  address" without an election ID; empty with one. Official data needs a street address and only
-  appears near an election.
-- **Google's "VIP Test Election" (id 2000) returns fake locations** that would have been labelled
-  "Official". Explicitly excluded in `civicService.js`. Don't remove that.
+- **Google Civic with a ZIP-only address always returns zero polling locations.** Official data
+  needs a street address and only appears near an election.
+- **Google's "VIP Test Election" (id 2000) returns fake locations.** Explicitly excluded in
+  `civicService.js`. Don't remove that.
 - **Fabricated sample locations were deliberately removed.** The old code invented "123 Main St".
-- **NewsAPI's free plan is development-only** → 5.2.2 violation. Removed. Subtlety: the
-  biztoc/freerepublic exclusion was a NewsAPI *query parameter*, so deleting the call would have
-  silently dropped the filter — it now lives in `dedupeAndSort` with its own test.
-- **The Google News RSS feed is not US-scoped.** The current News tab leads with Cyprus, Pakistan
-  and Turkey headlines. That is a 4.2.2 argument handed to a reviewer — see §8D.
+- **NewsAPI's free plan is development-only** → 5.2.2. Removed. Subtlety: the biztoc/freerepublic
+  exclusion was a NewsAPI *query parameter*, so deleting the call would have silently dropped the
+  filter — it now lives in `dedupeAndSort` with its own test.
 - **React 19 traps (web only, still live in `client/`):** effects and ref callbacks must use block
   bodies. `useEffect(() => window.scrollTo(0,0))` returns Chromium's scroll Promise and React
   treats it as cleanup; `ref={(el) => (x = el)}` returns the element. Both caused production
   blank-page crashes.
 - **Playwright locally runs `retries: 0`**, so flakes read as hard failures. A
-  `browserContext.close: ENOENT … .playwright-artifacts-*` trace error is a known flake — re-run
-  before investigating.
-- **The old Windows C: drive filling up** surfaced as bizarre `ENOSPC` test failures, not an
-  obvious disk error. Moot now but a good reminder that infrastructure failures masquerade as code
-  failures.
+  `browserContext.close: ENOENT … .playwright-artifacts-*` trace error is a known flake.
+- **The old Windows C: drive filling up** surfaced as bizarre `ENOSPC` test failures. Moot now, but
+  a good reminder that infrastructure failures masquerade as code failures.
 
 ---
 
-## 5. How to run everything
+## 6. How to run everything
 
 ```bash
 # Web
 npm run dev                    # API :3001 + Vite :5173
-npm test --prefix server       # 20 tests
-npm run test:e2e               # needs `npx playwright install` first on this machine
+npm test --prefix server       # 27 tests, ~29 s (the Nominatim pacing is real)
+npm run test:e2e               # 90 passed / 9 skipped; browsers ARE installed now
 BASE_URL=https://vote4ucyl.vercel.app npx playwright test
 
 # iOS — USE THE SCRIPT, not plain `xcodebuild test`
-./scripts/test-ios.sh                                    # 38 tests on the newest runtime
+./scripts/test-ios.sh                                    # 52 tests on the newest runtime
 DEVICE_TYPE='iPhone 15 Pro' \
 RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5' \
   ./scripts/test-ios.sh                                  # deployment-era regression run
-./scripts/capture-screenshots.sh
-node scripts/export-ios-data.mjs    # after changing client/src/data/*
+./scripts/capture-screenshots.sh                          # ONLY after the server is deployed
+node scripts/export-ios-data.mjs                          # after changing client/src/data/*
 
-# One-off build. Note the OS= — without it a 15 Pro cannot be resolved (§4).
+# One-off build. Note the OS= — without it a 15 Pro cannot be resolved (§5).
 xcodebuild -project ios/Vote4U.xcodeproj -scheme Vote4U \
   -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.5' build
+
+# Prove the widget is registered as a widget (the check a green build does not give you)
+xcrun simctl spawn <device-udid> pluginkit -m -v -p com.apple.widgetkit-extension | grep Vote4U
 ```
 
 **Why `test-ios.sh` is not replaceable by `xcodebuild test`:**
@@ -357,12 +502,11 @@ xcodebuild -project ios/Vote4U.xcodeproj -scheme Vote4U \
 3. It warms each new simulator, because a cold boot outruns the permission alert's timeout.
 4. It finishes with a Release build and greps the binary, so the DEBUG stubs cannot ship.
 
-**DEBUG-only launch arguments** (the script proves they are compiled out of Release):
-`-startTab home|vote|map|news`, `-startZip 90210`, `-stubPolling estimated|empty|error`,
-`-stubNews sample|error`. They exist so screenshots, QA and UI tests need neither UI automation nor
-a cooperative upstream. Extend them.
+**DEBUG-only launch arguments** (compiled out of Release, machine-checked):
+`-startTab home|vote|map|news`, `-startZip 90210`,
+`-stubPolling estimated|nearby|empty|error`, `-stubNews sample|error`.
 
-**Manual dark-mode / Dynamic Type check** (this is how §7's verification was done):
+**Manual dark-mode / Dynamic Type check:**
 ```bash
 xcrun simctl ui 'iPhone 15 Pro' appearance dark
 xcrun simctl ui 'iPhone 15 Pro' content_size accessibility-extra-extra-extra-large
@@ -370,309 +514,378 @@ xcrun simctl launch 'iPhone 15 Pro' com.shyamravidath.Vote4U -startTab home
 xcrun simctl io 'iPhone 15 Pro' screenshot /tmp/shot.png     # then actually look at it
 ```
 
-**Screenshotting the running app after every meaningful change caught three bugs that were
+**Screenshotting the running app after every meaningful change has now caught four bugs that were
 invisible to both the compiler and a green test run.** Do it.
+
+**CI runs the same commands** (`.github/workflows/`, added 2026-09-21 — see §9B):
+
+```bash
+gh run list --limit 5                 # did it pass?
+gh run view <id> --log-failed         # why not
+gh workflow run ios.yml --ref <branch>   # iOS is path-filtered; force it by hand
+```
+
+`test-ios.sh` takes three environment variables: `DEVICE_TYPE`, `RUNTIME`, and now **`DERIVED`**
+(the DerivedData path, previously hardcoded to `$TMPDIR/vote4u-test`). CI pins `DERIVED` because
+`TMPDIR` on a hosted runner is per-process and does not survive into the next workflow step.
 
 ---
 
-## 6. Rules that are not negotiable
+## 7. Rules that are not negotiable
 
 Product commitments, not style preferences.
 
 1. **Never show a voter a location the data doesn't support.** Unofficial results are labelled
-   "Not confirmed"; "no results" links to official state lookups rather than inventing something.
-   Guideline 1.1.6, and simply correct. **`APIStub` is the one place fake venues exist, it is
-   DEBUG-only, and `test-ios.sh` enforces that.**
+   "Not confirmed"; the labelling gets **more** cautious as the tier gets weaker, never less;
+   "no results" links to official state lookups rather than inventing something. Guideline 1.1.6,
+   and simply correct. **`APIStub` is the one place fake venues exist, it is DEBUG-only, and
+   `test-ios.sh` enforces that. They must never reach App Store marketing either.**
 2. **ZIP entry must always work when location permission is declined.** Guideline 5.1.1(iv).
 3. **Never imply government affiliation or endorsement.** Guidelines 5.2.1 / 5.2.4.
 4. **News stays the last tab.** Guideline 4.2.2.
 5. **Never commit keys.** The Civic key leaked in git history once already.
 
 **App Store research, already done** (guidelines as of 2026-06-08, searched in full): "election",
-"voter", "nonpartisan", "polling place" appear **zero times**. No rule requires a government
-entity to publish an election app, and elections are **not** in 5.1.1(ix)'s highly-regulated list,
-so the individual account is fine — it just publishes under the owner's legal name. **4.2 is the
-real risk**, and native is the strongest answer. Detail in `ios/APP_STORE.md`.
+"voter", "nonpartisan", "polling place" appear **zero times**. No rule requires a government entity
+to publish an election app, and elections are **not** in 5.1.1(ix)'s highly-regulated list, so the
+individual account is fine — it just publishes under the owner's legal name. **4.2 is the real
+risk**, and native plus the widget is the strongest answer. Detail in `ios/APP_STORE.md`.
 
 ---
 
-## 7. Codex is also working on this
+## 8. Codex is also working on this
 
 The owner brought in Codex (better iOS integration) and explicitly wanted it **unrestricted** —
 same authority I have, free to change my decisions. My role is to **review afterwards and push
 back where warranted**, not to constrain it up front. The owner wants Codex treated as a peer.
-`CODEX_HANDOFF.md` is the on-ramp, and now carries my replies inline.
+`CODEX_HANDOFF.md` is the on-ramp and carries my replies inline.
 
-**Codex's commit `1da4c8d` — reviewed twice, kept in full.** What it did:
+**Codex's commit `1da4c8d` — reviewed twice, kept in full.** It installed the iOS 17.5 runtime
+(closing the largest untested gap), decomposed the three big views into ~20 focused subviews,
+added the `Design/` layer with Liquid Glass behind `if #available(iOS 26, *)`, replaced cached
+`ISO8601DateFormatter` statics with `Date.ISO8601FormatStyle` for Sendable-safety, and fixed a real
+flaw in my `test-ios.sh` where `run()` swallowed xcodebuild's exit status.
 
-- **Installed the iOS 17.5 runtime and verified against it.** This was my #1 recommendation and it
-  closed the largest untested gap: nothing had ever run on the actual deployment target.
-- **Decomposed the three big views** into ~20 focused subviews. Good change; the monoliths were on
-  my own list.
-- **Added a design layer** (`Design/Vote4UTheme.swift`, `Vote4UActionStyle.swift`) with gradients,
-  shared corner radii, and Liquid Glass guarded behind `if #available(iOS 26, *)` with a
-  `.borderedProminent` fallback.
-- **Replaced cached `ISO8601DateFormatter` statics with `Date.ISO8601FormatStyle`** for
-  Sendable-safety.
-- **Fixed a real flaw of mine in `test-ios.sh`** — my `run()` swallowed xcodebuild's exit status,
-  so failures could pass silently.
-- **Added `ios/IOS_DEVELOPMENT_GUIDE.md`**, distilled from an article the owner supplied. It is a
-  translated third-party summary and Codex flagged that itself; it references skills that may not
-  exist here and iOS 26 / Swift 6.2 guidance that does not apply to an iOS 17 project. **Treat as
-  inspiration, not instruction.**
+Two minor things I noted and left: `ElectoralStateShapeView` hardcodes `Color.white.opacity(0.85)`
+for state borders where the old code used adaptive `.background`; and `MapDirections` opens
+`http://maps.apple.com` where `https` would be tidier.
 
-**Everything I flagged as outstanding is now closed** (verified 2026-09-20, second review):
-
-- Screenshots were **not** stale — my error, see §4. Only the Map shot lags, predating `a7dfe10`'s
-  pinned-open search field.
-- **Dark mode and Dynamic Type verified** on iOS 17.5 including `accessibility-XXXL`: nothing
-  clipped, nothing overlapping, the `@ScaledMetric` cap works.
-- **Accessibility grouping survived** the decomposition and was extended (loading skeletons got
-  labels, the reminder toggle got an identifier).
-- **Release build clean; DEBUG arguments compiled out**, now machine-checked.
-- Minor: `ElectoralStateShapeView` hardcodes `Color.white.opacity(0.85)` for state borders where
-  the old code used adaptive `.background`. Reads fine in dark mode; just no longer theme-driven.
-- Minor: `MapDirections` opens `http://maps.apple.com` (inherited). `https` would be tidier.
-
-**My follow-ups to Codex's work:** `a7dfe10` (pinned-open search, the `ReminderScheduler` race,
-simulator pre-warming) and `08e4bc7` (the destination bug I introduced in `a7dfe10`, plus the
-API-stub decoupling).
+**`ios/IOS_DEVELOPMENT_GUIDE.md` is a translated third-party summary** that Codex flagged itself.
+It references skills that may not exist here and iOS 26 / Swift 6.2 guidance that does not apply to
+an iOS 17 project. **Treat as inspiration, not instruction.**
 
 ---
 
-## 8. The next step I would take
+## 9. The next step I would take
 
-**The owner's instruction, verbatim, at the end of this session:** *"if there are no results being
-returned, we can ideally report that to the user and then just come up with community centers or
-something else (the next best thing)."* That is §8A and it is the next thing to build.
+**Current status (2026-09-24):** PRs #3 and #6 are merged; #4 remains open, so the
+widget lives only on `feat/election-countdown-widget`. After #4 merges, pull `main` and re-run
+`./scripts/test-ios.sh` plus the iOS 17.5 variant to confirm nothing changed in the merge.
 
-### A. Make the polling search degrade instead of dead-ending — **DONE 2026-09-21**
+### A. Re-run the iOS 17.5 regression — **DONE 2026-09-21**
 
-Built as described below, with one addition the investigation turned up. What shipped:
+Run on `feat/election-countdown-widget` (not `main` — the widget is not there yet):
+`DEVICE_TYPE='iPhone 15 Pro' RUNTIME='…iOS-17-5' ./scripts/test-ios.sh` → **52 tests, 0 failures,
+0 skipped**, the same count as iOS 27.0. The 17.5 number used to be 38; the widget accounts for
+11 of the 14 new tests (`ElectionCountdownTests` 8 + `ElectionCountdownRenderTests` 3) and the
+other 3 predate it — don't read the delta as widget-only.
+`ElectionCountdownRenderTests` ran unskipped and rendered all five families
+(`systemSmall`, `systemMedium`, `accessoryRectangular`, `accessoryCircular`, `accessoryInline`)
+on 17.5, so the `.containerBackground` / accessory / `ImageRenderer` worry is closed. Both
+notification-permission directions passed and the Release-build stub grep was clean.
 
-- **Two tiers in `findNearbyPollingVenues`.** Tier 1 is the old behaviour (library / community
-  center / town hall, city+state in the query text, ±0.03° box, ≤10 km) and still answers
-  `dataSource: 'estimated'`. Tier 2 runs **only when tier 1 is empty**: it drops the place name
-  and lets the bounding box do the geography, over a ±0.1° box with a 25 km cap, adding `school`
-  and `fire station`. It answers a new `dataSource: 'nearby'`.
-- **Dropping the place name is the important part**, not the wider box. Re-probing on 2026-09-21
-  showed `library Beverly Hills California` returning venues again — the 90210 hole was Nominatim's
-  *text index* being flaky, not a geography problem, so tier 2 removes the text dependency.
-- **`searchRadiusKm`** rides along in the response so both UIs can say how far the search went.
-- **Labelling gets more cautious, not less** (rule #1): tier-2 venues are typed `Civic Building`,
-  never `Likely Polling Place`, and both UIs carry distinct widened-search copy. Per-venue
-  "Not confirmed" is unchanged — tier 2 is still `isEstimated: true`.
-- **Nominatim's 1 req/s budget is shared across both tiers**, so the worst case is 7 sequential
-  calls. `vercel.json` allows `maxDuration: 30`, and the CDN caches the answer either way.
-- **New: a structural plausibility filter (`isPlausibleVenue`).** Nominatim matches free text, so
-  "town hall" was returning the *bus stop* named "Paterson Plank Rd At Town Hall", "library" was
-  returning a Little Free Library book box, and "community center" was returning the "Community
-  Compost Center" — all shown to voters under "Likely Polling Place". `class`/`type` come back
-  with `addressdetails=1` and are enough to reject them. It is a **denylist, not an allowlist**,
-  because a real community center is often only tagged `building=yes`.
+Also verified on 17.5 what a green build does not prove — the extension **registers as a widget**
+on the deployment target, not just on 27.0:
+`xcrun simctl spawn <udid> pluginkit -m -v -p com.apple.widgetkit-extension` lists
+`com.shyamravidath.Vote4U.Widgets(1.0)` from the app's `PlugIns/`. The throwaway simulator was
+deleted afterwards.
 
-Verified live against the local server on 2026-09-21: `83428` and `89060` used to dead-end and now
-return real schools, fire stations and community centers as `nearby`; `07094`, `10001` and `90210`
-still answer `estimated` and no longer contain the bus stop, the book box or the compost centre.
-`59645` still answers `none`, which is correct — there genuinely is nothing.
+What this still does **not** prove: a widget actually sitting on a real Home Screen (§10).
 
-Not done, and still worth considering: a `-stubPolling nearby` iOS screenshot, and item 5 below's
-"first tier empty, second tier hits" case is covered but the Postgres cache still stores only
-`data_source`, so a cached `nearby` row replays fine but `searchRadiusKm` comes from the stored
-payload (older rows simply omit it and the clients default to null — there is a test for that).
+### B. CI on GitHub Actions — **DONE 2026-09-21, but unproven until it runs**
 
-<details>
-<summary>The original plan, kept for the reasoning</summary>
+Two workflows, deliberately split because macOS minutes are the expensive ones even when free
+for a public repo (this repo is public, so both tiers are free):
 
-Today, when Nominatim returns nothing, the user gets "No polling places found" and a link list.
-That is honest but it is a dead end, and right now it is what every 90210 lookup sees.
+- **`.github/workflows/ci.yml`** — every push to `main` and every PR. Three ubuntu jobs:
+  `server` (`npm test --prefix server`, hermetic, no keys), `client` (oxlint + `vite build`),
+  and `e2e` (Playwright, chromium + webkit only — firefox is not in any device profile).
+- **`.github/workflows/ios.yml`** — `runs-on: macos-26`, **path-filtered** to `ios/**`,
+  `scripts/test-ios.sh`, `scripts/export-ios-data.mjs` and the workflow itself. Runs
+  `test-ios.sh`, then repeats the `pluginkit` widget-registration check as its own step.
 
-What the server does now, in `server/services/geocodeService.js → findNearbyPollingVenues`:
-three sequential Nominatim `search` calls (`library`, `community center`, `town hall`), 1s apart,
-each `bounded=1` inside a **±0.03° box** (~3 km) around the ZIP centroid, `limit=3`, then anything
-≥10 km is discarded. For 90210 all three now return `[]` inside that box.
+Opened as **PR #5**. Three things about it that are not obvious, plus one trap:
 
-Proposed shape — worth confirming with the owner before writing much of it:
-1. **Widen progressively.** Retry the same queries with a ±0.1° box (~11 km) before giving up. The
-   10 km distance filter already prevents absurd results, so the box is the real limiter.
-2. **Add more venue types** as a second tier: `school`, `church`, `fire station`, `city hall`,
-   `recreation center`. These are the buildings American precincts actually use.
-3. **Say what happened.** A new `dataSource` value (e.g. `"nearby"`) plus a `searchRadiusKm`, so
-   the app can show *"No polling places listed for 90210. Here are nearby civic buildings that
-   often serve as polling places — none of these are confirmed."* **Rule #1 still applies: the
-   labelling must get more cautious as the data gets weaker, not less.**
-4. **Keep the official links** above the fold in that state.
-5. Server tests are stubbed and fast — add cases for "first tier empty, second tier hits" and
-   "everything empty". The iOS side already has `-stubPolling empty`; add a `-stubPolling nearby`.
+1. **It must be `macos-26`, not `macos-15`.** `Vote4UActionStyle` calls `.glassProminent` behind
+   `if #available(iOS 26, *)`, and availability is a runtime check — the symbol still has to
+   exist at compile time, so an Xcode without the iOS 26 SDK fails to build. The pbxproj is also
+   `objectVersion = 77` with synchronized groups, which needs Xcode 16+.
+2. **The runner's simulators are not this Mac's.** `test-ios.sh` defaults to `DEVICE_TYPE='iPhone 17'`,
+   which need not exist there, so the workflow resolves the newest installed iOS runtime and an
+   available iPhone in it, and *asserts* rather than falling back to a wrong destination — the
+   §5 `-destination` lesson, applied.
+3. **`DERIVED` is now overridable in `test-ios.sh`** (it was hardcoded to `$TMPDIR/vote4u-test`).
+   `TMPDIR` on a hosted runner is per-process and need not survive into the next workflow step,
+   so CI pins it to `$GITHUB_WORKSPACE/DerivedData`, which the widget-check step and the
+   failure-artifact upload can both reach. The override was verified locally with a full run.
+4. **Merge order does *not* matter** — but only because the first run forced the fix. The
+   widget-registration step originally grepped for `Vote4UWidgets.appex` unconditionally and
+   went red on a branch cut from `main`. It now gates on the pbxproj, so it is correct on any
+   branch, with or without the widget.
 
-Mind the budget: each Nominatim call is 1s apart by policy and `fetchWithTimeout` allows 5s, so a
-naive "try everything" could exceed the serverless limit. Run later tiers only when the earlier
-one is empty.
-</details>
+**`main`'s `HANDOFF.md` is the pre-rewrite version.** The cold-restart rewrite (`cf7a95f`) is on
+the widget branch only, which is why the CI PR carries no handoff changes — they are in PR #4
+instead. Anything documenting CI must be written here, not on a branch cut from `main`, or it
+conflicts.
 
-### B. Re-shoot the App Store screenshots — **DONE 2026-09-21**
+**Both workflows have now run and both are green** (PR #5, 2026-09-21). What the first real runs
+taught, none of which was predictable from here:
 
-Captured after PR #2 merged and Vercel had deployed, so the set reflects the shipped server.
-All five checked by opening them, not by trusting the script's exit code (§4):
+- The runner resolved **Xcode 26.6 / iOS 26.5 / iPhone 17** by itself, so the dynamic simulator
+  lookup does its job. `macos-26` exists and works.
+- **Web CI takes 2m24s including the full Playwright suite** — and the two specs that hit live
+  Google News and Nominatim passed from a GitHub IP on the first attempt. The `--retries=2` hedge
+  has not been needed yet.
+- The iOS job takes **~24 minutes**, nearly all of it simulator creation and boot. That is the
+  argument for keeping it path-filtered.
+- **The first iOS run failed, correctly**, on the widget-registration step: that branch is cut
+  from `main`, which has no widget target, so there was no `.appex` to find. The 30-vs-41
+  unit-test count says the same thing. The fix was to gate the step on the **pbxproj** rather than
+  on the build output — no widget target means nothing to check, but a target present with no
+  embedded `.appex` is now a hard failure, never a skip, because a build that drops the extension
+  is exactly the regression the step exists for. It also polls now, since LaunchServices registers
+  plug-ins asynchronously.
 
-- **`3-electoral-map.png`** now shows the "Search states" field — it really was stale, predating
-  `a7dfe10`'s pinned-open `.searchable`.
-- **`5-news.png`** is the big change and the reason the ordering mattered: it now leads with
-  "2026 Midterm Elections: The races that will decide control of Congress" and "Voting in the
-  2026 midterms? Here's what you need to know before Nov. 3". Shooting before the deploy would
-  have put foreign-election headlines in the App Store listing — the exact 4.2.2 risk.
-- **`1-vote-results.png`** shows 90210 with real venues, the "Not confirmed" badge and the
-  MapKit map.
-- **`4-official-sources.png`** is byte-identical to the previous capture, which is expected: it
-  is a purely static screen.
+**Until PR #5 merges, no other PR gets CI.** A `pull_request` run uses the workflow files on the
+PR's own branch, and every other open branch was cut from `main` before CI existed — PR #6 opened
+with no checks at all for this reason. Merge #5 and the rest pick it up on their next push.
 
-`ios/APP_STORE.md` updated: the capture date, an accurate description of shot 3, the two
-live-data rules below, and the news blurb now says "about the current US election".
+**Check runs with:** `gh run list --limit 5`, then `gh run view <id> --log-failed`.
 
-**Two rules now written into `APP_STORE.md`:** capture only after the server is deployed (the app
-points at production directly), and never use `-stubPolling` for store screenshots — those venues
-are fabricated, and marketing is the last place rule #1 should bend.
+The e2e job runs with `--retries=2` on purpose: two specs deliberately hit live upstreams
+(Google News RSS and Nominatim) through the local API, and a CI runner's IP gets rate-limited in
+ways a laptop does not. A genuine regression still fails all three attempts. If that proves noisy
+anyway, the honest fix is a recorded-fixture mode for those two specs, **not** deleting them —
+they are the only check that the real upstreams still answer in the shape the UI expects.
 
-<details>
-<summary>The pre-capture analysis</summary>
+### B2. App Store screenshots — **merged PR #3, 2026-09-24**
 
-Checked on 2026-09-21 by opening the PNGs rather than trusting the claim (§4):
+The five captured images were opened and reviewed, not merely generated. The Map shot now shows
+the pinned search field; the News shot shows US midterm coverage; and the Vote shot shows real
+90210 venues with the required “Not confirmed” label. The official-sources image is unchanged.
+The capture date and copy in `ios/APP_STORE.md` came from PR #3. Always capture against the
+deployed server and real data, never `-stubPolling`; re-check changing locations, countdowns and
+headlines shortly before App Store submission. Earlier pre-capture theories in the old `main`
+handoff were superseded by opening the actual images and are not carried forward here.
 
-- **`3-electoral-map.png` is genuinely stale.** There is no search field under the "Electoral Map"
-  title, so it predates `a7dfe10`'s pinned-open `.searchable`. Re-shoot it.
-- **`1-vote-results.png` is *not* stale.** Production answers `zip=90210` with the same two
-  Beverly Hills libraries it shows. The HANDOFF previously said that ZIP "no longer returns"
-  them; Nominatim's index simply comes and goes (§4 again).
+### C. Snapshot tests for the electoral map — **DONE 2026-09-21, PR #6**
 
-**Do not re-shoot until the §8A/§8D server work is deployed.** The app points at
-`https://vote4ucyl.vercel.app` directly, so a capture run today would bake the *old* unscoped news
-feed — Turkey, the Philippines — into the App Store set, which is the exact 4.2.2 risk §8D exists
-to remove. Sequence: push → Vercel deploys → `./scripts/capture-screenshots.sh` → check all five
-by opening them.
+`ios/Vote4UTests/ElectoralMapRenderTests.swift`, five tests on `test/electoral-map-render`
+(cut from `main`; it needs nothing from the widget). `ImageRenderer` plus a bitmap check, no
+simulator UI automation — `ElectionCountdownRenderTests.swift` was the template.
 
-**Do not use `-stubPolling` for App Store screenshots.** The suggestion below was mine and I now
-think it is wrong: those venues are fabricated, and putting fabricated polling places into store
-marketing is precisely what rule #1 exists to prevent. Shoot against a real ZIP and re-check it
-on the day. The stub is for tests and QA, not for the listing.
+Visible, on-canvas, not-squashed, geographically-arranged, and **painted the right party colour**,
+that last one sampled from the rendered bitmap at a point inside each state's path.
 
-</details>
+**Verified by mutation rather than by going green** — this is the part worth copying:
 
-<details>
-<summary>The original note</summary>
+| mutation | result |
+|---|---|
+| transpose x/y in `SVGPath` | 4 of 5 new tests fail (2 existing `SVGPathTests` also catch it) |
+| `.fill(state.party.color)` -> `.fill(.gray)` | **only** the new colour test fails; all 30 pre-existing tests pass a map that paints every state wrong |
 
-Screenshot 1 shows Beverly Hills venues that ZIP no longer returns, and the Map shot predates the
-pinned-open search field. The owner's steer above means the Vote screenshot should show a
-*populated* result: shoot it against a ZIP that currently returns data (`10001` → 5 venues,
-`60601` → 3; **re-check on the day**, that is the whole lesson), or against `-stubPolling
-estimated` if you want it reproducible forever. Note `capture-screenshots.sh` defaults to
-`iPhone 18 Pro Max` for the 1320×2868 size and sleeps 12s per shot for cold serverless starts.
-If the listing copy in `ios/APP_STORE.md` names Beverly Hills, update it to match.
-</details>
+The second row is the coverage this actually adds. The first row also shows that *"did it render"*
+passes a **fully transposed map**, so a bare render check is close to worthless on its own.
 
-### C. A WidgetKit extension
+Two facts about the data that only showed up by looking at it first:
 
-Countdown or saved polling place. Genuinely useful, needs no Apple account to build and test, and
-materially strengthens the 4.2 "elevates beyond a website" argument. The highest-value *new*
-feature. Adding a target means hand-editing the pbxproj — copy the existing pattern carefully.
+- **us-atlas places the Alaska inset partly off-canvas** — bounding box starts at x ~ -58 of a
+  975-wide viewBox. Strict containment fails on *correct* data; the web app clips it identically.
+  The test asserts overlap plus a 10% margin.
+- **A bounding-box centroid is not reliably inside a concave state**, so the colour test scans for
+  a point the `Path` actually contains.
 
-### D. Scope the news feed to US elections — **DONE 2026-09-21**
+No pbxproj edit was needed: `Vote4UTests` is a `PBXFileSystemSynchronizedRootGroup`, so new test
+files are picked up automatically. Worth remembering — it makes adding tests cheap.
 
-The `gl`/`hl`/`ceid` parameters were **already** on the request. They bias the Google News
-*edition*, not the subject, which is why they did nothing: the query itself was
-`"2028 election" OR "2028 presidential race"`, and Turkey's April 2028 election and the
-Philippines' 2028 race match that perfectly. Confirmed by fetching the live feed — Erdoğan and
-Teodoro were both in the top ten.
+### D. SwiftLint or swift-format
 
-What shipped:
+**In draft PR #9 (`chore/swift-format`), not merged.** `ios/.swift-format` sets 4 spaces and 120
+columns; a separate mechanical commit is listed in `.git-blame-ignore-revs`; the CI job uses
+`xcrun swift-format lint --strict` on `macos-26`. Local full iOS tests and PR CI passed. PR #4
+and #6 add Swift files after its branch point, so rebase and format those files once they land.
+Do not add SwiftLint or use swift-format's 2-space defaults.
 
-- **`newsQuery()` builds the terms from `nextFederalElectionYear()`**, which mirrors
-  `nextFederalElection` in `client/src/lib/format.js` (same `(8 - weekday) % 7` arithmetic) so the
-  feed doesn't go stale the morning after an election. A midterm year leads with the midterms and
-  keeps the presidential race two years out; a presidential year drops the midterm terms.
-  **Every term is year-qualified** — that is the rule, and a test enforces it.
-- **`toArticle`'s relevance gate was silently undoing the fix.** It required the literal string
-  `"2028"` in the title, so every midterm headline the new query returns was being thrown away
-  ("Early voting begins in U.S. midterm elections" has no year in it at all). It now matches
-  word-bounded election vocabulary. Word-bounded because a substring test matches "pollution".
-- **`candidate` is now null** when no watchlist candidate is named. It used to be the placeholder
-  string `"2028 Election"`, which `NewsCard.jsx` then had to compare against by hand to hide.
+### E. Server odds and ends
 
-Measured on the live feed, before → after: 8 articles, several foreign → **15 (the `MAX_ARTICLES`
-cap), all US, all election-related**, and now leading with early voting, mail-in ballots and voter
-guides rather than 2028 horse-race speculation. That is a much better answer to 4.2.2 as well: the
-tab now reads like a voting tool's news feed.
+- ~~A coordinate-aware cache key so device lookups aren't cache-bypassed.~~ **DONE, PR #7.**
+  The key is now the bare ZIP for a ZIP lookup and `@lat,lng` (3dp) for a device one, so the two
+  kinds of row cannot collide. **The device key carries no ZIP on purpose:** including one forces
+  a reverse geocode before the cache can be read, which is the exact request a hit is supposed to
+  save. The first version did that and the test caught it — a hit still cost one upstream call.
+  The cache read now happens before anything touches an upstream, and the ZIP comes back out of
+  the cached payload's `place.zip`. Device rows live a day, ZIP rows a week.
+  `zip_code CHAR(5)` became `cache_key VARCHAR(32)`; **existing row values need no rewriting**
+  because their keys are already bare ZIPs, but the **schema migration must run before the new
+  route is deployed**. On an existing database, `CREATE TABLE IF NOT EXISTS` does not rename the
+  column; without the migration, cache queries fail and are silently skipped. Also add a purge
+  path for expired device-coordinate rows: expiry currently prevents reads but does not delete
+  stored location keys. Both are review blockers on PR #7, along with coordinating privacy copy.
+  Migration in `server/db/migrations/`.
+  Eleven tests in `server/test/pollingCache.test.js`, which installs a fake pool into the require
+  cache before loading the app — without that the cache path is **dead code in tests**, since
+  `DATABASE_URL` is unset and every request looks like a miss. `node --test` gives each file its
+  own process, so the stub cannot leak into `api.test.js`.
+  *Caveat worth keeping in mind:* Vercel's CDN already caches `?lat=&lng=` by URL for 24h, so the
+  win is across regions and evictions, and in Nominatim load — the budget that actually binds.
+- **Structured logging is in draft PR #10**, not merged. It adds request correlation, latency,
+  cache/tier telemetry, and redacts location, key, URL, ZIP and IP from application logs. It
+  cannot remove search parameters from Vercel Runtime Logs. PR #7 changes the route being
+  instrumented, so integrate/retest after #7 is fixed and merged.
+- Wire up `/api/elections` once the Civic key lands, so official-vs-estimated becomes visible.
+- **Near-duplicate news headlines.** `dedupeAndSort` matches exact titles only, so two outlets
+  covering the same event both appear ("Early voting in Virginia begins ahead of 2026 midterms" /
+  "…for 2026 midterms"). Left alone deliberately — normalising harder risks collapsing genuinely
+  different stories — but it is visible on the tab that carries the most 4.2.2 risk.
 
-Left alone deliberately: near-duplicate headlines from different outlets covering the same event
-("Early voting in Virginia begins ahead of 2026 midterms" / "…for 2026 midterms"). `dedupeAndSort`
-matches exact titles only. Normalising harder risks collapsing genuinely different stories.
+### F. Widget follow-ups (both currently blocked or costly)
 
-### E. Snapshot tests for the electoral map
+- **A saved-polling-place widget** genuinely needs an App Group, so it is blocked on the Team ID.
+- **Deep-linking a widget tap to a specific tab** needs `CFBundleURLTypes`, which has no
+  `INFOPLIST_KEY_*` equivalent, so it would mean introducing a hand-written Info.plist for the
+  **app** target too. Tapping currently opens the app, which is standard.
 
-A silent `SVGPath` regression would render a wrong-but-not-crashing map that only a human notices.
-
-### F. CI
-
-A GitHub Action on a macOS runner (free for public repos) running server tests, Playwright and
-`test-ios.sh`. Would have caught by machine several things I caught by hand — including the
-destination bug, which no human would think to check twice.
-
-### G. SwiftLint or swift-format
-
-None exists; the codebase is small enough that adding one now won't be noisy.
-
-### H. Server odds and ends
-
-A coordinate-aware cache key so device lookups aren't cache-bypassed; structured logging; wire up
-`/api/elections` once the key lands so official-vs-estimated becomes visible in the app.
-
-**Things to verify rather than trust** (I wrote them in one session):
-`geocodeService.coordsToZip` edge cases (ZIP+4 narrowing, outside-US); the Coarse-Location-only
-privacy label argument in `APP_STORE.md`; whether iPhone-only is right.
-*(`ElectionCalendar`'s fidelity to `client/src/lib/format.js` was on this list and is now
-**verified** — the Swift port matches the JS line for line, including the `(8 - weekday) % 7`
-first-Monday arithmetic.)*
+**The three earlier "verify rather than trust" items were checked in PR #11** (not merged):
+`coordsToZip` now requires unambiguous US country/ZIP evidence, with mutation-tested cases;
+the Coarse-Location-only argument was wrong because three-decimal coordinates are still Precise
+Location under Apple's definition, and raw coordinates had been sent before server rounding;
+and an iPhone-only build did launch in scaled compatibility mode on an iPad simulator. Native
+iPad work remains substantial and does not itself solve guideline 4.2. See §12.
+*(`ElectionCalendar`'s fidelity to `client/src/lib/format.js` is **verified** — the Swift port
+matches the JS line for line, and `nextFederalElectionYear` in `newsService.js` now mirrors it too.)*
 
 ---
 
-## 9. Blocked on the owner
+## 10. Blocked on the owner
 
 - **Apple Developer account is in verification.** No Team ID → no device build, no TestFlight, no
-  submission. The owner confirmed again this session that they are still waiting, and asked to
-  keep progressing until something genuinely needs it. When it clears: Xcode ▸ Settings ▸ Accounts
-  → add the account, set the team, or set `DEVELOPMENT_TEAM` and build with
+  submission. The owner has confirmed twice that they are still waiting and asked to keep
+  progressing until something genuinely needs it. When it clears: Xcode ▸ Settings ▸ Accounts →
+  add the account, set the team, or set `DEVELOPMENT_TEAM` and build with
   `-allowProvisioningUpdates`.
-- **Rotate the leaked Google Civic key** into Vercel as `GOOGLE_CIVIC_API_KEY`. It was public in
-  the removed legacy `index.html` and remains in git history. The old NewsAPI key no longer
-  matters here (integration removed) but should be rotated if reused elsewhere.
-- **Install the App Store skills** (auto-install was blocked by the permission classifier):
-  ```
-  ! npx skills add eronred/aso-skills --skill aso-audit -g -a claude-code -y
-  ! npx skills add eronred/aso-skills --skill apple-search-ads -g -a claude-code -y
-  ! npx skills add truongduy2611/app-store-preflight-skills -g -a claude-code -y
-  ! npx skills add https://github.com/code-with-beto/skills --skill app-icon -g -a claude-code -y
-  ```
-- **Playwright browsers are not installed** on this Mac (`npx playwright install`), so the web e2e
-  numbers in §2 are inherited from the old machine rather than re-verified here.
+- **Google Civic key rotation and App Store skills are done:** the owner reports the key was
+  rotated/replaced, and all four requested Claude Code skills were verified installed locally.
+  The old key remains in git history; do not reuse it. Production `/api/elections` behavior and
+  the upstream credential have not been independently verified here.
 
 ### Still genuinely device-only
 
 A notification **banner actually arriving** at its scheduled time (permission and queuing are
-tested; delivery weeks later is unobservable), **real GPS**, **airplane mode**, and on-device
-permission revocation. That's it — everything else is testable in the Simulator.
+tested; delivery weeks later is unobservable), **real GPS**, **airplane mode**, on-device
+permission revocation, and **a widget actually sitting on a Home Screen** (registration and
+rendering are both proven in the Simulator; placement is not). That's it — everything else is
+testable without hardware.
 
 ---
 
-## 10. Working notes on the owner
+## 11. Working notes on the owner
 
 - Direct, moves fast, says "continue" and "don't wait for me" — **bias toward doing the work and
-  reporting, not asking.** But ask before pushing to `main` or anything irreversible; they say yes
-  quickly when asked.
+  reporting, not asking.** But ask before anything irreversible; they say yes quickly when asked.
+- **Prefers branch → commit → push → PR.** Offered the choice on 2026-09-21, they picked it over
+  committing straight to `main`. Nothing deploys until they merge, which they like.
 - Asks sharp clarifying questions that have twice caught my errors. Don't get defensive; check.
-- Speech-to-text occasionally inverts meaning ("we're *not* going to develop on this Mac" meant
-  the opposite) and drops punctuation. If a message contradicts itself, ask rather than guess.
+- Speech-to-text occasionally inverts meaning ("we're *not* going to develop on this Mac" meant the
+  opposite) and drops punctuation. If a message contradicts itself, ask rather than guess.
+- Answers terse ("yes", "logged in with gh and set it up, we should be good to go") and expects you
+  to carry on without re-confirming.
 - Wants Codex treated as a peer, not a subordinate.
 - Prefers the full picture including what *didn't* work and what remains unverified. When I
-  reported my own bug in `a7dfe10` alongside Codex's good work, the response was to keep going —
-  accuracy is welcome, not punished.
-- Asks for a written handoff before ending a session. Write it as if the next session starts with
-  no memory at all, because it does.
+  reported my own bug alongside Codex's good work, the response was to keep going — **accuracy is
+  welcome, not punished.**
+- Asks for a written handoff before ending a session, and asked for this one to be filled "till you
+  can't anymore". Write it as if the next session starts with no memory at all, because it does.
+
+---
+
+## 12. Codex session, 2026-09-24 — PRs #9–#11 and open-PR review
+
+The owner-provided `~/codex-vote4u-prompt.md` asked for Tasks 1–5 in order, one PR per
+implementation task, with no merge by Codex. `AGENTS.md` and §5/§7/§9 above were read first.
+`origin/main` contained merged PR #8 at `e282e30` when these branches were cut. **No PR was
+merged.** This section is on the newer `feat/election-countdown-widget` branch / PR #4, not on
+the older `main` copy of this file; that is deliberate so the notes survive the rewrite.
+
+### Work and evidence
+
+- **Task 1:** The owner confirmed the leaked Civic key was rotated/replaced, installed all four
+  App Store skills (verified locally), and merged PRs #3 and #6. No Apple account work was attempted.
+- **Task 2 — [PR #9](https://github.com/ShyamRavidath/voting-finder/pull/9), draft:**
+  4-space/120-column swift-format config, genuine code fixes for retroactive `URL` conformance
+  and extension access, a separate formatting commit (`b16e8228190ffcbe8f6d71450a8b4124b3c10b39`)
+  in `.git-blame-ignore-revs`, and a separate strict `macos-26` CI commit. Verified dirty lint
+  exits 0 without `--strict` and 1 with it; clean strict lint exits 0. Required iOS script
+  passed all notifications, 30 unit and 9 UI tests, and Release stub grep; PR CI is green.
+  The bundled tool prints version `main`, so local Xcode 27 vs CI Xcode 26 is an ongoing risk.
+  Wait for the new Swift files in PRs #4, #6 and #11, then rebase, format them, rerun.
+- **Task 3 — [PR #10](https://github.com/ShyamRavidath/voting-finder/pull/10), draft:**
+  dependency-free JSON-line API logging with Vercel request IDs, request timing and polling
+  tier/cache telemetry. Application log values and Error objects are scrubbed by key and free
+  text; warn goes to stdout; tests are silent under `NODE_ENV=test`. A deliberate bypass of
+  the text scrubber failed the privacy test with ZIP, coordinates, URL and key visible; reverted.
+  Server tests 30/30, Playwright 90 passed / 9 expected skips, PR CI green. Initial local
+  server test was blocked by loopback sandboxing; escalated rerun passed. Vercel independently
+  captures query parameters, so the PR **does not** mean location is absent from platform logs.
+  Rebase/integrate route instrumentation after PR #7 is fixed and merged.
+- **Task 4 — [PR #11](https://github.com/ShyamRavidath/voting-finder/pull/11):**
+  `coordsToZip` rejects a missing/non-US country and ambiguous postcodes, accepts a complete US
+  ZIP+4; the new hermetic tests failed against deliberate loose-regex and missing-country
+  mutations. Native device coordinates had been sent at full precision; `APIClient` now rounds
+  to three decimals before constructing the URL, and its test failed against deliberately raw
+  coordinates. Updated `ios/APP_STORE.md` and the web privacy page because Vercel logs search
+  params and three decimals still meet Apple's **Precise Location** definition. Labels are
+  conservative drafts pending production host retention/linkage review. Server tests 31/31,
+  Playwright 90 passed / 9 expected skips, required iOS script on iOS 17.5 passed 31 unit,
+  9 UI, both notification directions, and Release stub grep. Initial iOS runner could not
+  reach CoreSimulator from the sandbox; escalated reruns passed. An iPhone-only Debug build
+  installed/launched on an iOS 17.5 iPad Pro 11-inch simulator; Map rendered in a centered,
+  scaled iPhone compatibility canvas with wide black margins. Native iPad support would need
+  actual layout and accessibility work and does not independently fix App Review 4.2.
+
+### Open PR review (comments already posted on GitHub)
+
+- **#3 screenshots: mergeable.** All five assets opened; real venues are visibly hedged “Not
+  confirmed”, Map has the pinned search UI, News remains last. Native `codex review` found no
+  actionable issue. Recheck live data, countdown and headlines near App Store submission.
+- **#6 electoral-map render tests: mergeable.** The test-only diff, mutation evidence and CI
+  are sound. Native review built tests (after a Swift macro sandbox workaround) and found no
+  actionable issue, but could not run a simulator there; CI did run them. Formatting will be
+  needed for PR #9.
+- **#4 widget: hold.** The widget extension targets device family `1` only; Apple's App
+  Extension Programming Guide says extensions must target iPhone and iPad even when the app is
+  iPhone-only. The circular accessory also displays `0 days` on Election Day while other
+  families say `Today`. Fix both and rerun the required iOS script; the widget actually being
+  placed on a Home Screen remains unverified. Comments are on PR #4.
+- **#7 coordinate-aware cache: hold.** Existing database deployments need the included
+  migration **before** the new route; `schema.sql` alone leaves the old column and silently
+  disables caching. Expired one-day device-coordinate rows are never deleted. Coordinate keys
+  and request params contradict old privacy claims, addressed in PR #11 but requiring merge
+  coordination. `codex review` independently found the migration and retention issues.
+
+Suggested owner-controlled order: merge #3 and #6 when convenient; merge #11 before enabling
+the coordinate cache; fix and merge #4 and #7 in either order after their blockers clear;
+then rebase/format #9 over all incoming Swift files and integrate/retest #10 over #7. Do not
+merge #9 or #10 as-is while their dependencies remain open. Do not infer green CI means the
+widget can appear or the existing database was migrated.
+
+### Still unverified / owner decisions
+
+- Civic key rotation, Vercel environment setting and any desired history rewrite; until fixed,
+  the official tier remains unavailable in production. Never commit the key.
+- Actual Vercel log retention/linkage and the final App Store Connect privacy answers; app-level
+  redaction cannot alter platform request logs. Any PR #7 coordinate-cache deployment needs a
+  migration and deletion/retention verification.
+- Apple Developer account, device build, GPS, real scheduled notification delivery, widget Home
+  Screen placement, full iPad interactions/accessibility, TestFlight and submission.
+- `ios/.swift-format` must be checked again after PR #4/#6/#11 Swift files arrive. Do not run
+  the formatter with its 2-space default or replace `scripts/test-ios.sh` with a bare build.
