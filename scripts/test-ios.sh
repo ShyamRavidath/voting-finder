@@ -18,7 +18,9 @@ set -euo pipefail
 DEVICE_TYPE="${DEVICE_TYPE:-iPhone 17}"
 RUNTIME="${RUNTIME:-$(xcrun simctl list runtimes | grep -oE 'com.apple.CoreSimulator.SimRuntime.iOS-[0-9-]+' | tail -1)}"
 PROJECT="$(cd "$(dirname "$0")/.." && pwd)/ios/Vote4U.xcodeproj"
-DERIVED="${TMPDIR:-/tmp}/vote4u-test"
+# Overridable so CI can put the build products somewhere it can archive them; TMPDIR on a
+# hosted runner is a per-process path that need not survive into the next workflow step.
+DERIVED="${DERIVED:-${TMPDIR:-/tmp}/vote4u-test}"
 
 CREATED=()
 

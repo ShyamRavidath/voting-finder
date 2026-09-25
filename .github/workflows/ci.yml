@@ -1,0 +1,86 @@
+# Web CI: the cheap, hermetic checks. Runs on every push and PR.
+#
+# The iOS suite lives in ios.yml because macOS runner minutes are the expensive ones even
+# when they are free, and most changes here never touch ios/.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A new push to the same branch makes the previous run's answer worthless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Vercel runs Node 22 (root package.json "engines"). Local dev is on 26; CI matches production.
+  NODE_VERSION: '22'
+
+jobs:
+  server:
+    name: Server tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+        working-directory: server
+      # 27 tests, node:test. Upstreams are stubbed, so this needs no network and no API keys.
+      - run: npm test
+        working-directory: server
+
+  client:
+    name: Client lint + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+        working-directory: client
+      - run: npm run lint
+        working-directory: client
+      - run: npm run build
+        working-directory: client
+
+  e2e:
+    name: Playwright e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      # playwright.config.js starts both servers itself, so all three trees need their deps.
+      - run: npm ci
+      - run: npm ci
+        working-directory: client
+      - run: npm ci
+        working-directory: server
+      # Only the two engines the device profiles use: chromium (Desktop Chrome, Pixel 7)
+      # and webkit (iPhone 13). Installing all three would pull firefox for nothing.
+      - run: npx playwright install --with-deps chromium webkit
+      # Retries because two specs deliberately hit live upstreams (Google News RSS and
+      # Nominatim) through the local API — that is the point of them, but a CI runner's IP
+      # gets rate-limited in ways a laptop does not. A real regression fails all attempts.
+      - run: npx playwright test --retries=2
+        env:
+          RATE_LIMIT_MAX: '5000'
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
