@@ -27,9 +27,8 @@ export default function PrivacyPage() {
           can clear it by clearing your browser's site data.
         </li>
         <li>
-          <strong>Standard request logs.</strong> Our hosting provider (Vercel) keeps routine technical logs, including
-          request URLs, IP address and browser type, to operate and secure the service. Search parameters can appear
-          there alongside request metadata.
+          <strong>Standard request logs.</strong> Our hosting provider (Vercel) keeps technical request information,
+          including search parameters, IP address, browser type, status, and timing, to operate and secure the service.
         </li>
       </ul>
 

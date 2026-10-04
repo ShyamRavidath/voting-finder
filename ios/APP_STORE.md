@@ -104,11 +104,11 @@ WHERE THE DATA COMES FROM
 LOCATION
 Location is optional and used only to resolve the user's ZIP code so we can
 look up nearby polling places. Coordinates are rounded to roughly 110 metres
-before leaving the device. They are sent to our server and can appear in Vercel
-request logs; an optional database cache may retain the rounded pair until
-daily cleanup (normally within two days, longer if cleanup fails). If the user
-declines the permission, ZIP code entry remains fully available — you can test
-the whole app without granting location.
+before leaving the device. They are sent to our server for ZIP resolution and
+can appear in Vercel request logs; an optional database cache may retain the
+rounded coordinate pair until daily cleanup (normally within two days, longer
+if cleanup fails). If the user declines the permission, ZIP code entry remains
+fully available — you can test the whole app without granting location.
 
 NOTIFICATIONS
 Optional. Scheduled locally with UNUserNotificationCenter; there is no push
@@ -163,6 +163,21 @@ configuration before submission; do not paste the old Coarse-Location-only answe
 Required: **6.9" iPhone** (1320 × 2868 or 1290 × 2796). Apple scales these down for smaller
 devices, so one set is enough for an iPhone-only app. iPad is not required — the target is
 `TARGETED_DEVICE_FAMILY = 1`.
+
+### iPad scope for version 1
+
+Keep the containing app iPhone-only for the first submission. The current four-tab layout uses
+single-column Home and Vote screens, a 220-point polling map, and a full-width electoral map;
+turning on native iPad support would need deliberate wide/landscape layouts, map-and-results
+placement, resizing and accessibility checks, plus iPad screenshots. Adding iPad device support
+alone does not add the functionality Apple asks for in guideline 4.2. Apple says iPhone apps
+should run on iPad where possible (2.4.1). On 2026-09-24 the iPhone-only build installed and
+launched on an iOS 17.5 iPad Pro 11-inch simulator: the Map view rendered in Apple's centered,
+scaled iPhone compatibility canvas with wide black margins, not a native iPad layout. This is a
+functional spot-check, not a full iPad interaction or accessibility test. The **widget extension
+has its own device-family requirement**:
+Apple's [App Extension Programming Guide](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/ExtensionCreation.html)
+says extensions must target both iPhone and iPad even when the containing app is iPhone-only.
 
 **Captured 2026-09-21 and committed to `ios/screenshots/`** at 1320 × 2868. Regenerate with:
 

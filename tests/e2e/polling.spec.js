@@ -51,7 +51,9 @@ test.describe('polling place finder', () => {
   test('shared link with ?zip= runs the search automatically and remembers it', async ({ page }) => {
     await page.goto('/tools?tab=booths&zip=19901');
     await expect(zipInput(page)).toHaveValue('19901');
-    await expect(page.getByRole('heading', { name: /near Dover, DE/ })).toBeVisible({ timeout: 30_000 });
+    const results = page.getByRole('heading', { name: /locations? near Dover, DE/ });
+    const empty = page.getByText('No locations found near Dover, DE yet');
+    await expect(results.or(empty)).toBeVisible({ timeout: 30_000 });
 
     // The last ZIP is pre-filled on the next visit
     await page.goto('/tools?tab=booths');

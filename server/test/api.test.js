@@ -129,6 +129,34 @@ describe('geocodeService.isPlausibleVenue', () => {
   });
 });
 
+describe('geocodeService.coordsToZip', () => {
+  const { coordsToZip, OutsideUsError, ZipNotFoundError } = require('../services/geocodeService');
+
+  test('accepts a complete US ZIP+4 and narrows it to five digits', async () => {
+    upstream = (u) => u.includes('/reverse')
+      ? json({ address: { postcode: ' 19901-1234 ', country_code: 'US' } }) : undefined;
+    assert.equal(await coordsToZip(39.158, -75.522), '19901');
+  });
+
+  test('rejects an ambiguous postcode rather than extracting an unsupported ZIP', async () => {
+    upstream = (u) => u.includes('/reverse')
+      ? json({ address: { postcode: '19901 / 19902', country_code: 'us' } }) : undefined;
+    await assert.rejects(coordsToZip(39.158, -75.522), ZipNotFoundError);
+  });
+
+  test('a non-US country wins even when its postcode looks like a US ZIP', async () => {
+    upstream = (u) => u.includes('/reverse')
+      ? json({ address: { postcode: '19901', country_code: 'mx' } }) : undefined;
+    await assert.rejects(coordsToZip(19.43, -99.13), OutsideUsError);
+  });
+
+  test('missing country evidence cannot turn five digits into a US location', async () => {
+    upstream = (u) => u.includes('/reverse')
+      ? json({ address: { postcode: '19901' } }) : undefined;
+    await assert.rejects(coordsToZip(39.158, -75.522), ZipNotFoundError);
+  });
+});
+
 describe('civicService.parseLocations', () => {
   test('never invents coordinates', () => {
     const locs = parseLocations({
