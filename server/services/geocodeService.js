@@ -33,9 +33,10 @@ async function coordsToZip(lat, lng) {
   // the US is a different answer to the user than being somewhere we simply couldn't resolve.
   const country = (addr.country_code || '').toLowerCase();
   if (country && country !== 'us') throw new OutsideUsError(`Coordinates are in ${country.toUpperCase()}, not the US`);
+  if (!country) throw new ZipNotFoundError(`No country found for ${lat},${lng}`);
 
   // Postcodes come back as either "19901" or ZIP+4 ("19901-1234"); the pipeline wants the 5-digit form.
-  const zip = String(addr.postcode || '').match(/\b(\d{5})\b/)?.[1];
+  const zip = String(addr.postcode || '').trim().match(/^(\d{5})(?:-\d{4})?$/)?.[1];
   if (!zip) throw new ZipNotFoundError(`No US ZIP code found for ${lat},${lng}`);
 
   return zip;
