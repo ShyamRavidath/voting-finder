@@ -51,7 +51,8 @@ npm run dev                   # API on :3001, Vite on :5173 (proxies /api)
 | Variable (server) | Required | Purpose |
 |---|---|---|
 | `GOOGLE_CIVIC_API_KEY` | optional | Official polling locations. Without it, OpenStreetMap venues are used. |
-| `DATABASE_URL` | optional | Postgres cache (run `server/db/schema.sql`). The CDN cache makes this unnecessary on Vercel. |
+| `DATABASE_URL` | optional | Postgres polling/news cache. The CDN cache makes this unnecessary on Vercel. If set, run the migration below before deploying a cache-route change. |
+| `CRON_SECRET` | required when using Postgres on Vercel | Authenticates the daily deletion of expired polling-cache rows. Set it in Production project settings; Vercel sends it as a bearer token to its cron endpoint. |
 | `CLIENT_URL` | optional | Extra allowed CORS origin. |
 | `RATE_LIMIT_MAX` | optional | Requests per 15 min per IP (default 100). |
 
@@ -72,3 +73,19 @@ The e2e suite covers every page on three device profiles: no runtime errors, no 
 ## Deployment (free)
 
 Everything runs on Vercel's free Hobby plan: push to `main` and Vercel builds the client and deploys `api/` as a serverless function. In the Vercel project settings, add `GOOGLE_CIVIC_API_KEY` as an environment variable (optional; the app works without it). No separate backend host is needed.
+
+If `DATABASE_URL` is configured, run `npm run db:migrate --prefix server` with that environment
+set **before merging/deploying** a cache-route change. Do not put the connection string on a
+command line or in git. The migration is transactional and idempotent: it creates a fresh schema
+or renames an existing `polling_cache.zip_code` column to `cache_key`, preserving ZIP rows. Run it
+again on a test database first if one is available. If it fails, do not deploy; inspect the schema
+without printing connection details. The route will fall back to live lookups on a cache error,
+but that masks a disabled cache and increases upstream traffic. If no `DATABASE_URL` is set,
+there is no database migration to perform.
+
+Also set `CRON_SECRET` in the Vercel Production environment when using Postgres. The authenticated
+daily cron deletes rows after their serving TTL (one day for device-coordinate keys, seven days
+for ZIP keys). Under normal daily execution, a device row may physically remain for nearly two
+days after creation; a failed cron can extend that until a successful run. Monitor cron failures
+and delete overdue rows manually if needed. The request URLs may separately appear in Vercel
+platform logs; database cleanup does not change that retention.

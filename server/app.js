@@ -13,6 +13,8 @@ app.disable('x-powered-by');
 
 app.use(corsMiddleware);
 app.use(express.json());
+// The signed daily job must not be blocked by the public per-IP request limiter.
+app.use('/api/internal/cache-maintenance', require('./routes/cacheMaintenance'));
 app.use('/api', rateLimit);
 
 app.use('/api/news', require('./routes/news'));
