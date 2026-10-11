@@ -1,10 +1,9 @@
 # Vote4U — Handoff
 
-**Audience: the next agent or owner, resuming this project cold.** Rewritten 2026-09-21 and
-updated 2026-10-03. **Section 0 is the current handoff.** Sections 1–12 preserve the detailed
-earlier record; their dated claims about `main`, open PRs, deployment, tests and blockers are
-historical unless section 0 explicitly reconfirms them. In particular, do not treat the
-2026-09-21 snapshot in §2 or the 2026-09-24 next steps in §9 as today's state.
+**Audience: the next agent or owner, resuming this project cold.** Updated 2026-10-11.
+**Read “Current handoff — October 11” below first.** It supersedes dated status throughout
+this file, including section 0. The earlier record is preserved for its decisions, failures
+and evidence; its branch, deployment and blocker claims must not be treated as current.
 
 Owner: Shyam Ravidath (`ShyamRavidath/voting-finder`), git user `vote4u`, email
 `dpti0904@gmail.com`.
@@ -16,19 +15,173 @@ then `CLAUDE.md` for architecture. `ios/APP_STORE.md` holds the submission copy.
 
 > ### If you read only one thing
 >
-> Vote4U is **not submitted to the App Store**. As of 2026-10-03, `origin/main` is `d21da52`;
-> PRs #3, #5, #6 and #8 are merged, while **#4, #7, #9, #10 and #11 remain open**. The owner
-> created the Vercel-integrated Neon database `neon-almond-flask` and says it is connected to
-> Production. That does **not** establish that the required tables, migration or `CRON_SECRET`
-> exist. **Merge #11's location/privacy correction before #7's coordinate cache; migrate the
-> database and configure/verify daily deletion before deploying #7.** The widget's extension
-> registration is proven on an iOS 17.5 simulator, but actual Home Screen placement is not.
-> Draft #9 needs the incoming Swift files; draft #10 needs #7's new route. Read §0 for the
-> checked facts, exact files, failures, and next action.
+> Vote4U has **no recorded App Store upload or submission**. Main is `4f104f3` and still lacks
+> PR #14: it merged into the release branch after PR #13 merged into main. **PR #16 repairs
+> that integration gap and is open for the owner to merge.** Opus has completed a review with
+> a **NOT READY** recommendation: read [the report](docs/OPUS_RELEASE_REVIEW.md), verify its
+> blockers, fix them, and validate the combined candidate before creating the next archive.
+> The owner is also running a Claude ultrareview; preserve and reconcile its work.
+
+## Current handoff — October 11, 2026
+
+### Goal we are working toward
+
+Ship a reliable, free, nonpartisan Vote4U web app and native iOS app, then reach a defensible
+App Store submission. Core commitments: ZIP search without location permission; no unsupported
+claims about voting venues or assignments; warnings retained through saving/sharing/reminders;
+clear official lookup; useful offline saved data; no government-affiliation implication; News
+last; truthful privacy disclosures and no secret or personal-location logging.
+
+The immediate task changed from visual polish to **independent pre-submission scrutiny**.
+The owner requested an extensive Opus review assignment and reported a concurrent Claude
+ultrareview. The assignment is written, the Opus report has since arrived, and the next work is
+to verify and resolve its material findings, reconcile the other review, and integrate/test the
+result. This handoff task itself changes documentation only.
+
+### Current state of the code and branches
+
+Remote refs and open PRs were refreshed during this handoff. These are observed git/GitHub
+facts, not deductions from PR titles:
+
+| Item | Current observed state |
+| --- | --- |
+| Active checkout | `docs/opus-release-review` |
+| HEAD before this handoff edit | `bc9c649` — adds `docs/OPUS_RELEASE_REVIEW.md` |
+| Assignment commit | `a4e5580` — adds `OPUS_REVIEW_REQUEST.md` |
+| `origin/main` | `4f104f3` — merge of PR #13 |
+| Intended reviewed candidate | `e39eeeb` on `origin/release/ios-signing-validation` |
+| PR #13 | Merged into main at `2026-10-11T02:54:21Z` |
+| PR #14 | Merged into the release branch at `2026-10-11T02:54:36Z`; **not main** |
+| PR #16 | Open: release branch → main, integration of #14 |
+| PR #15 | Open: review assignment, Opus report, and this handoff update |
+| PR #12 | Open older handoff update; reconcile content rather than blindly overwrite newer notes |
+| PRs #9 / #10 | Open drafts: formatting / structured logging |
+
+PRs #4, #7 and #11 are merged; old claims that the widget/cache/privacy changes are still only
+on those branches are obsolete. #14 adds the UI improvements and build 2, but current main
+does not yet contain them. The difference between main and the release branch is 52 files,
+610 insertions and 212 deletions. Do not use this documentation checkout as the UI candidate.
+
+PR #13 includes signing configuration, conservative saved-location evidence, warnings in saved
+cards/shares/reminders, reminder opt-out handling, and a UserDefaults privacy manifest. #14 adds
+the clearer denied-GPS/ZIP flow, prominent Save for offline action, collapsed native map,
+large-text/dark-mode refinements, responsive web popup fixes, year-neutral web copy, News-last
+navigation and refreshed JPEG store screenshots. See HANDOFF §14 **on the release branch**
+and its `docs/UI_REVIEW.md`; those files/updates are not all on main yet.
+
+Opus reports Production is deployed from `4f104f3` and has the same server code as `e39eeeb`.
+This handoff refreshed git/PR state, but did not independently re-check that deployment or
+re-run its live probes. Its report, not this paragraph, holds the associated evidence.
+
+### Files actively edited and concurrent work
+
+- **This task:** `HANDOFF.md` only. Before editing, this checkout was clean.
+- **Previous task:** `OPUS_REVIEW_REQUEST.md`, committed and pushed in PR #15; 499 lines of
+  review scope, concrete tests, evidence expectations, branch audit and submission gates.
+- **Newly arrived review:** `docs/OPUS_RELEASE_REVIEW.md`, committed as `bc9c649` by the other
+  review session. Preserve it; do not rewrite its findings as if this agent performed them.
+- **No application source changes are being made in this handoff session.**
+- Opus reports the concurrent ultrareview has popup-width-helper and reminder-denial-style
+  edits in another worktree on `feat/visual-ux-polish`. Their current dirty state was not
+  independently inspected here. Coordinate before touching that worktree, switching its
+  branch, launching competing simulator runs, or collecting its changes.
+
+### Review outcome and known remaining work
+
+Opus recommends **NOT READY**. Its major reported blockers are:
+
+1. The location permission purpose string claims location is never stored/shared, contradicting
+   the data flow and policy.
+2. No accessible in-app privacy-policy link.
+3. Unconfirmed public buildings are labelled “Likely Polling Place” / “Likely Early Voting”
+   without evidence of those voting roles.
+4. Listing/review notes overpromise official data while Production is keyless; restoring the
+   Civic key also exposes ZIP-level assignment, date and caching issues that must be addressed.
+5. Main lacks #14; the historical build-2 archive lacks clean-commit provenance; no processed
+   TestFlight candidate has been validated.
+
+The report also identifies state-border results, confirmation-flag ambiguity, notification/date
+rollover, time-dependent tests, weak test assertions, server failures and remaining device QA.
+Read the full finding ledger. These are **review findings requiring triage**, not fixes already
+applied. Reproduce consequential claims, confirm proposed remedies against the actual contract,
+and assign release priority from voter impact rather than copying severity labels uncritically.
+In particular, neutral building labels alone do not prove a safe polling-finder user journey.
+
+Historical test evidence: Opus reports 50 server tests, 93 Playwright passes with 9 documented
+skips, and the mandatory SE/iOS 17.5 runner with 69 passes and no skips on `e39eeeb`. This
+handoff did not rerun them. Green tests coexist with the above findings; inspect what the tests
+actually assert. PR #14's hosted web and iOS checks were also verified green in the assignment
+session. No test result validates future combined fixes automatically.
+
+Owner evidence: the physical Home Screen widget was added and works; ZIP worked after denying
+location but the old presentation was confusing. Returning to an existing screen in airplane
+mode without saving does **not** prove persisted offline saved-place behavior. Device cold
+launch after Save, permission revocation, delivered notification banners, VoiceOver and
+processed TestFlight paths remain unverified unless newer evidence is supplied.
+
+### What was tried and failed
+
+Preserve §5 for the full historical failure record. Recent attempts and limitations:
+
+- **Stacked integration failed to reach main:** #13 merged first; #14 then merged into its old
+  release-branch base. Both PRs show merged, but main lacks the UI changes. Opus opened #16;
+  it has not been merged as of this refresh.
+- **Initial GitHub query failed in the restricted network environment.** Re-running with the
+  approved network escalation succeeded; fetch and PR inspection are no longer blocked.
+- **Earlier visual QA:** stale headline assertions and a stale build caused initial browser
+  failures. Intensive repeated local requests later produced 429s; a local relaxed test limit
+  allowed the relevant subset to pass. Production limits were not changed, and that does not
+  validate production rate limiting.
+- **Earlier native visual QA:** a largest-text reachability test passed despite bad badge word
+  wrapping. Screenshot inspection caught it; layout was revised and the required runner passed.
+  Existing-browser automation was denied by automatic approval review; isolated Playwright was
+  used. Native interaction tooling required an unavailable skill; XCTest/simctl supplied evidence.
+- **Earlier signing:** initial provisioning lacked a registered device/widget profile; after
+  connection and provisioning retry, local signing/install/archive/export succeeded. This is
+  superseded as a blocker, but never proved Apple upload/processing or distribution installation.
+- **Opus-reported failed attempts:** popup bounds were initially measured during animation and
+  falsely failed; settled screenshots passed. A first lint run used the wrong default config;
+  the rerun still reported a nonzero baseline. A short production routing anomaly remains
+  unexplained. Review subagents could not write outputs, so their lead retained scratch notes.
+  See report §7 for details; these were not this handoff agent's experiments.
+- **No release completion:** no recorded upload, TestFlight processing, App Review submission
+  or public App Store release. No source fixes were made in the review-assignment/handoff work.
+
+Historical `/tmp/Vote4U-polished-final.xcarchive` and
+`/tmp/vote4u-polished-final-export/Vote4U.ipa` are build-2 evidence, **not an approved next upload**.
+Older similarly named packages also exist or existed. Preserve useful evidence; do not delete
+archives simply because a checklist suggests it. Produce a fresh, attributable artifact after
+the candidate is corrected and integrated.
+
+### The next step I would take
+
+Read `docs/OPUS_RELEASE_REVIEW.md` alongside the completed ultrareview, inspect all worktrees
+without changing them, and make one shared findings ledger. First reproduce the false location
+purpose string, missing in-app privacy link, and unsupported venue-role labels on `e39eeeb`.
+These have direct privacy and voter-trust consequences and should drive the first focused fix PR.
+
+Then:
+
+1. Coordinate the ultrareview edits into a new branch/PR; do not lose changes on an already-merged
+   branch. Keep owner-controlled PR #16 integration in the plan. Re-fetch before acting.
+2. Resolve the MVP/data decision: official-lookup-first behavior with honest metadata versus
+   restoring Civic only after assignment/date/cache risks are addressed. Never blindly enable
+   a key as the sole fix for the elections 503. Do not request or print the key in chat.
+3. Fix and meaningfully test blocking findings. Treat #9 formatting as optional unless an actual
+   gate requires it; assess #10 logging on current behavior rather than historical checklists.
+4. After owner merges, run the server, web and mandatory `scripts/test-ios.sh` against the
+   **combined source**, sequentially for iOS with separate DerivedData and preserved logs.
+5. Verify Production matches the merged SHA and privacy/configuration claims, create a new
+   build number from clean tracked source, record provenance, refresh affected store images,
+   then proceed through upload/processing and TestFlight device checks before submission.
+
+Read `AGENTS.md` and §5/§7 before code changes. Do not replace the iOS runner with generic
+`xcodebuild test`, run concurrent builds against shared DerivedData, or claim missing evidence
+as a pass. Required owner/account actions should be specific and tied to a concrete result.
 
 ---
 
-## 0. Current handoff — 2026-10-03 (supersedes dated status below)
+## 0. Historical handoff — 2026-10-03 (superseded by October 11 above)
 
 ### 0A. The outcome we are working toward
 
