@@ -17,9 +17,18 @@ struct ElectionReminderCard: View {
                     .accessibilityIdentifier("election-reminder-toggle")
             }
 
-            Text(permissionDenied ? deniedMessage : reminderMessage)
-                .font(.subheadline)
-                .foregroundStyle(Vote4UTheme.supportingText)
+            if permissionDenied {
+                Label(deniedMessage, systemImage: "exclamationmark.triangle.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(Color.orange.opacity(0.14), in: .rect(cornerRadius: 8))
+            } else {
+                Text(reminderMessage)
+                    .font(.subheadline)
+                    .foregroundStyle(Vote4UTheme.supportingText)
+            }
         }
         .padding()
         .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))

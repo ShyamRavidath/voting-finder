@@ -18,8 +18,8 @@ struct SavedPollingPlaceCard: View {
                     .foregroundStyle(Vote4UTheme.supportingText)
             }
 
-            if let type = place.type {
-                Text(type)
+            if place.type != nil {
+                Text(place.displayType)
                     .font(.subheadline)
             }
 

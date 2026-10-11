@@ -49,3 +49,11 @@ export function directionsUrl({ lat, lng, addr, name }) {
 export function isConfirmedLocation(location) {
   return location.isEstimated !== true && (location.isReal === true || location.isEstimated === false);
 }
+
+// Old CDN responses can carry labels inferred solely from a search keyword.
+export function locationType(location) {
+  if (!isConfirmedLocation(location) && !['Library', 'Community center', 'Town hall', 'School', 'Fire station', 'Nearby building'].includes(location.type)) {
+    return 'Nearby building';
+  }
+  return location.type;
+}

@@ -54,6 +54,20 @@ final class AppSmokeUITests: XCTestCase {
         capture(app, name: "accessibility-result-actions")
     }
 
+    func testPrivacyPolicyIsReachableFromHome() {
+        let app = launch(["-startTab", "home"])
+        let policy = app.descendants(matching: .any).matching(identifier: "privacy-policy").firstMatch
+        for _ in 0..<8 {
+            if policy.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(policy.isHittable)
+        capture(app, name: "home-privacy-link")
+        policy.tap()
+        XCTAssertTrue(
+            XCUIApplication(bundleIdentifier: "com.apple.mobilesafari").wait(for: .runningForeground, timeout: 10))
+    }
+
     func testAllFourTabsExistInOrder() {
         let app = launch(["-startTab", "home"])
         for tab in ["Home", "Vote", "Map", "News"] {

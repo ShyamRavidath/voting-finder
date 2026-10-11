@@ -17,6 +17,18 @@ final class PollingResultTests: XCTestCase {
         XCTAssertFalse(location(isEstimated: nil).isConfirmed, "missing evidence must not imply confirmation")
     }
 
+    func testNonofficialSourceOverridesConflictingConfirmationFlags() throws {
+        let data = Data(
+            """
+            {"locations":[{"name":"Library","addr":"Address","type":"Likely Early Voting",
+            "isReal":true,"isEstimated":false}],"dataSource":"nearby"}
+            """.utf8)
+        let result = try JSONDecoder().decode(PollingResult.self, from: data)
+        XCTAssertFalse(result.locations[0].isConfirmed)
+        XCTAssertEqual(result.locations[0].displayType, "Nearby building")
+        XCTAssertFalse(SavedPlace(location: result.locations[0]).isConfirmed)
+    }
+
     func testMilesConversionAndPrecision() {
         XCTAssertEqual(location(isEstimated: true, distance: 1.0).milesAway, "0.6 mi")
         XCTAssertEqual(location(isEstimated: true, distance: 32.2).milesAway, "20 mi")

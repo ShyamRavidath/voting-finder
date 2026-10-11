@@ -37,6 +37,7 @@ struct HomeView: View {
                     )
 
                     NonpartisanNotice()
+                    AppInformationLinks()
                 }
                 .padding()
             }

@@ -1,6 +1,6 @@
 import { usePageTitle } from '../hooks/usePageTitle';
 
-const UPDATED = 'September 24, 2026';
+const UPDATED = 'October 11, 2026';
 
 export default function PrivacyPage() {
   usePageTitle('Privacy policy');
@@ -19,7 +19,7 @@ export default function PrivacyPage() {
       <h2 className="pt-2 text-xl font-bold text-slate-900">What we process</h2>
       <ul className="list-disc space-y-2 pl-5">
         <li>
-          <strong>ZIP codes you search.</strong> Sent to our server to look up nearby voting locations. Results may
+          <strong>ZIP codes you search.</strong> Sent to our server to look up your area and nearby buildings. Results may
           be cached by ZIP code so repeat searches are fast. The ZIP can also appear in hosting request logs.
         </li>
         <li>
@@ -33,11 +33,12 @@ export default function PrivacyPage() {
       </ul>
 
       <h2 className="pt-2 text-xl font-bold text-slate-900">Third-party services</h2>
-      <p>To answer ZIP searches, our server contacts these services on your behalf with the ZIP code or the city and state it resolves to. An optional location search also sends rounded coordinates to Nominatim for reverse geocoding:</p>
+      <p>To answer ZIP searches, our server contacts these services on your behalf with the ZIP code or the city and state it resolves to. An optional location search also sends rounded coordinates to Nominatim for reverse geocoding and nearby-building searches using a bounding box around that location:</p>
       <ul className="list-disc space-y-2 pl-5">
         <li>Zippopotam.us (ZIP code to city and coordinates)</li>
-        <li>Google Civic Information API (official polling locations)</li>
-        <li>OpenStreetMap Nominatim (nearby public buildings)</li>
+        <li>Google Civic Information API (when configured; currently disabled)</li>
+        <li>Neon PostgreSQL (server-side lookup cache)</li>
+        <li>OpenStreetMap Nominatim (nearby buildings)</li>
         <li>Google News (headlines)</li>
       </ul>
       <p>
@@ -54,8 +55,9 @@ export default function PrivacyPage() {
         <li>
           <strong>Location (optional).</strong> If you tap &ldquo;Use my location&rdquo;, the app asks for permission to
           read your location while you're using it. Your coordinates are rounded to roughly 110 metres before they
-          leave your device, then sent to our server and Nominatim to work out which ZIP code you're in. The rounded
-          coordinates can appear in Vercel request logs. If database caching is enabled, the coordinate pair is a
+          leave your device, then sent to our server and Nominatim to work out which ZIP code you're in and search
+          for nearby buildings. Vercel may cache responses by request URL for up to one day. The rounded
+          coordinates can appear in Vercel request logs. In our Neon database, the coordinate pair is a
           cache key for one day of serving and is deleted by a daily cleanup job, normally within two days of the
           search; a failed cleanup may delay deletion. We don't use coordinates to track you across apps or websites.
           You can decline, or turn the permission off later in Settings, and the app keeps working normally &mdash;

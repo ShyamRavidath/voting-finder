@@ -9,7 +9,7 @@ struct PollingLocationCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(location.type)
+                Text(location.displayType)
                     .font(.subheadline)
                     .foregroundStyle(Vote4UTheme.supportingText)
                 Text(location.name)

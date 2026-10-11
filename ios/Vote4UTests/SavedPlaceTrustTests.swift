@@ -14,7 +14,7 @@ final class SavedPlaceTrustTests: XCTestCase {
         let saved = SavedPlace(location: location(estimated: true))
         let restored = try JSONDecoder().decode(SavedPlace.self, from: JSONEncoder().encode(saved))
         XCTAssertFalse(restored.isConfirmed)
-        XCTAssertEqual(restored.type, "Civic Building")
+        XCTAssertEqual(restored.type, "Nearby building")
         XCTAssertTrue(restored.confirmationNotice.contains("Not confirmed"))
     }
 
@@ -25,6 +25,23 @@ final class SavedPlaceTrustTests: XCTestCase {
         XCTAssertTrue(saved.confirmationNotice.contains("Not confirmed"))
     }
 
+    func testLegacyVotingClaimsAreNeutralInSavedCardsAndShares() throws {
+        for type in ["Likely Polling Place", "Likely Early Voting", "Civic Building"] {
+            let data = Data(
+                """
+                {"name":"Library","addr":"Address","type":"\(type)","isEstimated":true,"savedAt":0}
+                """.utf8)
+            let saved = try JSONDecoder().decode(SavedPlace.self, from: data)
+            XCTAssertEqual(saved.displayType, "Nearby building")
+            XCTAssertFalse(saved.isConfirmed)
+            let location = PollingLocation(
+                name: "Library", addr: "Address", type: type,
+                lat: nil, lng: nil, distance: nil, isEstimated: true)
+            XCTAssertFalse(location.shareText.contains(type))
+            XCTAssertTrue(location.shareText.contains("Not confirmed"))
+        }
+    }
+
     func testMissingAPIEvidenceDoesNotMeanOfficial() {
         XCTAssertFalse(location(estimated: nil).isConfirmed)
         XCTAssertTrue(location(estimated: nil).shareText.contains("Not confirmed"))
@@ -32,7 +49,7 @@ final class SavedPlaceTrustTests: XCTestCase {
 
     func testSharedCivicBuildingIncludesWarningAndOfficialLookup() {
         let shared = location(estimated: true).shareText
-        XCTAssertTrue(shared.contains("Civic Building"))
+        XCTAssertTrue(shared.contains("Nearby building"))
         XCTAssertTrue(shared.contains("Not confirmed"))
         XCTAssertTrue(shared.contains("https://www.usa.gov/find-polling-place"))
     }

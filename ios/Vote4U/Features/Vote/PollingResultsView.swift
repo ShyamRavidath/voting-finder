@@ -12,13 +12,15 @@ struct PollingResultsView: View {
                     "No polling places found",
                     systemImage: "mappin.slash",
                     description: Text(
-                        "We checked official data, then nearby public buildings, then widened the search. "
-                            + "Nothing came back, and we'd rather show you nothing than guess. "
-                            + "Use an official lookup below."
+                        "We couldn’t confirm a polling place for this search. "
+                            + "Use an official lookup below to find your assigned location and hours."
                     )
                 )
             } else {
                 resultSummary
+                OfficialSourcesView()
+                Text(result.isOfficial ? "Locations" : "Nearby buildings — not voting recommendations")
+                    .font(.headline)
                 if result.locations.contains(where: { $0.lat != nil && $0.lng != nil }) {
                     DisclosureGroup("View locations on map") {
                         PollingMapView(locations: result.locations)
@@ -42,7 +44,9 @@ struct PollingResultsView: View {
                 }
             }
 
-            OfficialSourcesView()
+            if result.isEmpty {
+                OfficialSourcesView()
+            }
         }
     }
 
@@ -65,9 +69,11 @@ struct PollingResultsView: View {
                     .accessibilityIdentifier("polling.unofficialNotice")
             }
 
-            Link("Confirm with an official lookup", destination: URL(string: "https://www.usa.gov/find-polling-place")!)
-                .font(.subheadline.bold())
-                .padding(.vertical, 6)
+            Link(
+                "Find your assigned polling place", destination: URL(string: "https://www.usa.gov/find-polling-place")!
+            )
+            .font(.subheadline.bold())
+            .frame(minHeight: 44)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -77,14 +83,12 @@ struct PollingResultsView: View {
     }
 
     private var unofficialNotice: String {
-        guard result.isWidened else {
-            return "Likely locations from OpenStreetMap—not confirmed polling places. "
-                + "Check an official source before you go."
+        if result.isWidened {
+            return "We can’t confirm your polling place. We widened the search beyond your immediate area. "
+                + "We have no evidence that these buildings offer voting; none is a confirmed polling place."
         }
-        let radius = result.searchRadiusMiles.map { " to about \($0) miles" } ?? ""
-        return "Nothing polling-related was listed in your immediate area, so we widened the search\(radius). "
-            + "These are civic buildings of the kind precincts often use—none is a confirmed polling place. "
-            + "Check an official source below before you go."
+        return "We can’t confirm your polling place. We have no evidence that these nearby buildings offer voting. "
+            + "Use an official lookup to find your assigned polling place."
     }
 
     private func isSaved(_ location: PollingLocation) -> Bool {

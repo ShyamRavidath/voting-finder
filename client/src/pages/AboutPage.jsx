@@ -9,7 +9,7 @@ const TABS = [
 ];
 
 const SOURCES = [
-  ['Polling places', "Google Civic Information API (Voting Information Project) when official data is published; otherwise nearby public buildings from OpenStreetMap."],
+  ['Polling places', "Official lookup links help you find your assigned polling place. Nearby buildings come from OpenStreetMap and are not voting recommendations. This release does not provide verified polling assignments."],
   ['ZIP code lookup', 'Zippopotam.us'],
   ['Maps', 'U.S. state shapes from the U.S. Census Bureau (via us-atlas); street maps © OpenStreetMap contributors.'],
   ['News', 'Google News headlines, linked to the original publishers.'],

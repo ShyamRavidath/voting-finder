@@ -25,7 +25,7 @@ test.describe('polling place finder', () => {
     await searchButton(page).click();
 
     await expect(page).toHaveURL(/zip=90210/);
-    const results = page.getByRole('heading', { name: /locations? near Beverly Hills, CA/ });
+    const results = page.getByRole('heading', { name: /(?:locations?|buildings?) near Beverly Hills, CA/ });
     const empty = page.getByText(/No locations found near/);
     await expect(results.or(empty)).toBeVisible({ timeout: 30_000 });
 
@@ -36,7 +36,7 @@ test.describe('polling place finder', () => {
       await expect(directions).toHaveAttribute('href', /^https:\/\/(maps\.apple\.com|www\.google\.com\/maps)/);
       await expect(directions).toHaveAttribute('target', '_blank');
       // Unconfirmed venues must be labeled as such
-      await expect(page.getByText(/Likely venues, not confirmed|Nothing listed nearby|Official locations/)).toBeVisible();
+      await expect(page.getByText(/We can’t confirm your polling place|Official locations/)).toBeVisible();
       await expect(page.getByRole('region', { name: 'Map of nearby locations' })).toBeVisible();
 
       await cards.first().getByRole('button', { name: 'Show on map' }).click();
@@ -51,7 +51,7 @@ test.describe('polling place finder', () => {
   test('shared link with ?zip= runs the search automatically and remembers it', async ({ page }) => {
     await page.goto('/tools?tab=booths&zip=19901');
     await expect(zipInput(page)).toHaveValue('19901');
-    const results = page.getByRole('heading', { name: /locations? near Dover, DE/ });
+    const results = page.getByRole('heading', { name: /(?:locations?|buildings?) near Dover, DE/ });
     const empty = page.getByText('No locations found near Dover, DE yet');
     await expect(results.or(empty)).toBeVisible({ timeout: 30_000 });
 
@@ -112,10 +112,8 @@ test.describe('polling place finder', () => {
     );
     await page.goto('/tools?tab=booths&zip=83428');
 
-    await expect(page.getByText('Nothing listed nearby')).toBeVisible();
-    // 25 km, reported to the reader in miles.
-    await expect(page.getByText(/widened the search to about 16 miles/)).toBeVisible();
-    await expect(page.getByText(/None of them is a confirmed polling place/)).toBeVisible();
+    await expect(page.getByText(/We widened the building search/)).toBeVisible();
+    await expect(page.getByText(/We have no evidence that any of these buildings offer voting/)).toBeVisible();
     // Rule #1: every venue in the weakest tier still carries the per-card disclaimer.
     await expect(page.getByText('Not confirmed')).toBeVisible();
     await expect(page.getByRole('link', { name: /Find your official polling place/ })).toBeVisible();
@@ -158,4 +156,20 @@ test('missing confirmation flags never imply an official location', async ({ pag
     const map = await page.getByRole('region', { name: 'Map of nearby locations' }).boundingBox();
     return popup.x >= map.x && popup.x + popup.width <= map.x + map.width;
   }).toBe(true);
+});
+
+
+test('legacy fallback claims are neutralized and official lookup precedes building actions', async ({ page }) => {
+  await page.route('**/api/polling*', route => route.fulfill({ json: {
+    dataSource: 'estimated', locations: [{ name: 'Test building', addr: 'Test address',
+      type: 'Likely Early Voting', isEstimated: false, isReal: true, lat: 34, lng: -118 }],
+  } }));
+  await page.goto('/tools?tab=booths&zip=90210');
+  const card = page.locator('ol > li').first();
+  await expect(card.getByText('Nearby building', { exact: true })).toBeVisible();
+  await expect(card.getByText('Not confirmed', { exact: true })).toBeVisible();
+  await expect(page.getByText('Likely Early Voting', { exact: true })).toHaveCount(0);
+  const official = page.getByRole('link', { name: /Find your official polling place/ });
+  const directions = card.getByRole('link', { name: /Directions/ });
+  expect((await official.boundingBox()).y).toBeLessThan((await directions.boundingBox()).y);
 });

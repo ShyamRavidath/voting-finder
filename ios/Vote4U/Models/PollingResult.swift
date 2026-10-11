@@ -7,7 +7,7 @@ struct PollingLocation: Codable, Identifiable, Equatable {
     let lat: Double?
     let lng: Double?
     let distance: Double?
-    let isEstimated: Bool?
+    var isEstimated: Bool?
     var isReal: Bool? = nil
 
     var id: String { "\(name)|\(addr)" }
@@ -16,16 +16,24 @@ struct PollingLocation: Codable, Identifiable, Equatable {
     /// estimated venue as confirmed — that is the rule the whole codebase is built around.
     var isConfirmed: Bool { isEstimated != true && (isReal == true || isEstimated == false) }
 
+    var displayType: String { Self.displayType(type, confirmed: isConfirmed) }
+
+    static func displayType(_ type: String?, confirmed: Bool) -> String {
+        let buildingKinds = ["Library", "Community center", "Town hall", "School", "Fire station", "Nearby building"]
+        guard confirmed || buildingKinds.contains(type ?? "") else { return "Nearby building" }
+        return type ?? "Location"
+    }
+
     var confirmationNotice: String {
         if isConfirmed {
             return "Confirm your assigned polling place and hours with your election office before you go."
         }
         return
-            "Not confirmed. This location may not be a polling place. Check your official state lookup before you go."
+            "Not confirmed. This location may not be a polling place. Check your official lookup before you go."
     }
 
     var shareText: String {
-        "\(name)\n\(addr)\n\(type)\n\(confirmationNotice)\nhttps://www.usa.gov/find-polling-place"
+        "\(name)\n\(addr)\n\(displayType)\n\(confirmationNotice)\nhttps://www.usa.gov/find-polling-place"
     }
 
     var milesAway: String? {
@@ -86,4 +94,23 @@ struct Article: Codable, Identifiable, Equatable {
 
 struct NewsResponse: Codable {
     let articles: [Article]
+}
+
+// A result from a nonofficial source cannot become confirmed because of conflicting flags.
+// Keep this in an extension so the memberwise initializer remains available to DEBUG fixtures.
+extension PollingResult {
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        dataSource = try values.decode(String.self, forKey: .dataSource)
+        let decoded = try values.decode([PollingLocation].self, forKey: .locations)
+        let officialSource = dataSource == "official"
+        locations = decoded.map { location in
+            var normalized = location
+            if !officialSource { normalized.isEstimated = true }
+            return normalized
+        }
+        place = try values.decodeIfPresent(PollingPlace.self, forKey: .place)
+        zip = try values.decodeIfPresent(String.self, forKey: .zip)
+        searchRadiusKm = try values.decodeIfPresent(Double.self, forKey: .searchRadiusKm)
+    }
 }

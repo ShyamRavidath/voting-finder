@@ -20,15 +20,15 @@ struct HomeSavedPlaceCard: View {
 
                 Spacer(minLength: 12)
 
-                Label("Offline", systemImage: "checkmark.circle.fill")
+                Label("Offline", systemImage: "internaldrive")
                     .font(.caption.bold())
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.secondary)
                     .labelStyle(.iconOnly)
                     .accessibilityLabel("Available offline")
             }
 
-            if let type = place.type {
-                Text(type)
+            if place.type != nil {
+                Text(place.displayType)
                     .font(.subheadline)
             }
 

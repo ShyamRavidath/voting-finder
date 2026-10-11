@@ -83,7 +83,7 @@ beforeEach(() => {
     if (u.includes('nominatim') && u.includes('reverse'))
       return json({ address: { postcode: '19901', country_code: 'us' } });
     if (u.includes('nominatim') && u.includes('library'))
-      return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { city: 'Dover', postcode: '19901' } }]);
+      return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { state: 'Delaware', city: 'Dover', postcode: '19901' } }]);
     if (u.includes('nominatim')) return json([]);
   };
 });
@@ -211,4 +211,15 @@ describe('polling cache behaviour', () => {
       console.warn = originalWarn;
     }
   });
+});
+
+
+test('old cache entries are refreshed before their unverified labels or state can be served', async () => {
+  rows.set('19901', { locations: { locations: [{ name: 'Old venue', type: 'Likely Early Voting' }] }, data_source: 'estimated' });
+  const body = await (await fetch(`${base}/api/polling?zip=19901`)).json();
+  assert.equal(body.cached, false);
+  assert.equal(body.schemaVersion, 2);
+  assert.equal(body.locations[0].name, 'Dover Public Library');
+  assert.doesNotMatch(body.locations[0].type, /polling|voting/i);
+  assert.ok(upstreamCalls > 0);
 });

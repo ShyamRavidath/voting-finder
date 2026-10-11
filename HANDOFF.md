@@ -1,5 +1,8 @@
 # Vote4U — Handoff
 
+> October 11 release-fix implementation: see [the current fix ledger](docs/RELEASE_TRUST_FIXES.md).
+> The independent review and current branch audit remain in PR #15. Nothing is submitted.
+
 **Latest continuation: §14 — visual polish, build 2, device installation and release status (2026-10-10).**
 
 **Audience: the next agent or owner, resuming this project cold.** Rewritten 2026-09-21 and

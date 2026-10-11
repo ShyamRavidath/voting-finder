@@ -403,7 +403,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Vote4U uses your location only to find polling places near you. It is never stored or shared.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Vote4U sends rounded coordinates to our server and OpenStreetMap to look up your area and nearby buildings. Coordinates may be cached and recorded in hosting logs. You can use a ZIP code instead.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -429,7 +429,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Vote4U uses your location only to find polling places near you. It is never stored or shared.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Vote4U sends rounded coordinates to our server and OpenStreetMap to look up your area and nearby buildings. Coordinates may be cached and recorded in hosting logs. You can use a ZIP code instead.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (

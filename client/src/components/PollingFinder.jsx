@@ -70,19 +70,17 @@ const SOURCE_NOTICE = {
   },
   estimated: {
     tone: 'border-amber-200 bg-amber-50 text-amber-900',
-    title: 'Likely venues, not confirmed',
+    title: 'We can’t confirm your polling place',
     body: () =>
-      "We couldn’t confirm an official polling place for this search. These nearby public buildings may be used for voting, but none is confirmed. Check an official lookup before you go.",
+      "We have no evidence that the nearby buildings below offer voting. Use an official lookup to find your assigned polling place.",
   },
   // The weakest tier the server will return. The wording hedges harder than 'estimated' on
   // purpose: these came from a wider sweep with no match in the immediate area.
   nearby: {
     tone: 'border-amber-200 bg-amber-50 text-amber-900',
-    title: 'Nothing listed nearby — here are the closest civic buildings',
-    body: (_election, radiusKm) =>
-      `We couldn't find any polling-type venue in your immediate area, so we widened the search${
-        radiusKm ? ` to about ${Math.round(radiusKm * 0.621371)} miles` : ''
-      }. These are civic buildings of the kind precincts often use. None of them is a confirmed polling place — check the official links below before you go.`,
+    title: 'We can’t confirm your polling place',
+    body: () =>
+      "We widened the building search beyond your immediate area. We have no evidence that any of these buildings offer voting. Use an official lookup to find your assigned polling place.",
   },
 };
 
@@ -194,9 +192,7 @@ export default function PollingFinder() {
               No locations found near {place ? `${place.city}, ${place.stateAbbr}` : searchedZip} yet
             </p>
             <p className="mt-1 text-sm text-slate-600">
-              We checked official data, then nearby public buildings, then widened the search — nothing came back. Official
-              polling places are usually published a few weeks before each election. Use the official lookups below in the
-              meantime.
+              We couldn’t confirm a polling place for this search. Use an official lookup to find your assigned location and hours.
             </p>
           </div>
         )}
@@ -205,7 +201,7 @@ export default function PollingFinder() {
           <div className="fade-in space-y-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-lg font-semibold">
-                {locations.length} location{locations.length === 1 ? '' : 's'} near{' '}
+                {locations.length} {dataSource === 'official' ? 'location' : 'building'}{locations.length === 1 ? '' : 's'} near{' '}
                 {place ? `${place.city}, ${place.stateAbbr}` : searchedZip}
               </h3>
             </div>
@@ -214,6 +210,8 @@ export default function PollingFinder() {
                 <strong className="font-semibold">{notice.title}.</strong> {notice.body(election, searchRadiusKm)}
               </div>
             )}
+            <OfficialLinks heading="Find your assigned polling place" />
+            <h3 className="text-lg font-semibold">{dataSource === 'official' ? 'Locations' : 'Nearby buildings — not voting recommendations'}</h3>
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
               <ol className="space-y-3">
                 {locations.map((loc, i) => (
@@ -240,7 +238,7 @@ export default function PollingFinder() {
           </div>
         )}
 
-        {status !== 'idle' && <OfficialLinks />}
+        {status !== 'idle' && !(status === 'success' && locations.length > 0) && <OfficialLinks />}
       </div>
     </div>
   );
