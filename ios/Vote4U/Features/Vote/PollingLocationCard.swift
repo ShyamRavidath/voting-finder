@@ -61,12 +61,12 @@ struct PollingLocationCard: View {
                         isSaved ? "Saved" : "Save",
                         systemImage: isSaved ? "bookmark.fill" : "bookmark"
                     )
-                        .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .disabled(isSaved)
 
-                ShareLink(item: shareText) {
+                ShareLink(item: location.shareText) {
                     Label("Share", systemImage: "square.and.arrow.up")
                         .frame(maxWidth: .infinity)
                 }
@@ -86,10 +86,6 @@ struct PollingLocationCard: View {
         if let miles = location.milesAway { parts.append("\(miles) away") }
         if !location.isConfirmed { parts.append("Not confirmed") }
         return parts.joined(separator: ", ")
-    }
-
-    private var shareText: String {
-        "\(location.name)\n\(location.addr)"
     }
 
 }

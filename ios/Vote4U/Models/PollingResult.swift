@@ -8,12 +8,25 @@ struct PollingLocation: Codable, Identifiable, Equatable {
     let lng: Double?
     let distance: Double?
     let isEstimated: Bool?
+    var isReal: Bool? = nil
 
     var id: String { "\(name)|\(addr)" }
 
     /// The API labels anything that did not come from an official source. Never present an
     /// estimated venue as confirmed — that is the rule the whole codebase is built around.
-    var isConfirmed: Bool { isEstimated != true }
+    var isConfirmed: Bool { isEstimated != true && (isReal == true || isEstimated == false) }
+
+    var confirmationNotice: String {
+        if isConfirmed {
+            return "Confirm your assigned polling place and hours with your election office before you go."
+        }
+        return
+            "Not confirmed. This location may not be a polling place. Check your official state lookup before you go."
+    }
+
+    var shareText: String {
+        "\(name)\n\(addr)\n\(type)\n\(confirmationNotice)\nhttps://www.usa.gov/find-polling-place"
+    }
 
     var milesAway: String? {
         guard let distance else { return nil }
