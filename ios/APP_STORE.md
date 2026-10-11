@@ -102,8 +102,8 @@ WHERE THE DATA COMES FROM
   Safari view.
 
 LOCATION
-Location is optional and used only to resolve the user's ZIP code so we can
-look up nearby polling places. Coordinates are rounded to roughly 110 metres
+Location is optional and used to resolve the user's ZIP code and find nearby
+locations, with distances measured from the rounded device position. Coordinates are rounded to roughly 110 metres
 before leaving the device. They are sent to our server for ZIP resolution and
 can appear in Vercel request logs; an optional database cache may retain the
 rounded coordinate pair until daily cleanup (normally within two days, longer

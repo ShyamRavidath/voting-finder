@@ -7,13 +7,28 @@ struct SavedPlace: Codable, Equatable {
     let addr: String
     let lat: Double?
     let lng: Double?
+    // Optional fields preserve existing saved records; missing evidence never means confirmed.
+    let isEstimated: Bool?
+    let type: String?
     let savedAt: Date
+
+    var isConfirmed: Bool { isEstimated == false }
+
+    var confirmationNotice: String {
+        if isConfirmed {
+            return "Confirm your assigned polling place and hours with your election office before you go."
+        }
+        return
+            "Not confirmed. This location may not be a polling place. Check your official state lookup before you go."
+    }
 
     init(location: PollingLocation, savedAt: Date = Date()) {
         self.name = location.name
         self.addr = location.addr
         self.lat = location.lat
         self.lng = location.lng
+        self.isEstimated = !location.isConfirmed
+        self.type = location.type
         self.savedAt = savedAt
     }
 }
