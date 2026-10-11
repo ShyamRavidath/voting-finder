@@ -142,3 +142,20 @@ test.describe('polling place finder', () => {
     await expect(zipInput(page)).toHaveValue('90210');
   });
 });
+
+// An upstream payload without trust flags must stay cautious on both card and map.
+test('missing confirmation flags never imply an official location', async ({ page }) => {
+  await page.route('**/api/polling*', route => route.fulfill({
+    json: { dataSource: 'estimated', locations: [{ name: 'QA venue', addr: 'QA address', lat: 34, lng: -118 }] },
+  }));
+  await page.goto('/tools?tab=booths&zip=90210');
+  const card = page.locator('ol > li').first();
+  await expect(card.getByText('Not confirmed', { exact: true })).toBeVisible();
+  await card.getByRole('button', { name: 'Show on map' }).click();
+  await expect(page.locator('.leaflet-popup-content')).toContainText('Not confirmed');
+  await expect.poll(async () => {
+    const popup = await page.locator('.leaflet-popup').boundingBox();
+    const map = await page.getByRole('region', { name: 'Map of nearby locations' }).boundingBox();
+    return popup.x >= map.x && popup.x + popup.width <= map.x + map.width;
+  }).toBe(true);
+});

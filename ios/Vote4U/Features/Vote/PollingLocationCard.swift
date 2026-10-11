@@ -4,88 +4,113 @@ struct PollingLocationCard: View {
     let location: PollingLocation
     var isSaved: Bool = false
     var onSave: () -> Void = {}
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(location.type)
+                    .font(.subheadline)
+                    .foregroundStyle(Vote4UTheme.supportingText)
                 Text(location.name)
                     .font(.title3.bold())
-                Spacer(minLength: 8)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(location.addr)
+                    .font(.subheadline)
+                    .foregroundStyle(Vote4UTheme.supportingText)
                 if let miles = location.milesAway {
-                    Text(miles)
-                        .font(.subheadline.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                    Label("\(miles) away", systemImage: "location")
+                        .font(.subheadline)
+                        .foregroundStyle(Vote4UTheme.supportingText)
                 }
             }
 
-            Text(location.addr)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 10) {
-                Text(location.type)
-                    .font(.caption.bold())
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(.thinMaterial, in: .capsule)
-
-                // The single most important rule in this codebase: never present an unofficial
-                // venue as confirmed.
-                if !location.isConfirmed {
-                    Label("Not confirmed", systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+            if !location.isConfirmed {
+                Group {
+                    if typeSize.isAccessibilitySize {
+                        Text("Not confirmed")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        Label("Not confirmed", systemImage: "exclamationmark.triangle.fill")
+                    }
                 }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Color.orange.opacity(0.14), in: .rect(cornerRadius: 8))
             }
 
-            Divider()
-
-            Button {
-                MapDirections.open(
-                    name: location.name,
-                    address: location.addr,
-                    latitude: location.lat,
-                    longitude: location.lng
-                )
-            } label: {
-                Label("Directions", systemImage: "arrow.triangle.turn.up.right.circle.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
+            Button(action: onSave) {
+                Group {
+                    if typeSize.isAccessibilitySize {
+                        Text(isSaved ? "Saved for offline" : "Save for offline")
+                    } else {
+                        Label(
+                            isSaved ? "Saved for offline" : "Save for offline",
+                            systemImage: isSaved ? "checkmark.circle.fill" : "bookmark"
+                        )
+                    }
+                }
+                .frame(maxWidth: .infinity, minHeight: 32)
             }
-            .controlSize(.large)
             .vote4UPrimaryActionStyle()
+            .disabled(isSaved)
+            .accessibilityIdentifier("save-location")
 
-            HStack(spacing: 10) {
-                Button(action: onSave) {
-                    Label(
-                        isSaved ? "Saved" : "Save",
-                        systemImage: isSaved ? "bookmark.fill" : "bookmark"
-                    )
-                    .frame(maxWidth: .infinity)
+            if typeSize.isAccessibilitySize {
+                VStack(spacing: 10) {
+                    directions
+                    share
                 }
-                .buttonStyle(.bordered)
-                .disabled(isSaved)
-
-                ShareLink(item: location.shareText) {
-                    Label("Share", systemImage: "square.and.arrow.up")
-                        .frame(maxWidth: .infinity)
+            } else {
+                HStack(spacing: 10) {
+                    directions
+                    share
                 }
-                .buttonStyle(.bordered)
             }
-            .sensoryFeedback(.success, trigger: isSaved)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
+        .padding(18)
         .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: Vote4UTheme.cardCornerRadius)
+                .stroke(.secondary.opacity(0.15), lineWidth: 1)
+        }
+        .sensoryFeedback(.success, trigger: isSaved)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(accessibilityLabel)
+        .accessibilityLabel("\(location.name), \(location.addr)\(location.isConfirmed ? "" : ", Not confirmed")")
     }
 
-    private var accessibilityLabel: String {
-        var parts = [location.name, location.addr, location.type]
-        if let miles = location.milesAway { parts.append("\(miles) away") }
-        if !location.isConfirmed { parts.append("Not confirmed") }
-        return parts.joined(separator: ", ")
+    private var directions: some View {
+        Button {
+            MapDirections.open(
+                name: location.name, address: location.addr,
+                latitude: location.lat, longitude: location.lng)
+        } label: {
+            Group {
+                if typeSize.isAccessibilitySize {
+                    Text("Directions")
+                } else {
+                    Label("Directions", systemImage: "arrow.turn.up.right")
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 32)
+        }
+        .buttonStyle(.bordered)
     }
 
+    private var share: some View {
+        ShareLink(item: location.shareText) {
+            Group {
+                if typeSize.isAccessibilitySize {
+                    Text("Share")
+                } else {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 32)
+        }
+        .buttonStyle(.bordered)
+    }
 }

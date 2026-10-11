@@ -1,5 +1,7 @@
 # Vote4U — Handoff
 
+**Latest continuation: §14 — visual polish, build 2, device installation and release status (2026-10-10).**
+
 **Audience: the next agent or owner, resuming this project cold.** Rewritten 2026-09-21 and
 updated 2026-10-03. **Section 0 is the current handoff.** Sections 1–12 preserve the detailed
 earlier record; their dated claims about `main`, open PRs, deployment, tests and blockers are
@@ -1263,3 +1265,54 @@ blockers above are superseded. No credentials or device identifiers were committ
 Owner has been asked to check ZIP after declining location and actual Home Screen widget
 placement; results are pending. Continue GPS/offline/notification/accessibility device QA,
 App Store record/privacy finalization and the remaining #9/#10 integration before submission.
+
+## 14. Visual polish and owner device feedback — 2026-10-10
+
+Active branch: `feat/visual-ux-polish`, stacked on PR #13 (`release/ios-signing-validation`).
+The owner requested an Imagegen-assisted visual loop across native and responsive web UI.
+See `docs/UI_REVIEW.md` for impact-ranked findings, iterations and selected captures.
+
+Owner evidence supersedes the widget-placement uncertainty in §13: the widget was added to the
+physical Home Screen and works. Location denial allowed a later ZIP search, but the failed-search
+presentation was confusing. Returning to the app in airplane mode retained the screen; the owner
+had not used Save, so persisted offline saved-place behavior is still an owner follow-up.
+
+Changes: explicit optional-location/ZIP fallback; prominent Save for offline; collapsed native
+result map; readable warnings and supporting copy; adaptive dark link color with separate primary
+button blue; large-text action layout; calmer Home countdown and clearer plan instructions.
+Web Home/News no longer imply every election is in 2028; News is last; desktop search layout,
+map warning evidence, narrow popup bounds and touch controls were improved. Build number is 2.
+
+Validation history: server 50 passed; full browser 93 passed / 9 expected skips; final relevant
+browser subset 54 passed after resolving a local-only HTTP 429 caused by intensive repeated QA.
+Desktop-to-320px popup resize passed. Initial iPhone 15 Pro iOS 17.5 run passed 68 tests and Release
+stub/family checks. Small-phone validation adds a largest-text reachability test plus retained
+screenshots; vision found a badge wrapping problem even though the test passed, and the layout
+was revised again. Final native totals and delivery evidence follow when complete.
+
+Xcode interaction tooling required an unavailable `device-interaction` skill; simulator captures
+and XCTest supplied the native evidence instead. Existing Chrome access was rejected by automatic
+approval review; web QA used an isolated Playwright browser, not the owner's browsing session.
+No source keys or precise user location were logged. No PR was merged and nothing was published.
+
+Final small-phone runner passed: **69 tests** (55 unit, 12 smoke, allow and deny), plus Release
+stub exclusion and widget iPhone/iPad family checks. Final screenshots of result actions, saved
+Home warning and largest-text labels are retained in `docs/ui-review/` and explicitly marked as
+QA fixtures, not store imagery. Browser and native visual findings are resolved within this pass;
+VoiceOver and delivered device notification banners remain unverified.
+
+Final build 1.0 (2) installed/launched on the owner's iPhone after the accessibility refinement.
+Final signed archive: `/tmp/Vote4U-polished-final.xcarchive`.
+Final App Store export: `/tmp/vote4u-polished-final-export/Vote4U.ipa`; signature verification
+passed, distribution profile has no device list and `get-task-allow` is false. Earlier packages
+without `final` in the name are superseded. No upload or Apple processing has been attempted.
+Production elections was rechecked: HTTP 503, “Election data is not configured.” Owner should
+verify the rotated Civic key in Vercel Production, without pasting it into chat, then redeploy
+after the owner-controlled merge. App Store record, final host-log/privacy review and TestFlight
+processing still need completion. Installed Xcode 27.0 (27A266a) matches Apple's supported Xcode
+27 toolchain family; local export success is not server-side package acceptance.
+
+All five App Store screenshots were regenerated from the final app with live data, inspected,
+and saved as 1320 × 2868 JPEGs without alpha channels. The capture script now emits JPEGs;
+the old PNG set was removed. Dark appearance and the smaller SE/largest-text layouts were
+visually checked. Store imagery stays separate from DEBUG fixture captures in the QA report.

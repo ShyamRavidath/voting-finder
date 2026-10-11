@@ -14,7 +14,9 @@ struct NewsView: View {
                     ContentUnavailableView("No headlines right now", systemImage: "newspaper")
                 case .loaded(let articles):
                     List(articles) { article in
-                        Button { reading = URL(string: article.url) } label: {
+                        Button {
+                            reading = URL(string: article.url)
+                        } label: {
                             NewsRow(article: article)
                         }
                         .buttonStyle(.plain)
@@ -33,6 +35,7 @@ struct NewsView: View {
                     } actions: {
                         Button("Try again") { Task { await model.load() } }
                             .buttonStyle(.borderedProminent)
+                            .tint(Vote4UTheme.actionBlue)
                     }
                 }
             }

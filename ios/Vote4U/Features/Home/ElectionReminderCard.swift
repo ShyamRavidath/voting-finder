@@ -19,7 +19,7 @@ struct ElectionReminderCard: View {
 
             Text(permissionDenied ? deniedMessage : reminderMessage)
                 .font(.subheadline)
-                .foregroundStyle(permissionDenied ? .orange : .secondary)
+                .foregroundStyle(Vote4UTheme.supportingText)
         }
         .padding()
         .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))

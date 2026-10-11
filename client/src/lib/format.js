@@ -44,3 +44,8 @@ export function directionsUrl({ lat, lng, addr, name }) {
   }
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
 }
+
+// Missing evidence never upgrades a venue to an official polling place.
+export function isConfirmedLocation(location) {
+  return location.isEstimated !== true && (location.isReal === true || location.isEstimated === false);
+}

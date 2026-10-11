@@ -7,7 +7,11 @@ struct PollingSearchLoadingView: View {
         VStack(alignment: .leading, spacing: 12) {
             Label("Finding polling places…", systemImage: "location.magnifyingglass")
                 .font(.headline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Vote4UTheme.supportingText)
+
+            Text("Checking available sources. This can take a few seconds.")
+                .font(.subheadline)
+                .foregroundStyle(Vote4UTheme.supportingText)
 
             ForEach(placeholders, id: \.self) { _ in
                 VStack(alignment: .leading, spacing: 10) {

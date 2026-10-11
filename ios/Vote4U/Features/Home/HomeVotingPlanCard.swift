@@ -8,12 +8,14 @@ struct HomeVotingPlanCard: View {
             Label("Make your voting plan", systemImage: "list.clipboard.fill")
                 .font(.title3.bold())
 
-            Text("Find a polling place, save it for offline access, and get directions when it matters.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            Text(
+                "Search by ZIP, confirm with an official source, then tap Save for offline on a result. Your saved location will appear here."
+            )
+            .font(.subheadline)
+            .foregroundStyle(Vote4UTheme.supportingText)
 
             Button(action: onFindPollingPlace) {
-                Label("Find a polling place", systemImage: "mappin.and.ellipse")
+                Label("Find a location", systemImage: "mappin.and.ellipse")
                     .frame(maxWidth: .infinity)
             }
             .controlSize(.large)
