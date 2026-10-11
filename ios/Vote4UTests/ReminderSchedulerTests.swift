@@ -1,5 +1,6 @@
 import UserNotifications
 import XCTest
+
 @testable import Vote4U
 
 /// Runs in the Simulator against the real UNUserNotificationCenter, so it verifies that requests
@@ -75,6 +76,39 @@ final class ReminderSchedulerTests: XCTestCase {
         let requests = await pending()
         let morning = try XCTUnwrap(requests.first { $0.identifier.contains("morning-of") })
         XCTAssertTrue(morning.content.body.contains("Beverly Hills Public Library"), morning.content.body)
+        XCTAssertTrue(morning.content.body.contains("Not confirmed"), morning.content.body)
+        XCTAssertEqual(morning.content.title, "Today is Election Day")
+    }
+
+    @MainActor
+    func testSavingAndRemovingAPlaceRespectDisabledReminders() async throws {
+        let defaults = UserDefaults.standard
+        let previousSetting = defaults.object(forKey: "remindersEnabled")
+        let previousPlace = SavedPlaceStore.load()
+        defer {
+            if let previousSetting {
+                defaults.set(previousSetting, forKey: "remindersEnabled")
+            } else {
+                defaults.removeObject(forKey: "remindersEnabled")
+            }
+            SavedPlaceStore.save(previousPlace)
+        }
+        defaults.set(false, forKey: "remindersEnabled")
+        ReminderScheduler.cancelAll()
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let model = VoteViewModel()
+        model.save(
+            PollingLocation(
+                name: "Beverly Hills Public Library", addr: "444 N Rexford Dr", type: "Civic Building",
+                lat: nil, lng: nil, distance: nil, isEstimated: true
+            ))
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let afterSave = await pending()
+        XCTAssertTrue(afterSave.isEmpty, "saving must not turn reminders back on")
+        model.clearSavedPlace()
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let afterRemoval = await pending()
+        XCTAssertTrue(afterRemoval.isEmpty, "removing must not turn reminders back on")
     }
 
     func testReschedulingReplacesRatherThanStacks() async throws {

@@ -27,6 +27,19 @@ struct HomeSavedPlaceCard: View {
                     .accessibilityLabel("Available offline")
             }
 
+            if let type = place.type {
+                Text(type)
+                    .font(.subheadline)
+            }
+
+            Text(place.confirmationNotice)
+                .font(.subheadline)
+                .accessibilityIdentifier("saved-place-confirmation")
+
+            Link("Check official polling place", destination: URL(string: "https://www.usa.gov/find-polling-place")!)
+                .font(.subheadline)
+                .padding(.vertical, 8)
+
             HStack(spacing: 10) {
                 Button(action: openDirections) {
                     Label("Directions", systemImage: "arrow.triangle.turn.up.right.circle.fill")

@@ -1212,3 +1212,54 @@ widget can appear or the existing database was migrated.
   Screen placement, full iPad interactions/accessibility, TestFlight and submission.
 - `ios/.swift-format` must be checked again after PR #4/#6/#11 Swift files arrive. Do not run
   the formatter with its 2-space default or replace `scripts/test-ios.sh` with a bare build.
+
+## 13. Release preparation — 2026-10-10
+
+This update supplements the broader current handoff in PR #12. Work is on
+`release/ios-signing-validation`, PR #13. The owner asked to test, improve UX and publish;
+owner-controlled merges remain in effect. No merge, TestFlight upload or submission occurred.
+
+- Configured Team ID `M6L74ZB5KS` for automatic signing on app, widget and test targets.
+  Initial identity/device checks found no valid identity and no physical phone. The actual
+  archive attempt with automatic provisioning reached Apple but failed because the team has
+  no registered devices for development profiles. Connect/unlock/trust an iPhone and enable
+  Developer Mode if prompted. Account access itself is therefore not the current blocker.
+- Fixed a trust gap: saved cards, shares and reminder text lost unconfirmed-location warnings.
+  Saved records now retain confirmation evidence/type; old records remain readable and
+  unconfirmed. Both saved cards link to the official lookup. Official API `isReal` is decoded;
+  missing evidence is no longer implicitly confirmed. Notification wording no longer claims
+  polls are open at 7am everywhere.
+- Saving/removing a venue previously rescheduled reminders despite an in-app opt-out when OS
+  permission remained granted. It now checks that setting; a real notification-queue test covers it.
+- Added the missing UserDefaults required-reason privacy manifest (`CA92.1`, app-local storage).
+  This does not replace or finalize App Store Connect collection disclosures.
+- Server 50/50 passed; browser/accessibility 90 passed / 9 expected skips; client build passed.
+  iOS 17.5 final test results and screenshot review are recorded in `ios/RELEASE_VALIDATION.md`.
+- Failures: the first run exposed an obsolete assertion that missing evidence meant official;
+  updated it and added explicit official-payload decoding coverage. A new saved-card UI test
+  could not reach Save with center-screen swipes over MapKit; dragging in the outer scroll
+  margin passed. Failed-run diagnostic collection was terminated after tests completed; those
+  xcresult bundles did not finalize, so use the textual logs, not those incomplete bundles.
+- Live production: health 200, news 200/15 articles, privacy 200, unauthenticated cleanup 401,
+  elections 503. The deployed elections route uses 503 for a missing Civic key. Owner should
+  check Production GOOGLE_CIVIC_API_KEY and redeploy without sharing the key in chat.
+- PRs #9/#10 remain unfinished drafts; this branch does not integrate them. Device GPS,
+  permission revocation, airplane mode, actual notification delivery, widget Home Screen
+  placement, production cleanup recurrence/deletion and host log retention remain unverified.
+
+See `ios/RELEASE_VALIDATION.md` for the owner checklist and the exact release gates.
+
+### Physical-device follow-up — 2026-10-10
+
+Owner connected an iPhone 15. Signed Release build installed and launched through devicectl.
+Initial build hit a missing widget profile; retry with automatic provisioning succeeded.
+Signature, Release DEBUG-stub exclusion, manifest and widget-family checks passed on the device
+bundle. Signed archive `/tmp/Vote4U-release.xcarchive` and App Store export
+`/tmp/vote4u-app-store-export/Vote4U.ipa` succeeded, version 1.0/build 1. Exported IPA signatures
+and distribution profile verified (get-task-allow false, no provisioned-device list).
+These temporary artifacts are not an upload or Apple acceptance. Earlier no-device/signing
+blockers above are superseded. No credentials or device identifiers were committed.
+
+Owner has been asked to check ZIP after declining location and actual Home Screen widget
+placement; results are pending. Continue GPS/offline/notification/accessibility device QA,
+App Store record/privacy finalization and the remaining #9/#10 integration before submission.

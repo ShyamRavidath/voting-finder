@@ -20,6 +20,41 @@ final class AppSmokeUITests: XCTestCase {
         }
     }
 
+    func testSavedLocationKeepsItsWarningOnHomeAndAfterRelaunch() {
+        let app = launch(["-startTab", "vote", "-startZip", "90210", "-stubPolling", "nearby"])
+        XCTAssertTrue(app.staticTexts["Westwood Branch Library"].waitForExistence(timeout: 15))
+        let save = app.buttons["Save"].firstMatch
+        for _ in 0..<6 {
+            if save.isHittable { break }
+            // Drag in the scroll view's outer margin so MapKit cannot consume the gesture.
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.8))
+                .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.3)))
+        }
+        XCTAssertTrue(save.isHittable)
+        save.tap()
+        app.tabBars.buttons["Home"].tap()
+        let warning = app.staticTexts["saved-place-confirmation"]
+        for _ in 0..<5 {
+            if warning.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(warning.label.contains("Not confirmed"))
+        XCTAssertTrue(warning.isHittable)
+
+        app.terminate()
+        app.launchArguments = ["-startTab", "vote"]
+        app.launch()
+        XCTAssertTrue(warning.waitForExistence(timeout: 10))
+        XCTAssertTrue(warning.label.contains("Not confirmed"))
+        let remove = app.buttons["Remove"]
+        for _ in 0..<5 {
+            if remove.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(remove.isHittable)
+        remove.tap()
+    }
+
     func testVoteTabSearchesAndLabelsUnconfirmedResults() {
         // Stubbed, not live: this used to drive the real API and failed on a correct build the
         // day Nominatim stopped returning venues for 90210. The labelling rule is too important
@@ -102,8 +137,9 @@ final class AppSmokeUITests: XCTestCase {
         stateSearch.typeText("District of Columbia")
 
         let district = app.buttons.containing(NSPredicate(format: "label CONTAINS 'District of Columbia'")).firstMatch
-        XCTAssertTrue(district.waitForExistence(timeout: 5),
-                      "DC must be reachable through search even though it is unhittable on the map")
+        XCTAssertTrue(
+            district.waitForExistence(timeout: 5),
+            "DC must be reachable through search even though it is unhittable on the map")
     }
 
     func testNewsTabLoadsHeadlines() {

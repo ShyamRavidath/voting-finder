@@ -30,7 +30,7 @@ product; headlines are the fourth tab.
 voting,polling place,election,ballot,voter,vote,midterm,electoral,register,precinct,elections
 ```
 
-That is 92 characters. Notes: do not repeat words already in the app name or subtitle — Apple
+That is 93 characters. Notes: do not repeat words already in the app name or subtitle — Apple
 indexes those separately, so "Vote4U", "polling place" and "find" are wasted keyword space, and
 the duplication above of "polling place" should be dropped if you keep the current subtitle.
 Never use a competitor's or organisation's name.
@@ -102,8 +102,8 @@ WHERE THE DATA COMES FROM
   Safari view.
 
 LOCATION
-Location is optional and used only to resolve the user's ZIP code so we can
-look up nearby polling places. Coordinates are rounded to roughly 110 metres
+Location is optional and used to resolve the user's ZIP code and find nearby
+locations, with distances measured from the rounded device position. Coordinates are rounded to roughly 110 metres
 before leaving the device. They are sent to our server for ZIP resolution and
 can appear in Vercel request logs; an optional database cache may retain the
 rounded coordinate pair until daily cleanup (normally within two days, longer
@@ -179,7 +179,7 @@ has its own device-family requirement**:
 Apple's [App Extension Programming Guide](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/ExtensionCreation.html)
 says extensions must target both iPhone and iPad even when the containing app is iPhone-only.
 
-**Captured 2026-09-21 and committed to `ios/screenshots/`** at 1320 × 2868. Regenerate with:
+**Captured 2026-10-10 and committed to `ios/screenshots/`** at 1320 × 2868. Regenerate with:
 
 ```
 ./scripts/capture-screenshots.sh
