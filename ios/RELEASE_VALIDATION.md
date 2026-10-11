@@ -1,6 +1,20 @@
 # Vote4U release validation — 2026-10-10
 
-## Owner steps to unblock device testing
+## Device signing update — 2026-10-10
+
+The owner connected an iPhone 15. A signed Release build installed and launched successfully.
+The first build failed on a missing widget provisioning-profile file; automatic-provisioning
+retry succeeded. Device Release signature verification, DEBUG-stub exclusion, privacy-manifest
+presence and widget-family checks passed.
+
+A signed archive and local App Store distribution export both succeeded (version 1.0, build 1).
+The exported IPA passed signature checks; its profile has get-task-allow=false and no registered
+device list, consistent with App Store distribution. Artifacts are local, temporary files:
+`/tmp/Vote4U-release.xcarchive` and `/tmp/vote4u-app-store-export/Vote4U.ipa`.
+No upload or Apple processing validation has occurred. Owner-observed on-device behavior is
+still pending, starting with denied-location ZIP search and widget Home Screen placement.
+
+## Owner setup reference (connection completed)
 
 1. The archive attempt reached team `M6L74ZB5KS`; account access is available.
    If Xcode requests renewed sign-in/2FA, complete it in Xcode, not in chat.

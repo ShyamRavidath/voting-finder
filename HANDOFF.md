@@ -1248,3 +1248,18 @@ owner-controlled merges remain in effect. No merge, TestFlight upload or submiss
   placement, production cleanup recurrence/deletion and host log retention remain unverified.
 
 See `ios/RELEASE_VALIDATION.md` for the owner checklist and the exact release gates.
+
+### Physical-device follow-up — 2026-10-10
+
+Owner connected an iPhone 15. Signed Release build installed and launched through devicectl.
+Initial build hit a missing widget profile; retry with automatic provisioning succeeded.
+Signature, Release DEBUG-stub exclusion, manifest and widget-family checks passed on the device
+bundle. Signed archive `/tmp/Vote4U-release.xcarchive` and App Store export
+`/tmp/vote4u-app-store-export/Vote4U.ipa` succeeded, version 1.0/build 1. Exported IPA signatures
+and distribution profile verified (get-task-allow false, no provisioned-device list).
+These temporary artifacts are not an upload or Apple acceptance. Earlier no-device/signing
+blockers above are superseded. No credentials or device identifiers were committed.
+
+Owner has been asked to check ZIP after declining location and actual Home Screen widget
+placement; results are pending. Continue GPS/offline/notification/accessibility device QA,
+App Store record/privacy finalization and the remaining #9/#10 integration before submission.
