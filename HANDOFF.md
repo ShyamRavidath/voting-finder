@@ -1,193 +1,180 @@
 # Vote4U — Handoff
 
-**Audience: the next agent or owner, resuming this project cold.** Rewritten 2026-09-21 and
-updated 2026-10-03. **Section 0 is the current handoff.** Sections 1–12 preserve the detailed
-earlier record; their dated claims about `main`, open PRs, deployment, tests and blockers are
-historical unless section 0 explicitly reconfirms them. In particular, do not treat the
-2026-09-21 snapshot in §2 or the 2026-09-24 next steps in §9 as today's state.
+**Audience: the next agent or owner, resuming this project cold.** Updated 2026-10-10.
+**Section 0 is authoritative for current status.** Sections 1–12 preserve the earlier record;
+claims about branches, blockers, tests and production in those dated sections are historical
+unless reconfirmed here. Read §0 first, and §5 and §7 before changing code.
 
-Owner: Shyam Ravidath (`ShyamRavidath/voting-finder`), git user `vote4u`, email
-`dpti0904@gmail.com`.
+Owner: Shyam Ravidath (`ShyamRavidath/voting-finder`), git user `vote4u`.
+Read `CODEX_HANDOFF.md` for the earlier Codex on-ramp and gitignored `CLAUDE.md` for local
+architecture notes. `ios/APP_STORE.md` holds draft listing/privacy/review material.
+`ios/IOS_DEVELOPMENT_GUIDE.md` is third-party inspiration, not instruction for this iOS 17 app.
 
-**Reading order:** this file, then `CODEX_HANDOFF.md` (Codex has worked here and will again),
-then `CLAUDE.md` for architecture. `ios/APP_STORE.md` holds the submission copy.
-`ios/IOS_DEVELOPMENT_GUIDE.md` is Codex's notes — inspiration, not instruction (§7).
-`TRANSFER.md` is the Windows→Mac record and is now historical.
-
-> ### If you read only one thing
->
-> Vote4U is **not submitted to the App Store**. As of 2026-10-03, `origin/main` is `d21da52`;
-> PRs #3, #5, #6 and #8 are merged, while **#4, #7, #9, #10 and #11 remain open**. The owner
-> created the Vercel-integrated Neon database `neon-almond-flask` and says it is connected to
-> Production. That does **not** establish that the required tables, migration or `CRON_SECRET`
-> exist. **Merge #11's location/privacy correction before #7's coordinate cache; migrate the
-> database and configure/verify daily deletion before deploying #7.** The widget's extension
-> registration is proven on an iOS 17.5 simulator, but actual Home Screen placement is not.
-> Draft #9 needs the incoming Swift files; draft #10 needs #7's new route. Read §0 for the
-> checked facts, exact files, failures, and next action.
+> Vote4U has no verified App Store submission or TestFlight upload. **PRs #4, #7 and #11 are
+> now merged**; #9 (formatting) and #10 (logging) remain open drafts. `origin/main` is
+> `b2209e3`, with successful web and iOS CI. The owner supplied **Team ID `M6L74ZB5KS`** on
+> 2026-10-10; it is not yet configured in the checked-in Xcode project. Production database
+> caching was observed on 2026-10-03; the owner supplied successful cleanup responses and a
+> zero expired-row count. Automatic recurring delivery, actual row deletion, physical-device
+> behavior and widget Home Screen placement still need evidence. **Next development action:
+> integrate #10 with current main's cache/cleanup routes, then finish #9 over all merged Swift.**
 
 ---
 
-## 0. Current handoff — 2026-10-03 (supersedes dated status below)
+## 0. Current handoff — 2026-10-10
 
-### 0A. The outcome we are working toward
+### 0A. The goal we are working toward
 
-Keep the live, free, nonpartisan Vote4U website reliable while bringing the **native iOS 17+
-SwiftUI app** to a defensible App Store submission. A voter must be able to search by ZIP when
-location permission is denied; unofficial or weakly inferred polling results must be hedged,
-never fabricated; the app must not imply government endorsement; and News must remain the last
-tab. The backend should use the newly created Neon PostgreSQL database for a coordinate-aware
-polling cache **without exposing household-identifying coordinates in application logs or
-retaining expired coordinate keys indefinitely**. The widget, automated tests, formatting, and
-logging should reach `main` only after their actual behavior is proven and the owner merges the
-PRs. Everything should stay on the free tier except the Apple Developer Program; call out any
-new recurring cost. No secrets in git, PR bodies, logs, test output, or this handoff.
+Ship the free, nonpartisan **native iOS 17+ Swift/SwiftUI Vote4U app** to the App Store while
+keeping its Vercel web app and shared Express backend reliable. The voting tools lead; News
+stays last. ZIP entry must work when location permission is declined. Official versus
+unconfirmed data must remain honest, with more cautious labels for weaker evidence and official
+lookup links when nothing is found. Never fabricate a polling venue outside DEBUG-only APIStub,
+never imply government endorsement, and never commit credentials or log user location.
 
-This is not merely a coding backlog: the current immediate production decision is whether the
-Neon instance is ready for PR #7. The owner supplied **masked**, not plaintext, connection
-values and explicitly confirmed the database is linked to Vercel **Production**. No one here
-has independently connected to it, inspected its schema, run the migration, checked the cron
-secret, or observed a cache hit/delete in production. Do not convert an owner report into a
-verified database fact.
+Everything stays free except the Apple Developer Program. Use branch → commit → push → PR;
+the owner merges, and main deploys. A successful build is insufficient evidence of a working
+feature. Distinguish observed results, owner-supplied evidence and remaining uncertainty.
 
-### 0B. Branches, PRs, and what is actually on `main`
+The database setup that blocked #7 has progressed to observed production caching and reported
+successful cleanup. The immediate development work is now integrating the two remaining draft
+PRs and preparing signing/device validation. Knowing a Team ID removes the old missing-ID
+blocker; it does not prove Xcode account access, certificates, provisioning or device installs.
 
-This handoff update is on `feat/election-countdown-widget`, the branch for
-[PR #4](https://github.com/ShyamRavidath/voting-finder/pull/4). Its last **code** commit
-before this documentation update was `8848340`; the worktree was clean before editing. This
-is the branch carrying the **newer, full rewrite of this file**. The local `main` is still
-`e282e30`; do not mistake it for current production source. `origin/main` and the last
-verified remote `main`
-are `d21da52` (merges #3 and #6). The other local topic heads were synced to their remotes
-before this edit: #7 `d58bfa3`, #9 `64b8b5f`, #10 `d858458`, #11 `bcecc9d`.
+### 0B. Current repository and PR state
 
-| PR | State at last GitHub check, 2026-10-03 | What it contains / merge gate |
+Refreshed with `git fetch origin`, GitHub PR reads and main-branch CI reads on 2026-10-10:
+
+- `origin/main`: **`b2209e36fa2224b44103b5295142aef83a785d05`** (merge of PR #4).
+- Current documentation branch: **`docs/handoff-2026-10-10`**, created from that main.
+- Starting checkout was clean on `feat/coordinate-aware-cache` at `63d9b79`; that branch is
+  already merged and should not be used for new work. The local `main` branch was not updated;
+  use the refreshed `origin/main` when creating the next topic branch.
+- This session changes only `HANDOFF.md`. No source implementation or signing configuration
+  is in progress. No PR has been merged by Codex.
+
+| PR | Verified GitHub state | What remains |
 |---|---|---|
-| [#4 widget](https://github.com/ShyamRavidath/voting-finder/pull/4) | OPEN, CI green | WidgetKit extension, tests, corrected iPhone+iPad **extension** family, Election Day label, and the current `HANDOFF.md`. App target remains iPhone-only. Simulator registration passes; Home Screen placement remains unproven. |
-| [#7 cache](https://github.com/ShyamRavidath/voting-finder/pull/7) | OPEN, CI green | Coordinate-aware PostgreSQL cache, migration, daily cleanup endpoint/cron. **Production schema + `CRON_SECRET` gate; merge after #11.** Real Postgres migration has not been exercised. |
-| [#9 format](https://github.com/ShyamRavidath/voting-finder/pull/9) | OPEN **DRAFT**, CI green | 4-space `swift-format`, mechanical commit and strict CI. Rebase and format new Swift from #4 and #11 before ready; #6 is already merged. |
-| [#10 logging](https://github.com/ShyamRavidath/voting-finder/pull/10) | OPEN **DRAFT**, CI green | Dependency-free structured application logging and redaction. Rebase/instrument #7's route after #7 lands; Vercel platform request logs remain a separate privacy issue. |
-| [#11 privacy](https://github.com/ShyamRavidath/voting-finder/pull/11) | OPEN, CI green | Strict US ZIP reverse-geocode evidence, client-side 3-decimal rounding, conservative privacy copy, shared-link e2e repair. **Recommended before #7.** |
+| [#4 widget](https://github.com/ShyamRavidath/voting-finder/pull/4) | MERGED, 2026-10-04 UTC (Oct 3 Pacific) | Widget code and newer historical handoff are on main. Simulator registration/rendering passed; actual Home Screen placement is unverified. |
+| [#7 cache](https://github.com/ShyamRavidath/voting-finder/pull/7) | MERGED, 2026-10-04 UTC | Schema, migration, coordinate-aware cache and daily cleanup are on main. Production evidence and limits are in §0D. |
+| [#11 privacy](https://github.com/ShyamRavidath/voting-finder/pull/11) | MERGED, 2026-10-04 UTC, before #7 | Strict US geocoding and client rounding are on main. Final App Store privacy answers still need host-retention review. |
+| [#9 format](https://github.com/ShyamRavidath/voting-finder/pull/9) | OPEN, DRAFT | Update over main, format the merged widget/map/privacy Swift files, rerun strict lint and the required iOS runner. Old green CI does not validate this integration. |
+| [#10 logging](https://github.com/ShyamRavidath/voting-finder/pull/10) | OPEN, DRAFT | Update over main, instrument the new cache and cleanup paths, and rerun privacy/mutation/server/web checks. Platform logging is separate. |
 
-PRs #3 (screenshots), #5 (CI), #6 (electoral-map rendering tests), and #8 (`AGENTS.md`) are
-merged. PR #2's fallback polling and US-scoped news are also merged. **Codex has not merged
-the open PRs.** The CI checks last reviewed for #4/#7/#9/#10/#11 were green; Supabase Preview
-reported “skipping,” not passing. CI is valuable evidence, not proof that a real database has
-the right schema, Vercel env vars exist, a widget can be placed, or privacy labels are final.
-The GitHub API was briefly unreachable on a subsequent read-only refresh on 2026-10-03, so
-recheck PR state and checks before deciding to merge; the table is the last successful check,
-not a guarantee about future changes.
+PRs #2, #3, #5, #6 and #8 also remain merged. Only #9 and #10 were open in the refreshed list.
+No new integration work was performed on those drafts in this handoff session. Do not mark
+those PRs ready based on their September branch checks.
 
-Suggested **owner-controlled** integration order: #11 before #7; #4 can merge once the owner
-accepts the remaining Home Screen-placement caveat; #9 after all incoming Swift changes
-(especially #4 and #11) have been incorporated and formatted; #10 after #7 has been integrated
-and its new cache path is instrumented and retested. #7 must not deploy merely because #11 and
-the SQL files exist: its schema, secret, cleanup, and production behavior are a separate gate.
-Expect rebase/conflict work around `ios/APP_STORE.md`, `server/routes/polling.js`, and this
-handoff. Do not merge directly on the owner's behalf.
+Main at `b2209e3` has completed, successful [web CI](https://github.com/ShyamRavidath/voting-finder/actions/runs/37168366885)
+and [iOS CI](https://github.com/ShyamRavidath/voting-finder/actions/runs/37168366863), both
+started 2026-10-04 UTC. These results were read on October 10; tests were not rerun locally
+for this documentation-only update. They do not prove a signed device build or App Store upload.
 
-### 0C. Current code/file map — no hidden in-progress edits
+`AGENTS.md` and `CLAUDE.md` still contain dated statements that the widget exists only on #4
+and that main has no widget. **Those inventory statements are superseded:** #4 is merged.
+Their product commitments and test-runner instructions still apply. This update does not edit
+those files or `CODEX_HANDOFF.md`.
 
-This handoff edit changes **only `HANDOFF.md` on PR #4**. There are no uncommitted source-code
-edits and no half-finished local patch to recover. Features under discussion are on separate
-branches; looking at a file on this checkout does **not** reveal the #7/#9/#10/#11 version.
-Use `git show <branch>:<path>` or switch to a clean branch before judging its implementation.
+### 0C. Files actively edited and current code map
 
-| Branch / file | Actual state and trap for the next person |
+**Active edit: `HANDOFF.md` only.** No unfinished source patch, migration or device build needs
+to be recovered. Team ID `M6L74ZB5KS` is recorded here as owner-provided metadata; no
+`DEVELOPMENT_TEAM` setting was found in main's `ios/Vote4U.xcodeproj/project.pbxproj`.
+The app and widget use automatic signing, which still needs the team/account configured.
+
+| Files / area | Current state and traps |
 |---|---|
-| #4 `ios/Vote4U.xcodeproj/project.pbxproj` | Hand-written project; extension target has `TARGETED_DEVICE_FAMILY = "1,2"` in Debug and Release, while app stays iPhone-only. Shared Swift files need explicit target membership despite synchronized groups. Do not move the extension Info.plist into the synchronized widget folder. |
-| #4 `ios/Vote4UWidgets-Info.plist`, `ios/Vote4UWidgets/*.swift` | Real WidgetKit extension and nested `NSExtension` key. Offline timeline, no App Group. Build + embed + `pluginkit` registration verified on iOS 17.5 iPad simulator; gallery/Home Screen placement not verified. |
-| #4 `ios/Vote4U/Models/ElectionCalendar.swift`, `ios/Vote4U/Features/Widget/ElectionCountdownWidgetView.swift` | Shared countdown model and all five widget families. `circularCountdown` now says “Today” rather than “0 days” on Election Day. Medium view needs a definite countdown column width. |
-| #4 `ios/Vote4UTests/ElectionCountdown{Tests,RenderTests}.swift`, `scripts/test-ios.sh` | Model and pixel/render tests; required runner checks the built extension's device family in Debug and Release and greps the Release app for DEBUG stubs. Do not substitute bare `xcodebuild test`. |
-| #7 `server/db/schema.sql`, `server/db/migrations/2026-09-21-polling-cache-key.sql`, `server/db/migrate.js` | Schema creates `news_cache` and `polling_cache(cache_key VARCHAR(32))`; transactional, idempotent migration handles the old `zip_code CHAR(5)` column, creates expiry index, deletes expired rows. **These files are not on this checkout or `main` yet.** |
-| #7 `server/lib/pollingCacheKey.js`, `server/routes/polling.js` | ZIP key is bare ZIP; device key is `@lat,lng` rounded to 3 decimals, with no ZIP dependency before cache read. ZIP and device rows cannot collide. Device rows serve for one day, ZIP rows for one week. Device responses no longer advertise week-long CDN stale-while-revalidate. SQL errors fall back to live lookup, so a functioning API is not proof that DB caching works. |
-| #7 `server/routes/cacheMaintenance.js`, `server/app.js`, `vercel.json` | Daily `0 0 * * *` production cron calls `/api/internal/cache-maintenance`. With DB but no `CRON_SECRET`, endpoint fails closed (503); invalid Bearer is 401; successful DELETE is 204. When no DB is configured, 204 no-op prevents a false alarm. Route is mounted before public rate limiting. A failed cron can leave expired coordinate keys stored beyond the normal deletion window. |
-| #7 `server/test/{pollingCache,cacheMigration,cacheMaintenance}.test.js`, `README.md` | Fake-pool tests exercise cache, migration transaction/rollback and cron auth/deletion; README describes the deployment gate. These are **not** a real Neon integration test. |
-| #11 `server/services/geocodeService.js`, `server/test/api.test.js` | `coordsToZip` requires unambiguous US country and full ZIP or ZIP+4. A loose substring of digits or missing country can no longer become a voter-facing ZIP. Hermetic tests failed under deliberate regressions. |
-| #11 `ios/Vote4U/Services/APIClient.swift`, `ios/Vote4UTests/APIClientPrivacyTests.swift` | Device coordinates are rounded before constructing the API URL, not merely on the server. Three decimal places are still **Precise Location** for Apple's disclosure purposes. Mutation to raw coordinates caused the focused test to fail. |
-| #11 `client/src/pages/PrivacyPage.jsx`, `ios/APP_STORE.md`, `tests/e2e/polling.spec.js` | Privacy text recognizes URL/platform logs and differing cache retention; App Store labels are conservative **drafts**. Shared-link test accepts a real empty result in Dover and proves URL-driven search. Final host log retention/linkage still needs verification. |
-| #9 `ios/.swift-format`, `.git-blame-ignore-revs`, `.github/workflows/ios.yml` | 4-space, 120-column config, mechanical commit recorded for blame, strict lint in CI. Local tool is `xcrun swift-format` (not PATH `swift-format`); its default 2 spaces would reformat the project incorrectly. Local Xcode 27 and CI Xcode 26 may differ. |
-| #10 `server/lib/logger.js`, `server/middleware/requestLog.js`, `server/routes/{polling,news,elections}.js` | JSON-line request correlation/timing and shape-only telemetry with key/free-text scrubbing. No raw ZIP, lat/lng, coordinate cache key, upstream URL, credential or client IP in application logs. Review again when #7's route changes. Vercel's own request logs are outside this scrubber. |
+| `api/index.js`, `server/app.js`, `server/index.js` | Shared Express app; Vercel entry exports it, local entry listens on :3001. |
+| `server/db/schema.sql`, `server/db/migrate.js`, `server/db/migrations/2026-09-21-polling-cache-key.sql` | On main. Fresh schema has `cache_key VARCHAR(32)`; migration handles old `zip_code`, adds expiry index and removes expired rows. CLI wraps schema+migration in a transaction. Do not rerun production SQL just because old notes say it is pending. |
+| `server/lib/pollingCacheKey.js`, `server/routes/polling.js` | ZIP and device keys are distinct; device key is rounded coordinate pair with no ZIP so cache read precedes reverse-geocoding. Device serving TTL is one day, ZIP one week; database errors can fall back live. Device responses have no week-long CDN stale window. |
+| `server/routes/cacheMaintenance.js`, `vercel.json` | GET `/api/internal/cache-maintenance`, daily `0 0 * * *`. DB+missing secret → 503; bad/missing Bearer → 401; successful DELETE → 204; absent DB → intentional 204 no-op. Mounted before public rate limiting. |
+| `server/db/client.js` | Uses Node pg and `DATABASE_URL`; production code supplies `ssl: { rejectUnauthorized: false }`. URL SSL options can override that object. Review effective TLS configuration alongside the reported compatibility warning; no SSL fix has been made here. |
+| `server/services/geocodeService.js`, `server/test/api.test.js` | Requires explicit US country evidence and complete ZIP/ZIP+4. Typed no-ZIP/outside-US errors are handled without inventing a result. Whole Error logging elsewhere remains a privacy-sensitive edge for #10. |
+| `ios/Vote4U/Services/APIClient.swift`, `ios/Vote4UTests/APIClientPrivacyTests.swift` | Coordinates round on-device before constructing the URL. Three decimals are still Precise Location for the conservative disclosure draft. |
+| `client/src/pages/PrivacyPage.jsx`, `ios/APP_STORE.md` | #11 wording preserved through #7 conflict resolution. Describes platform request logs and cleanup-delay caveat. App Privacy labels remain drafts pending actual host retention/linkage review. |
+| `ios/Vote4U.xcodeproj/project.pbxproj`, `ios/Vote4UWidgets-Info.plist`, `ios/Vote4UWidgets/*.swift` | Widget merged. Containing app is iPhone-only; extension targets iPhone+iPad in Debug/Release. Keep extension Info.plist outside its synchronized group. App ID `com.shyamravidath.Vote4U`, widget ID `com.shyamravidath.Vote4U.Widgets`. Both need team configuration for signing. |
+| `ios/Vote4U/Models/ElectionCalendar.swift`, `ios/Vote4U/Features/Widget/ElectionCountdownWidgetView.swift`, `ios/Vote4UTests/ElectionCountdown{Tests,RenderTests}.swift` | Shared offline countdown, five widget families and model/render tests. Circular countdown says Today on Election Day. Registration/render tests do not prove Home Screen placement. |
+| `scripts/test-ios.sh`, `.github/workflows/ios.yml` | Required runner: warmed throwaway simulators, both notification decisions, unit/UI tests, Release DEBUG-stub grep and widget-family checks. CI uses macos-26 and checks widget registration. Never substitute bare xcodebuild test or run against shared DerivedData concurrently. |
+| #9-only `ios/.swift-format`, `.git-blame-ignore-revs`, CI formatting step | Not integrated into main. Use four-space/120-column config from that branch; local formatter is `xcrun swift-format`. Cover `Vote4UWidgets` as well as app/test Swift when finishing the integration. |
+| #10-only `server/lib/logger.js`, `server/middleware/requestLog.js`, route instrumentation/tests | Not integrated into main. New polling cache path must be merged carefully; keep cache hits ahead of reverse geocoding and instrument cleanup without leaking Bearer secrets or DB errors. |
 
-Cross-cutting files: `api/index.js` exports Express for Vercel; `server/index.js` listens locally;
-`client/` is React 19/Vite; `ios/Vote4U/Services/APIStub.swift` is the **only** fabricated
-polling venue source, inside `#if DEBUG`; `ios/APP_STORE.md` is listing/privacy/review guidance,
-not a declaration that the app has shipped. `CLAUDE.md` is gitignored and local to this Mac.
-`CODEX_HANDOFF.md` is an earlier on-ramp. The old §4 below is the 2026-09-21 file map, not an
-inventory of uncommitted work today.
+For #9/#10 source, read the appropriate branch with `git show <branch>:<path>`; main cannot
+show code that remains in a draft. This documentation branch contains no signing, formatting
+or logging implementation changes.
 
-### 0D. Neon/Vercel production gate — what is known, unknown, and safe to do next
+### 0D. Production database evidence, Team ID and remaining uncertainty
 
-The owner created a Vercel-integrated Neon PostgreSQL database named `neon-almond-flask`
-(Neon ID `shiny-mode-83679617`, Free plan) and confirmed its Vercel integration is connected
-to **Production**. The connection panel offered pooled `DATABASE_URL`, unpooled
-`DATABASE_URL_UNPOOLED`, and related PG/POSTGRES variables, but every value shared in chat was
-masked. There is **no** plaintext credential in this handoff. The actual production environment
-scope, current deployment's environment, schema, job secret, and live connection were not
-inspected from this machine. Local `server/.env` and `.vercel/project.json` were absent when
-checked; no `DATABASE_URL` or Vercel env variable was present in the shell; Vercel CLI was not
-available. A prior attempt to inspect Vercel in Chrome through UI automation stalled, and a
-later UI action failed after the browser state changed. **Do not report UI/env inspection as
-successful.** The GitHub repo/CI cannot reveal secret values or which Vercel deployment picked
-them up. If Neon was connected after the currently running production deployment, a **new
-production deployment may be needed** for those variables to reach it.
+**Database identity:** owner created Vercel-integrated Neon `neon-almond-flask`
+(`shiny-mode-83679617`) and confirmed its Production connection. On 2026-10-03 the owner said
+CRON_SECRET was updated in Vercel and SQL was run in Neon SQL Editor. No plaintext database
+connection string, password, API key or cron secret was supplied to Codex or written here.
 
-This app uses Node `pg` and the pooled `DATABASE_URL` in #7. The Neon quickstart's sample
-`comments` table, Next.js Server Action, and `@neondatabase/serverless` installation are not
-part of Vote4U and should **not** be run as a substitute for its schema. PR #7's migration is
-in `server/db/`, not available on `main` until merge. The owner was advised to set a strong
-Production `CRON_SECRET` (at least 16 random characters), then run **the exact PR #7
-`schema.sql` followed by the migration SQL** in Neon SQL Editor for the fresh database, or
-run `npm run db:migrate --prefix server` with a securely supplied `DATABASE_URL` on the #7
-branch. Neither path has been run by Codex, and the owner has **not** yet confirmed completing
-the SQL or secret setup. The CLI path executes schema plus migration in one transaction;
-the SQL Editor path should be handled carefully, with the exact reviewed files. An existing DB
-with `zip_code` needs the migration; `CREATE TABLE IF NOT EXISTS` alone leaves the old column
-and the cache route can silently fall back to uncached live calls. Avoid showing, pasting, or
-committing the connection string; don't include upstream request URLs or DB errors in logs.
+**Owner-supplied schema results:** `news_cache` has id, query_key, articles, cached_at and
+expires_at; `polling_cache` has id, cache_key (`character varying`, maximum length 32), locations,
+data_source (maximum length 20), cached_at and expires_at. No `zip_code` column appeared.
+Indexes returned: `polling_cache_pkey`, `polling_cache_cache_key_key`, and
+`polling_cache_expires_at_idx`. This establishes reported schema shape; Codex did not connect
+independently to Neon or inspect SQL Editor history. Legacy-schema upgrade on real Postgres
+remains untested, even though the reported deployed fresh schema is correct.
 
-Before deploying #7, verify via an authenticated, read-only Neon inspection or the owner's
-confirmation that `news_cache` and `polling_cache` exist, `polling_cache.cache_key` is
-`VARCHAR(32)`, `zip_code` is absent, and the expiry index exists. `information_schema.columns`
-and `pg_indexes` can prove shape without revealing user data. Check that Production has both
-`DATABASE_URL` and `CRON_SECRET` **without asking the owner to paste either secret**. Then
-deploy through the owner's merge, verify the expected new deployment, exercise a non-sensitive
-ZIP lookup twice and determine whether a real DB cache hit occurs (shape-only telemetry or
-safe aggregate DB evidence), and verify the cron's next production run/deletion. Do not make
-raw coordinate queries, keys, IPs or upstream URLs part of that evidence. A 204 from cron
-when `DATABASE_URL` is absent proves only the intentional no-op; a healthy polling response
-can be a live fallback; even a DB row's `expires_at` passing does not prove physical deletion.
+**Direct live checks by Codex on 2026-10-03 Pacific, after #7 deployed:**
 
-Read-only SQL for that **schema-shape check**, if the owner opens the correct Neon database:
+| Check | Observed result | What it establishes |
+|---|---|---|
+| `/api/health` | 200, CDN MISS | API responded at that time. |
+| Cleanup without Authorization | 401, CDN MISS | In the deployed route, DB and secret were configured and unauthenticated access was rejected. No DELETE was triggered by this check. |
+| First public test ZIP search, unique query suffix | 200, CDN MISS, `cached: false`, estimated, 3 locations | Live lookup response; alone this would not prove a DB write. |
+| Repeat same public ZIP, different unique suffix | 200, CDN MISS, `cached: true`, estimated, 3 locations | Backend served a DB cache hit rather than a repeated CDN response, supporting read/write operation. |
+
+No raw coordinates, cache keys, client IPs, upstream URLs or credentials were printed by the
+check script. Codex did not exercise a real user's location. These are October 3 observations,
+**not a new October 10 health or deployment check**. Current production device-mode cache
+behavior was not separately exercised; local tests cover it.
+
+**Owner-supplied cleanup evidence:** after seeing the job registered and following guidance to
+trigger it, the owner supplied GET 204 logs for `/api/internal/cache-maintenance` at
+Oct 3 **18:00:30.70** and **18:10:58.88** on Vercel deployment host
+`voting-finder-c0caxnp59-shyamravidaths-projects.vercel.app`. The logs contained a pg SSL
+compatibility warning, indicating a DB connection path; combined with the earlier observed
+DB cache hit, these support successful authenticated cleanup-query execution. The earlier
+Oct 3 **17:49:43.03** GET 401 was likely Codex's unauthenticated check. Its origin was not
+confirmed from request details.
+
+The owner then ran this read-only query in Neon and reported **0**:
 
 ```sql
-SELECT table_name, column_name, data_type, character_maximum_length
-FROM information_schema.columns
-WHERE table_schema = current_schema()
-  AND table_name IN ('news_cache', 'polling_cache')
-ORDER BY table_name, ordinal_position;
-
-SELECT indexname
-FROM pg_indexes
-WHERE schemaname = current_schema()
-  AND tablename = 'polling_cache'
-ORDER BY indexname;
+SELECT COUNT(*) AS expired_rows
+FROM polling_cache
+WHERE expires_at <= NOW();
 ```
 
-Expected: `polling_cache.cache_key` is `character varying` with maximum length `32`, there is
-**no** `polling_cache.zip_code`, and `polling_cache_expires_at_idx` appears. The first query
-should list both tables. This proves structure only, not that the app connected, wrote, read,
-or deleted anything. An aggregate `SELECT COUNT(*) FROM polling_cache WHERE expires_at <= NOW()`
-after a verified cron run can help check expired-row deletion **without selecting keys or
-location payloads**, but a zero count before test rows exist proves little.
+This shows no expired rows remained at that moment. No documented before-count or known expired
+row establishes physical deletion. No User-Agent evidence distinguishes the two 204 requests
+as manual versus scheduled; **automatic recurring delivery is still unverified**. Confirm a
+later automatic invocation and aggregate DB state without selecting keys or location payloads.
+The daily schedule uses UTC; on Hobby it can run within the scheduled hour rather than at the
+exact minute. Do not assume an immediate run when deploying during that window.
 
-The one-day device cache is a **serving TTL**, not a guaranteed one-day deletion deadline.
-Daily cleanup normally deletes shortly after expiry (roughly within a second day), but a failed
-job retains rows longer. #7's privacy copy was corrected to say this; #11's later docs-only
-commit `bcecc9d` clarified the distinction too. Vercel request-log retention is **separate**
-and still unverified. Vercel may record query strings containing ZIP/coordinates irrespective
-of #10's application-log scrubber. Do not tell voters or App Review that only coarse location
-is processed or that all location traces are purged after exactly one day.
+**SSL follow-up:** the owner saw the driver's warning about future SSL-mode semantics on both
+204 logs. Advice was to explicitly use `sslmode=verify-full` in the Production DATABASE_URL,
+keep the remainder private and unchanged, redeploy, and recheck. No completed env edit/redeploy
+was confirmed. Review the effective configuration in `server/db/client.js`; do not weaken
+verification merely to suppress a warning or print connection details during diagnostics.
+
+**Apple account update, 2026-10-10:** the owner answered that they now have Team ID
+**`M6L74ZB5KS`**. The old "waiting for Team ID" blocker is superseded. Xcode account access,
+team selection for app and extension, signing certificates, provisioning, physical-device
+installation, archive, TestFlight and App Store submission are **not verified**. No project
+signing settings were changed in this handoff session.
+
+**Still needed for release:** actual widget gallery/Home Screen placement, real GPS and
+permission denial/revocation, offline saved-place behavior, a notification banner delivered on
+a real device, current real-data screenshots, final App Store privacy answers based on Vercel
+log retention/linkage, and upload/submission evidence. App logs and Vercel platform logs have
+different controls: #10 cannot remove coordinates/ZIP from platform request URLs. One-day
+serving TTL is not a guaranteed deletion deadline. The Civic key was previously owner-reported
+rotated/replaced; `/api/elections` and the official tier were not retested in this session.
+Never reuse the leaked old key or rewrite history without an explicit request.
 
 ### 0E. What was tried and what failed since the historical §5 record
 
@@ -197,7 +184,7 @@ widgets, wrong widget Info.plist placement and metadata, wrong iOS destination, 
 alert-label theories, concurrent Xcode processes/DerivedData corruption, cold simulator timing,
 stale screenshot judgments, unhelpful log suppression, brittle UI accessibility selectors,
 reactive state and notification races, live geocoder instability, and direct-to-main commits.
-The newer attempts and limits are these:
+The earlier attempts and limits are preserved here; the October deployment updates are in §0D/§0F:
 
 - **Widget “built, therefore installable” was false.** Original extension family was `1`
   only even though app extensions must support iPhone and iPad. PR #4 changed only the
@@ -216,8 +203,9 @@ The newer attempts and limits are these:
   cannot transform an existing `polling_cache(zip_code CHAR(5))`; the old route's broad DB
   catch masked `undefined_column` and would keep serving live lookups. The revised SQL is
   idempotent and transactional; the route emits only a generic one-time legacy-schema warning
-  and still falls back live. A fake-client test exercises commit/rollback but **no actual
-  PostgreSQL server has run this migration**. Do not let a green CI job close that gap.
+  and still falls back live. Before deployment, only fake-client transaction tests had run.
+  The owner subsequently applied SQL in Neon and supplied the expected schema shape (§0D).
+  That does not exercise the old-column upgrade on a real legacy PostgreSQL database.
 - **Initial retention/privacy claim was too strong.** A one-day `expires_at` prevented stale
   reads but never removed device-coordinate rows. #7 added an authenticated daily DELETE
   cron; tests cover authorization, fail-closed missing secret, and delete. A deliberate
@@ -256,7 +244,54 @@ The newer attempts and limits are these:
   create `.git/index.lock` because `.git` was sandbox read-only; an approved scoped retry
   switched to PR #4 successfully. Keep these distinctions in any status report.
 
-### 0F. Evidence that *did* pass, with dates/limits
+New failures and misleading signals from the 2026-10-03 integration session:
+
+- **PR #7 conflicted after #11 merged.** `client/src/pages/PrivacyPage.jsx` and
+  `ios/APP_STORE.md` had competing wording for hosting logs and coordinate retention. Merged
+  `origin/main` into `feat/coordinate-aware-cache`, kept #11's wording (both resolved files
+  matched main), tested, committed `63d9b79`, and pushed to the existing PR. GitHub changed
+  from `CONFLICTING` to `MERGEABLE`; the owner then merged it. Do not resolve later conflicts
+  by restoring the older anonymity/coarse-location or exact-one-day deletion claims.
+- **Sandbox restrictions blocked Git and server tests.** Initial GitHub reads could not reach
+  the network; `git switch` could not create `.git/index.lock`; `git merge` could not lock
+  `ORIG_HEAD`; server tests failed with `listen EPERM`. Scoped approved retries succeeded.
+  These were execution-environment failures, not regressions. Final server result was 50/50.
+- **A log filter was mistaken for proof of a cron invocation.** Codex deliberately requested
+  cleanup without an Authorization header; it returned 401. The owner then saw that same-path
+  401 in Vercel logs. It was likely the test request, not evidence that the scheduled cron
+  failed. Codex's test User-Agent was `Vote4U-deployment-check/1.0`; Vercel identifies scheduled
+  invocations with `vercel-cron/1.0`. Log lists include all requests to the filtered path.
+  Codex should have made that distinction clearer before directing the owner to View Logs.
+- **Finding request details did not work for the owner.** The owner could not see a User-Agent
+  or another scheduled run in the log view. Guidance switched to manually triggering the job
+  from the Production deployment summary, after which the owner supplied two 204 entries.
+  Their origin (manual versus automatic) was not independently established. Do not label
+  these as proof of recurring scheduled delivery.
+- **The database driver emitted an SSL compatibility warning.** The successful cleanup logs
+  warned that `prefer`/`require`/`verify-ca` currently alias `verify-full`, with semantics
+  changing in future major pg versions. Local dependencies were pg 8.22.0 and
+  pg-connection-string 2.14.0. Advice was to make `sslmode=verify-full` explicit in the
+  Production connection string and redeploy; the owner has not confirmed doing so. The 204
+  remained a successful response. No connection string was requested or exposed.
+- **A zero expired-row count is limited evidence.** No expired rows were documented before
+  the owner ran the count query. Its zero result shows the database had no expired rows at
+  that moment, not that a cleanup invocation physically removed any row.
+
+### 0F. Validation that passed, with dates and limits
+
+- During the October 3 #7/#11 conflict resolution, local server tests passed **50/50**,
+  client lint passed, and Playwright built the client and passed **90 tests / 9 skipped** on
+  desktop Chrome, iPhone Safari and Android Chrome. No new iOS test run was made by Codex in
+  that integration session; #7's refreshed web CI subsequently passed.
+- GitHub was checked on October 10: main at `b2209e3` has successful completed web and iOS
+  workflows (§0B). No current-main tests were rerun locally for this documentation-only change.
+- Production and owner-supplied Neon evidence are explicitly separated in §0D. Codex did not
+  run a production migration or an authenticated cleanup request; public test ZIP requests
+  exercised the normal cache-write path. The unauthenticated maintenance request was
+  deliberately rejected before its DELETE path.
+
+Earlier **isolated-branch evidence recorded before the October integration** is preserved
+below. Its counts and branch bases must not be treated as current-main results:
 
 - #4 (after its compatibility fix): required iOS 17.5 script passed notification allow and
   deny on throwaway, warmed simulators, 47 unit tests, 9 UI smoke tests, and Release DEBUG-stub
@@ -265,7 +300,8 @@ The newer attempts and limits are these:
   a physical device, and live scheduled-notification delivery remain untested.
 - #7: local `npm test --prefix server` **46/46**; Playwright **90 passed / 9 expected skipped**;
   mutation proof for deletion as above. CI web/server/e2e/iOS checks last seen green. Database
-  test doubles, not a real Neon/Postgres connection. No production SQL or cron observed.
+  test doubles, not a real Neon/Postgres connection. No production SQL or cron had been
+  observed at that pre-deployment check.
 - #11: server **31/31**, Playwright **90 passed / 9 skipped**, required iOS 17.5 script passed
   31 unit, 9 UI, both notification paths and Release stub grep. Geocode/client privacy
   mutations failed focused tests; a shared-link mutation failed its e2e test. A later docs-only
@@ -278,70 +314,43 @@ The newer attempts and limits are these:
   integration and platform-log behavior remain untested. CI does not run iOS for its
   server-only diff, by workflow path filter.
 
-The original `~/codex-vote4u-prompt.md` assigned five tasks: owner key rotation/skills,
-formatting, logging, privacy/geocode, and open-PR review. The owner reported the Google Civic
-key rotated/replaced and the four requested Claude Code App Store skills installed (the files
-were verified locally on 2026-09-24). That is **not** evidence that `/api/elections` is healthy
-in Production; the last live endpoint check recorded below is from 2026-09-21, when it returned
-503 because the key was absent. PR review comments were left on GitHub; #4 and #7's original
-review blockers received code fixes, while their remaining real-world verification gates are
-listed above. Nothing in this paragraph authorizes a history rewrite for the leaked old key.
+### 0G. The next step I would take
 
-The last recorded **live-site** smoke check, also 2026-09-21, saw `/api/health` 200, `/api/news`
-200 with US coverage, 90210 `estimated`, 83428 `nearby`, 59645 correctly empty, and
-`/api/elections` 503 without Civic configuration. Those are historical observations, **not**
-an October production check. The live site is `https://vote4ucyl.vercel.app`; do not claim its
-current health without a fresh request. The repo's backend tests stub upstreams and need no
-key or network, but two Playwright cases intentionally use live upstreams. App Store screenshots
-must use real, labelled data—not `APIStub` or fabricated polling venues.
+1. **Integrate draft #10 over refreshed main first.** On `feat/structured-logging`, merge main
+   without rewriting published history, resolve `server/routes/polling.js` carefully and add
+   shape-only logging for database cache hits/misses and maintenance outcome. Preserve the
+   device cache read before reverse-geocoding, TTLs and auth/fail-closed behavior. Never log
+   ZIP, lat/lng, place location fields, coordinate cache keys, upstream URLs, Authorization,
+   client IP or raw DB Error objects. Cover the new route with privacy tests and a deliberate
+   redaction-bypass mutation, restore it, then run server, client and Playwright checks. Push
+   to the existing PR, update its description around the final behavior, and leave merge to
+   the owner. #10's old green checks are insufficient for the new code.
+2. **Finish draft #9 over all merged Swift.** Update `chore/swift-format` over current main,
+   preserve its four-space config, format app, widget and both test targets, update strict CI
+   coverage and the blame-ignore revision as needed. Inspect the diff for accidental logic
+   changes. Run strict `xcrun swift-format` with repo configuration and the full required
+   `scripts/test-ios.sh`, including the iOS 17.5 regression. Keep one Xcode process per
+   DerivedData directory. Push to the existing PR and make it ready only after current checks.
+3. **Prepare signing in a separate code PR.** The owner can add the Apple account in Xcode
+   Settings → Accounts and confirm the available team. Set `M6L74ZB5KS` for the Vote4U app and
+   Vote4UWidgets extension, ensure compatible automatic signing, and verify bundle IDs and
+   signing for the intended build. A Team ID alone is not an installed signing identity.
+   Continue with a physical-device install only when the connected device/account are
+   available; document the exact outcome rather than claiming a build or upload happened.
+4. **Close runtime and production gaps.** Check a genuine automatic cleanup invocation and
+   safe aggregate expired-row counts; establish actual deletion with documented before/after
+   evidence when expired rows exist. Resolve/verify the SSL warning and review Vercel platform
+   log retention/linkage. On device, test ZIP after denied location permission, real GPS,
+   offline saved place, notification delivery and widget Home Screen placement.
+5. **Then prepare TestFlight/App Store.** Recheck current real-data screenshots and draft
+   listing/privacy copy, record signing/archive/upload results, and perform final device QA.
+   The owner controls publishing/submission; this handoff request does not authorize an upload
+   or submission. Update this record with evidence and failures after each integration.
 
-Run the current branch's exact commands again after integration. Playwright's nine skips are
-**skips, not passes**; two specs contact real Nominatim/Google News, so a future upstream or
-CI-IP failure is possible. The authoritative iOS command is `./scripts/test-ios.sh`, with
-`DEVICE_TYPE='iPhone 15 Pro' RUNTIME='com.apple.CoreSimulator.SimRuntime.iOS-17-5'` for the
-minimum deployment runtime; it is not replaceable with bare `xcodebuild test`. Do not run
-two Xcode invocations against the same DerivedData concurrently. For formatting, run from
-`ios/`: `xcrun swift-format lint --strict --parallel --recursive Vote4U Vote4UTests
-Vote4UUITests`. Keep sources at four spaces and rerun the full runner after a formatter change.
-
-### 0G. The exact next action I would take
-
-1. **Refresh facts without exposing secrets:** check `gh pr list`/checks and the clean branch;
-   ask the owner only whether Production `CRON_SECRET` is set and whether Vote4U's PR #7
-   schema+migration were applied to `neon-almond-flask`, or inspect those items read-only
-   through an authorized Neon/Vercel connection. Do **not** ask for URL/password/secret text.
-   The most recent owner message confirmed only the Neon **Production connection**, not SQL
-   or cron. If no authorized DB access is available, provide the exact vetted PR #7 file
-   paths and verification query/instructions, and wait for status rather than claiming done.
-2. **If not migrated, coordinate a safe database setup before #7 deploys:** use reviewed #7
-   schema then idempotent migration (or the `db:migrate` command on #7), verify `cache_key`
-   and expiry index without revealing row contents, and confirm `CRON_SECRET` exists in
-   Production. This is a production mutation; don't execute merely because this handoff
-   requests documentation. On a fresh database, the files should be safe, but still verify
-   database identity and don't paste secrets. A missing/ambiguous schema should stop the
-   cache merge, not trigger guessed SQL.
-3. **Recommend the owner merge #11 before #7.** #11 corrects what the app sends and claims;
-   #7 then adds persistent coordinate-key storage. Each new Vercel Production deployment
-   should be inspected for env availability and site health. After #7, use a safe, non-user
-   test ZIP and shape-only evidence to prove actual database reads/writes and cron deletion;
-   fallback responses alone are insufficient. Validate privacy copy against actual retention.
-4. **Finish the independent PRs deliberately:** merge #4 only with its remaining placement
-   caveat visible; after #4/#11 and #7 land, rebase and format #9, integrate #10 with #7's
-   cache route and rerun its privacy tests. Resolve merge conflicts rather than trusting CI
-   from old branch bases. Run web, server, e2e, and required iOS checks in proportion to each
-   integrated change. Update this handoff with verified outcomes and new failures.
-5. **Before App Store submission:** establish Apple Developer account/Team ID status (last
-   explicit status was “verification pending” on 2026-09-21, not recently rechecked), finalize
-   App Store Connect privacy answers after Vercel log retention/linkage review, recheck the
-   five screenshots against current real content, confirm real device GPS/offline/notification
-   delivery/widget placement where possible, and submit only after owner approval. Civic key
-   rotation/replacement was owner-reported; the live `/api/elections` endpoint and production
-   key were not independently retested. The old key remains in git history: never reuse it.
-
-The best first development task if database readiness is still waiting on owner action is to
-prepare the #9/#10 integration or improve safe, **read-only** verification tooling/tests on a
-topic branch. Do not silently migrate a production DB, invent credentials, or make new privacy
-promises to keep moving. Report precisely what was not checked.
+**Immediate owner tasks:** confirm Xcode sees team `M6L74ZB5KS`, check the next automatic cron
+run, and confirm whether the Production SSL-mode update was performed. The owner has already
+completed the reported SQL setup and merges #11/#7/#4; do not send them back to repeat those.
+The next agent can finish #10 and #9 without waiting for device access when asked to continue.
 
 ---
 
