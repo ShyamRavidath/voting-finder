@@ -3,10 +3,10 @@ const AxeBuilder = require('@axe-core/playwright').default;
 const { trackErrors, expectNoHorizontalScroll } = require('./helpers');
 
 const PAGES = [
-  { path: '/', h1: /Ready for\s+November 2028\?/, title: /Vote4U/ },
+  { path: '/', h1: /Make your\s+voting plan\./, title: /Vote4U/ },
   { path: '/tools', h1: 'Voting tools', title: /Find your polling place · Vote4U/ },
   { path: '/tools?tab=map', h1: 'Voting tools', title: /Electoral map · Vote4U/ },
-  { path: '/news', h1: '2028 election news', title: /2028 election news · Vote4U/ },
+  { path: '/news', h1: 'Election news', title: /Election news · Vote4U/ },
   { path: '/about', h1: 'About Vote4U', title: /About · Vote4U/ },
   { path: '/privacy', h1: 'Privacy policy', title: /Privacy policy · Vote4U/ },
   { path: '/definitely-not-a-page', h1: "We couldn't find that page", title: /Page not found/ },

@@ -10,6 +10,7 @@ final class VoteViewModel {
         case loading
         case loaded(PollingResult)
         case failed(String)
+        case locationUnavailable
     }
 
     private(set) var state: State = .idle
@@ -55,6 +56,9 @@ final class VoteViewModel {
             // Reflect the resolved ZIP back into the field so the user can see, edit and re-run it.
             if let resolved = result.zip { zip = resolved }
             state = .loaded(result)
+        } catch is LocationManager.LocationError {
+            usingLocation = false
+            state = .locationUnavailable
         } catch {
             state = .failed(message(for: error))
         }

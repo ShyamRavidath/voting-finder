@@ -32,7 +32,7 @@ struct VoteView: View {
                 Vote4UTheme.pageBackground
                     .ignoresSafeArea()
             }
-            .navigationTitle("Find your polling place")
+            .navigationTitle("Find a place to vote")
             .navigationBarTitleDisplayMode(.inline)
             .task { await searchFromLaunchArguments() }
         }
@@ -58,14 +58,15 @@ struct VoteView: View {
 
     private func searchFromLaunchArguments() async {
         #if DEBUG
-        // `-startZip 90210` runs a search on launch, for screenshots and QA.
-        let arguments = ProcessInfo.processInfo.arguments
-        if let index = arguments.firstIndex(of: "-startZip"),
-           index + 1 < arguments.count,
-           case .idle = model.state {
-            model.zip = arguments[index + 1]
-            await model.search()
-        }
+            // `-startZip 90210` runs a search on launch, for screenshots and QA.
+            let arguments = ProcessInfo.processInfo.arguments
+            if let index = arguments.firstIndex(of: "-startZip"),
+                index + 1 < arguments.count,
+                case .idle = model.state
+            {
+                model.zip = arguments[index + 1]
+                await model.search()
+            }
         #endif
     }
 }

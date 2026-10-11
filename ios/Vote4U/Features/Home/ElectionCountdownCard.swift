@@ -2,23 +2,23 @@ import SwiftUI
 
 struct ElectionCountdownCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @ScaledMetric(relativeTo: .largeTitle) private var countdownSize = 72.0
+    @ScaledMetric(relativeTo: .largeTitle) private var countdownSize = 60.0
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 3_600)) { context in
             let election = ElectionCalendar.next(from: context.date)
 
             ZStack(alignment: .topTrailing) {
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 132))
+                Image(systemName: "calendar")
+                    .font(.system(size: 96))
                     .foregroundStyle(.tint.opacity(0.08))
-                    .offset(x: 28, y: -32)
+                    .offset(x: 6, y: 4)
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 12) {
                     Label(election.kind, systemImage: "calendar.badge.clock")
                         .font(.headline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.primary)
 
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
                         Text("\(election.daysAway)")
@@ -32,16 +32,16 @@ struct ElectionCountdownCard: View {
 
                         Text(election.daysAway == 1 ? "day" : "days")
                             .font(.title2.bold())
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.primary)
                     }
 
                     Text(election.date, format: .dateTime.weekday(.wide).month(.wide).day().year())
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.primary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(24)
+            .padding(20)
             .background(Vote4UTheme.heroBackground, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
             .overlay {
                 RoundedRectangle(cornerRadius: Vote4UTheme.cardCornerRadius)

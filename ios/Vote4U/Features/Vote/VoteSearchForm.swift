@@ -7,43 +7,69 @@ struct VoteSearchForm: View {
     let onSearch: () -> Void
     let onUseLocation: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var typeSize
     @FocusState private var zipFocused: Bool
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 10) {
-                Label {
-                    TextField("ZIP code", text: $zip)
-                        .keyboardType(.numberPad)
-                        .textContentType(.postalCode)
-                        .focused($zipFocused)
-                        .accessibilityLabel("ZIP code")
-                } icon: {
-                    Image(systemName: "mappin.and.ellipse")
-                        .foregroundStyle(.secondary)
-                        .accessibilityHidden(true)
-                }
-                .padding(.horizontal, 12)
-                .frame(minHeight: 48)
-                .background(.background.opacity(0.72), in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Start with your ZIP code")
+                .font(.headline)
+            Text("Location access is optional. Always confirm your assigned polling place with an official source.")
+                .font(.subheadline)
+                .foregroundStyle(Vote4UTheme.supportingText)
 
-                Button(action: submitZip) {
-                    Text("Search")
-                        .frame(minHeight: 32)
+            if typeSize.isAccessibilitySize {
+                VStack(spacing: 10) {
+                    zipField
+                    searchButton
                 }
-                .vote4UPrimaryActionStyle()
-                .disabled(!canSearch)
+            } else {
+                HStack(spacing: 10) {
+                    zipField
+                    searchButton
+                }
             }
 
             Button(action: submitLocation) {
-                Label("Use my location", systemImage: "location.fill")
-                    .frame(maxWidth: .infinity, minHeight: 32)
+                Label("Use my location", systemImage: "location")
+                    .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.bordered)
             .disabled(isBusy)
         }
-        .padding()
+        .padding(18)
         .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { zipFocused = false }
+            }
+        }
+    }
+
+    private var zipField: some View {
+        TextField("ZIP code", text: $zip)
+            .keyboardType(.numberPad)
+            .textContentType(.postalCode)
+            .focused($zipFocused)
+            .accessibilityLabel("ZIP code")
+            .padding(.horizontal, 14)
+            .frame(minHeight: 50)
+            .background(.background, in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
+            .overlay {
+                RoundedRectangle(cornerRadius: Vote4UTheme.compactCornerRadius)
+                    .stroke(.secondary.opacity(0.3), lineWidth: 1)
+            }
+    }
+
+    private var searchButton: some View {
+        Button(action: submitZip) {
+            Text(isBusy ? "Searching…" : "Search")
+                .font(.headline)
+                .frame(maxWidth: typeSize.isAccessibilitySize ? .infinity : nil, minHeight: 36)
+        }
+        .vote4UPrimaryActionStyle()
+        .disabled(!canSearch)
     }
 
     private func submitZip() {
@@ -55,15 +81,4 @@ struct VoteSearchForm: View {
         zipFocused = false
         onUseLocation()
     }
-}
-
-#Preview {
-    VoteSearchForm(
-        zip: .constant("90210"),
-        canSearch: true,
-        isBusy: false,
-        onSearch: {},
-        onUseLocation: {}
-    )
-    .padding()
 }

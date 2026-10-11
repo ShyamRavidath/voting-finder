@@ -6,7 +6,7 @@ struct SavedPollingPlaceCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Your saved polling place", systemImage: "bookmark.fill")
+            Label("Saved for offline", systemImage: "bookmark.fill")
                 .font(.caption.bold())
                 .foregroundStyle(.tint)
 
@@ -15,7 +15,7 @@ struct SavedPollingPlaceCard: View {
                     .font(.headline)
                 Text(place.addr)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Vote4UTheme.supportingText)
             }
 
             if let type = place.type {
@@ -37,6 +37,7 @@ struct SavedPollingPlaceCard: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(Vote4UTheme.actionBlue)
 
                 Button("Remove", systemImage: "trash", role: .destructive, action: onRemove)
                     .buttonStyle(.bordered)

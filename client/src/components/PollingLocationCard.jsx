@@ -1,9 +1,9 @@
 import Icon from './Icon';
-import { directionsUrl, formatMiles } from '../lib/format';
+import { directionsUrl, formatMiles, isConfirmedLocation } from '../lib/format';
 
 export default function PollingLocationCard({ location, number, selected, onShowOnMap }) {
-  const { name, addr, type, hours, distance, isEstimated, lat, lng } = location;
-  const official = !isEstimated;
+  const { name, addr, type, hours, distance, lat, lng } = location;
+  const official = isConfirmedLocation(location);
   const hasCoords = lat != null && lng != null;
 
   return (
@@ -45,7 +45,7 @@ export default function PollingLocationCard({ location, number, selected, onShow
               href={directionsUrl(location)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 text-sm font-semibold text-white hover:bg-slate-700"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 text-sm font-semibold text-white hover:bg-slate-700"
             >
               <Icon name="directions" className="size-4" />
               Directions
@@ -55,7 +55,7 @@ export default function PollingLocationCard({ location, number, selected, onShow
               <button
                 type="button"
                 onClick={onShowOnMap}
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-300 px-3.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-300 px-3.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
               >
                 <Icon name="map" className="size-4" />
                 Show on map
