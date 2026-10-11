@@ -40,7 +40,15 @@ Record phone/iOS version, build number, date and observed result for each:
 - Public production checks: health 200, news 200 (15 articles), privacy 200,
   unauthenticated cleanup 401, elections 503. The elections route returns 503 when
   GOOGLE_CIVIC_API_KEY is missing; verify Production configuration and redeploy.
-- iOS validation is in progress; do not treat this document as release approval.
+- Required iOS 17.5 runner passed: 55 unit tests, 10 smoke UI tests, both notification
+  permission decisions, Release stub exclusion and widget iPhone/iPad family checks.
+- Privacy manifest is present and valid in both Debug and Release app bundles.
+- Fresh 1320 × 2868 screenshots captured and visually inspected on iOS 27: real unconfirmed
+  results, 24-day countdown, electoral map/search, official sources and current US election news.
+  This is a light-mode visual pass; full Dynamic Type/dark/VoiceOver device QA remains pending.
+- Widget registration observed with pluginkit on the iOS 27 simulator; Home Screen placement
+  is still not proven.
+- This evidence is not a signed device build or release approval.
 
 ## Changes under validation
 
