@@ -74,10 +74,10 @@ function distanceKm(lat1, lng1, lat2, lng2) {
 // cooperates. It often doesn't: the exact query this server sends for 90210 returned venues one
 // afternoon, `[]` the next morning, and venues again the day after. So tier 2 drops the place
 // name entirely and lets the bounding box do the geography, which is far more stable, over a
-// wider box and a broader set of venue types — the buildings American precincts actually use.
+// wider box and a broader set of building types. Neither tier supplies voting evidence.
 //
-// Tier 2 results are *not* a better guess, they are a weaker one, and the labelling gets more
-// cautious to match: "Civic Building", never "Likely Polling Place".
+// Both tiers describe buildings only. The clients distinguish the wider search and lead
+// with official lookup links; a name matching a query is not evidence of a voting role.
 const VENUE_TIERS = [
   {
     dataSource: 'estimated',
@@ -85,9 +85,9 @@ const VENUE_TIERS = [
     maxDistanceKm: 10,
     scoped: true,
     venues: [
-      { query: 'library', label: 'Likely Polling Place' },
-      { query: 'community center', label: 'Likely Early Voting' },
-      { query: 'town hall', label: 'Likely Early Voting' },
+      { query: 'library', label: 'Nearby building' },
+      { query: 'community center', label: 'Nearby building' },
+      { query: 'town hall', label: 'Nearby building' },
     ],
   },
   {
@@ -96,10 +96,10 @@ const VENUE_TIERS = [
     maxDistanceKm: 25,
     scoped: false,
     venues: [
-      { query: 'library', label: 'Civic Building' },
-      { query: 'community center', label: 'Civic Building' },
-      { query: 'school', label: 'Civic Building' },
-      { query: 'fire station', label: 'Civic Building' },
+      { query: 'library', label: 'Nearby building' },
+      { query: 'community center', label: 'Nearby building' },
+      { query: 'school', label: 'Nearby building' },
+      { query: 'fire station', label: 'Nearby building' },
     ],
   },
 ];
@@ -119,7 +119,7 @@ const REJECTED_TYPES = new Set([
   'bus_stop', 'bus_station', 'platform', 'public_bookcase', 'recycling', 'waste_disposal',
   'waste_transfer_station', 'bench', 'parking', 'bicycle_parking', 'garden', 'park', 'playground',
   'pitch', 'dog_park', 'bar', 'pub', 'restaurant', 'cafe', 'fast_food', 'atm', 'vending_machine',
-  'toilets', 'drinking_water', 'fuel', 'car_wash', 'post_box',
+  'toilets', 'drinking_water', 'fuel', 'car_wash', 'post_box', 'theatre', 'arts_centre', 'cinema',
 ]);
 
 function isPlausibleVenue(place) {
@@ -140,13 +140,19 @@ function buildVenue(place, label, originLat, originLng, state, maxDistanceKm) {
   if (!place.name && !displayName) return null;
 
   const addr = place.address || {};
+  // Missing state evidence is not permission to assign the ZIP's state to a building.
+  if (typeof addr.state !== 'string' || addr.state.trim().toLowerCase() !== state.trim().toLowerCase()) return null;
+  const buildingKinds = {
+    library: 'Library', community_centre: 'Community center', townhall: 'Town hall',
+    school: 'School', fire_station: 'Fire station',
+  };
   const parts = [
     [addr.house_number, addr.road || addr.street].filter(Boolean).join(' '),
     addr.city || addr.town || addr.village || addr.municipality,
     // The venue's own state, not the ZIP's: the widened tier's box is ~11 km and can cross a
     // state line, and printing the wrong state under a venue's name is exactly the kind of
     // quiet inaccuracy rule #1 exists to prevent.
-    addr.state || state,
+    addr.state,
     addr.postcode,
   ].filter(Boolean);
   const fullAddress =
@@ -155,7 +161,7 @@ function buildVenue(place, label, originLat, originLng, state, maxDistanceKm) {
   return {
     name: place.name || displayName.split(',')[0],
     addr: fullAddress,
-    type: label,
+    type: Object.hasOwn(buildingKinds, place.type) ? buildingKinds[place.type] : label,
     lat: placeLat,
     lng: placeLng,
     distance: Math.round(distance * 10) / 10,
@@ -225,6 +231,7 @@ async function findNearbyPollingVenues(lat, lng, city, state) {
 }
 
 module.exports = {
+  buildVenue,
   isPlausibleVenue,
   zipToCoords,
   coordsToZip,

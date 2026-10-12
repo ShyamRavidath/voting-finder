@@ -32,6 +32,11 @@ function popupContent(location) {
   return el;
 }
 
+// Keeps popups inside narrow maps: 40px gutter per side, 120–280px wide.
+function popupMaxWidth(container) {
+  return Math.min(280, Math.max(120, container.clientWidth - 80));
+}
+
 export default function PollingMap({ locations, center, selected, onSelect }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -52,7 +57,7 @@ export default function PollingMap({ locations, center, selected, onSelect }) {
 
     const observer = new ResizeObserver(() => {
       map.invalidateSize();
-      const maxWidth = Math.min(280, Math.max(120, containerRef.current.clientWidth - 80));
+      const maxWidth = popupMaxWidth(containerRef.current);
       for (const marker of markersRef.current) {
         const popup = marker?.getPopup();
         if (!popup) continue;
@@ -87,7 +92,7 @@ export default function PollingMap({ locations, center, selected, onSelect }) {
         keyboard: true,
       })
         .bindPopup(popupContent(loc), {
-          maxWidth: Math.min(280, Math.max(120, containerRef.current.clientWidth - 80)),
+          maxWidth: popupMaxWidth(containerRef.current),
           autoPanPadding: [16, 16],
         })
         .on('click', () => onSelectRef.current?.(i))

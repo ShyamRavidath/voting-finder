@@ -231,7 +231,7 @@ describe('API routes', () => {
       if (u.includes('zippopotam'))
         return json({ places: [{ 'place name': 'Dover', state: 'Delaware', 'state abbreviation': 'DE', latitude: '39.15', longitude: '-75.52' }] });
       if (u.includes('nominatim') && u.includes('library'))
-        return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { house_number: '35', road: 'Loockerman Plaza', city: 'Dover', postcode: '19901' } }]);
+        return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { state: 'Delaware', house_number: '35', road: 'Loockerman Plaza', city: 'Dover', postcode: '19901' } }]);
       if (u.includes('nominatim')) return json([]);
     };
     const res = await fetch(`${base}/api/polling?zip=19901`);
@@ -240,6 +240,7 @@ describe('API routes', () => {
     assert.equal(body.locations[0].name, 'Dover Public Library');
     assert.equal(body.locations[0].addr, '35 Loockerman Plaza, Dover, Delaware, 19901');
     assert.ok(body.locations[0].isEstimated);
+    assert.doesNotMatch(body.locations[0].type, /polling|voting/i);
     assert.equal(body.searchRadiusKm, 10);
   });
 
@@ -253,7 +254,7 @@ describe('API routes', () => {
       if (!u.includes('nominatim')) return undefined;
       if (u.includes('Dover')) return json([]); // every tier-1, place-scoped query
       if (u.includes('q=school'))
-        return json([{ name: 'Dover High School', lat: '39.19', lon: '-75.55', display_name: 'Dover High School, Dover', address: { house_number: '1', road: 'Pat Lynn Drive', city: 'Dover', postcode: '19904' } }]);
+        return json([{ name: 'Dover High School', lat: '39.19', lon: '-75.55', display_name: 'Dover High School, Dover', address: { state: 'Delaware', house_number: '1', road: 'Pat Lynn Drive', city: 'Dover', postcode: '19904' } }]);
       return json([]);
     };
     const res = await fetch(`${base}/api/polling?zip=19901`);
@@ -263,8 +264,9 @@ describe('API routes', () => {
     assert.equal(body.locations.length, 1);
     assert.equal(body.locations[0].name, 'Dover High School');
     // Rule #1: a weaker source must be labelled more cautiously, never less.
-    assert.equal(body.locations[0].type, 'Civic Building');
+    assert.equal(body.locations[0].type, 'Nearby building');
     assert.ok(body.locations[0].isEstimated);
+    assert.doesNotMatch(body.locations[0].type, /polling|voting/i);
     assert.match(res.headers.get('cache-control'), /s-maxage=86400/);
   });
 
@@ -273,7 +275,7 @@ describe('API routes', () => {
       if (u.includes('zippopotam'))
         return json({ places: [{ 'place name': 'Dover', state: 'Delaware', 'state abbreviation': 'DE', latitude: '39.15', longitude: '-75.52' }] });
       if (u.includes('nominatim') && u.includes('Dover') && u.includes('library'))
-        return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { city: 'Dover', postcode: '19901' } }]);
+        return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { state: 'Delaware', city: 'Dover', postcode: '19901' } }]);
       if (u.includes('nominatim') && u.includes('Dover')) return json([]);
       // A bare (tier-2) query reaching Nominatim at all would mean we widened unnecessarily.
       if (u.includes('nominatim')) throw new Error('tier 2 must not run when tier 1 found venues');
@@ -317,7 +319,7 @@ describe('API routes', () => {
       if (u.includes('zippopotam'))
         return json({ places: [{ 'place name': 'Dover', state: 'Delaware', 'state abbreviation': 'DE', latitude: '39.15', longitude: '-75.52' }] });
       if (u.includes('nominatim') && u.includes('library'))
-        return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { house_number: '35', road: 'Loockerman Plaza', city: 'Dover', postcode: '19901' } }]);
+        return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { state: 'Delaware', house_number: '35', road: 'Loockerman Plaza', city: 'Dover', postcode: '19901' } }]);
       if (u.includes('nominatim')) return json([]);
     };
 
@@ -342,7 +344,7 @@ describe('API routes', () => {
       if (u.includes('zippopotam'))
         return json({ places: [{ 'place name': 'Dover', state: 'Delaware', 'state abbreviation': 'DE', latitude: '39.15', longitude: '-75.52' }] });
       if (u.includes('nominatim') && u.includes('library'))
-        return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { road: 'Loockerman Plaza', city: 'Dover', postcode: '19901' } }]);
+        return json([{ name: 'Dover Public Library', lat: '39.158', lon: '-75.522', display_name: 'Dover Public Library, Dover', address: { state: 'Delaware', road: 'Loockerman Plaza', city: 'Dover', postcode: '19901' } }]);
       if (u.includes('nominatim')) return json([]);
     };
 
@@ -429,5 +431,39 @@ describe('API routes', () => {
     assert.equal(res.status, 502);
     assert.match((await res.json()).error, /unavailable/);
     assert.equal(res.headers.get('cache-control'), 'no-store');
+  });
+});
+
+
+describe('building evidence', () => {
+  const { buildVenue } = require('../services/geocodeService');
+  const venue = { name: 'Test building', lat: '39.158', lon: '-75.522',
+    address: { state: 'Delaware', city: 'Dover', road: 'Main St' } };
+  const build = (value) => buildVenue(value, 'Nearby building', 39.15, -75.52, 'Delaware', 25);
+
+  test('uses map tags, never search keywords, to describe building kinds', () => {
+    assert.equal(build({ ...venue, type: 'library' }).type, 'Library');
+    assert.equal(build({ ...venue, type: 'yes' }).type, 'Nearby building');
+    assert.equal(build({ ...venue, type: 'constructor' }).type, 'Nearby building');
+    for (const type of ['library', 'community_centre', 'townhall', 'school', 'fire_station', 'yes']) {
+      const result = build({ ...venue, type });
+      assert.doesNotMatch(result.type, /polling|voting/i);
+      assert.equal(result.isEstimated, true);
+    }
+  });
+
+  test('rejects out-of-state buildings even within the distance limit', () => {
+    assert.equal(build({ ...venue, address: { ...venue.address, state: 'Maryland' } }), null);
+    assert.ok(build(venue), 'same-state positive control');
+  });
+
+  test('does not fill in missing state evidence from the search area', () => {
+    assert.equal(build({ ...venue, address: { city: 'Dover' } }), null);
+  });
+
+  test('rejects entertainment venues whose names match civic-building keywords', () => {
+    for (const type of ['theatre', 'arts_centre', 'cinema']) {
+      assert.equal(build({ ...venue, name: 'The Town Hall', class: 'amenity', type }), null);
+    }
   });
 });

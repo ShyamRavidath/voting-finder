@@ -66,10 +66,10 @@ router.get('/', async (req, res) => {
       'SELECT locations, data_source FROM polling_cache WHERE cache_key = $1 AND expires_at > NOW()',
       [cacheKey]
     );
-    if (cached.rows.length > 0) {
-      const stored = cached.rows[0].locations;
-      // Older cache rows stored a bare array of locations
-      const payload = Array.isArray(stored) ? { locations: stored, place: null, election: null } : stored;
+    if (cached.rows.length > 0 && cached.rows[0].locations?.schemaVersion === 2) {
+      // Version 2 records have neutral labels and independently checked venue states.
+      // Older rows (including bare arrays) are refreshed rather than trusted.
+      const payload = cached.rows[0].locations;
       // A device row carries no ZIP in its key, so recover it from the payload.
       const cachedZip = zipCode || payload.place?.zip;
       res.set('Cache-Control', device ? CACHE_DEVICE_FOUND : CACHE_FOUND);
@@ -155,6 +155,7 @@ router.get('/', async (req, res) => {
   }
 
   const payload = {
+    schemaVersion: 2,
     locations,
     place: { city, state, stateAbbr, zip: zipCode, lat, lng },
     election,

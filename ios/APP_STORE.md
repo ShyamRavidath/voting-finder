@@ -1,7 +1,7 @@
 # App Store Connect — submission material
 
 Draft copy for the Vote4U App Store listing. Paste into App Store Connect; nothing here is
-wired into the build. Written 2026-09-20.
+wired into the build. Updated 2026-10-11 for the keyless release candidate. Not yet submitted.
 
 Account: `ravidath@gmail.com` (individual). An individual account publishes under your personal
 legal name — that name appears on the store page as the seller.
@@ -41,32 +41,34 @@ Never use a competitor's or organisation's name.
 Vote4U helps you find where to vote, see what is coming, and keep track of Election Day.
 
 FIND YOUR POLLING PLACE
-Tap once to use your location, or type a ZIP code. Vote4U shows nearby voting
-locations on a map with driving directions, and tells you plainly when a
-location is unconfirmed rather than guessing.
+Type a ZIP code or optionally use your location to look up your area.
+Official lookup links help you find your assigned polling place and hours.
+Nearby buildings from OpenStreetMap are shown separately, with no claim
+that they offer voting. Vote4U cannot confirm your assigned polling place.
 
 NEVER MISS ELECTION DAY
 A countdown to the next federal election, plus optional reminders one week
 before and on Election Day morning. Reminders are scheduled on your iPhone —
 there is no account and nothing to sign up for.
 
-SAVE YOUR POLLING PLACE
-Keep your polling place on your device so it is there when you need it, even
-without a signal.
+SAVE A LOCATION
+Keep a location on your device for offline reference. Unconfirmed locations
+keep their warning when saved or shared. Confirm with your election office
+before making a voting plan.
 
 ELECTORAL MAP
 An interactive map of all 50 states and DC with electoral vote counts and the
 270 line.
 
 ELECTION NEWS
-Headlines about the current US election, from across the political spectrum,
+Headlines about the current US election from third-party publishers,
 opening on the publisher's own page.
 
 BUILT TO BE TRUSTED
 Vote4U is independent and nonpartisan. It is not affiliated with any government
 agency, election office, campaign or party. There are no accounts, no ads and
 no tracking. When we cannot confirm a polling location, we say so and link you
-to your state's official lookup instead of showing you something we made up.
+to official lookup resources. Nearby-building results are not voting recommendations.
 
 Always confirm your polling place with your state or county election office
 before you go.
@@ -79,7 +81,7 @@ code actually does.
 ## Promotional text (170 char max, editable without a new build)
 
 ```
-Find your polling place in one tap, get reminded before Election Day, and follow the race with an interactive electoral map. Independent, nonpartisan, no ads.
+Plan for Election Day with official lookup links, optional reminders, offline saved locations and an electoral map. Independent, nonpartisan, no ads.
 ```
 
 ## Notes for Review (guideline 2.3.1(a))
@@ -90,9 +92,10 @@ affiliated with, endorsed by, or operated by any government agency, election
 office, political party, campaign or candidate.
 
 WHERE THE DATA COMES FROM
-- Polling locations: Google's Civic Information API (Voting Information
-  Project) when official data is available for the user's state, otherwise
-  nearby public buildings from OpenStreetMap.
+- This release uses no Google Civic key and does not provide verified polling
+  assignments. ZIP/location search resolves the area and returns nearby
+  buildings from OpenStreetMap. These are not voting recommendations.
+- Official lookup links are the primary route to an assigned polling place.
 - Any location not confirmed by an official source is labelled "Not confirmed"
   in the UI, and the app always links to USA.gov, Vote.gov and the National
   Association of Secretaries of State for the authoritative lookup. The app
@@ -104,7 +107,8 @@ WHERE THE DATA COMES FROM
 LOCATION
 Location is optional and used to resolve the user's ZIP code and find nearby
 locations, with distances measured from the rounded device position. Coordinates are rounded to roughly 110 metres
-before leaving the device. They are sent to our server for ZIP resolution and
+before leaving the device. They are sent to our server and OpenStreetMap for
+ZIP resolution and nearby-building searches, are cached by Vercel and Neon, and
 can appear in Vercel request logs; an optional database cache may retain the
 rounded coordinate pair until daily cleanup (normally within two days, longer
 if cleanup fails). If the user declines the permission, ZIP code entry remains
@@ -121,10 +125,15 @@ reachable immediately on launch.
 
 HOW TO TEST
 1. Vote tab: enter ZIP 90210 (or allow location) and tap Search.
-2. Tap Directions on a result to open Apple Maps.
+2. Follow an official lookup link to confirm your assigned polling place.
+   Nearby building cards are unconfirmed; Save preserves that warning offline.
+   Directions opens Apple Maps but does not imply the building offers voting.
 3. Map tab: tap any state, or use the list below the map.
 4. Home tab: toggle "Remind me about Election Day".
 ```
+
+**Release configuration gate:** Keep Google Civic disabled until the assignment, election-date
+and cache findings in OPUS-6/11/12 are fixed. This copy describes the keyless candidate.
 
 ## Privacy nutrition labels (App Store Connect → App Privacy)
 
@@ -225,5 +234,5 @@ Vote-tab shot if you would rather lead with density.
 - [x] **NewsAPI removed 2026-09-20** — its development-only free plan was the 5.2.2 risk. Gone;
       news comes from Google News RSS, which is keyless
 - [ ] Privacy policy live at `/privacy` with the app section (done 2026-09-20)
-- [x] Screenshots captured (`ios/screenshots/`, regenerate with `scripts/capture-screenshots.sh`)
+- [ ] Refresh screenshots after the corrected backend is deployed; the existing build-2 images contain obsolete voting claims
 - [ ] Archive ▸ Distribute ▸ App Store Connect ▸ TestFlight ▸ Submit

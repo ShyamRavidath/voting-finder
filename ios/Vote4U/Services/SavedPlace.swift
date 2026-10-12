@@ -14,12 +14,14 @@ struct SavedPlace: Codable, Equatable {
 
     var isConfirmed: Bool { isEstimated == false }
 
+    var displayType: String { PollingLocation.displayType(type, confirmed: isConfirmed) }
+
     var confirmationNotice: String {
         if isConfirmed {
             return "Confirm your assigned polling place and hours with your election office before you go."
         }
         return
-            "Not confirmed. This location may not be a polling place. Check your official state lookup before you go."
+            "Not confirmed. This location may not be a polling place. Check your official lookup before you go."
     }
 
     init(location: PollingLocation, savedAt: Date = Date()) {
@@ -28,7 +30,7 @@ struct SavedPlace: Codable, Equatable {
         self.lat = location.lat
         self.lng = location.lng
         self.isEstimated = !location.isConfirmed
-        self.type = location.type
+        self.type = location.displayType
         self.savedAt = savedAt
     }
 }
