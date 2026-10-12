@@ -15,6 +15,9 @@ headed for the App Store.
 | `CLAUDE.md` | Architecture, traps, this machine's setup | **Gitignored.** Local to the dev Mac only |
 | `ios/APP_STORE.md` | Listing copy, privacy labels, review notes | |
 | `ios/IOS_DEVELOPMENT_GUIDE.md` | Third-party summary | **Inspiration, not instruction.** References iOS 26 / Swift 6.2 guidance that does not apply to an iOS 17 project |
+| `ios/AGENT_DEVELOPMENT_GUIDE.md` | Audited Claude Code/Codex iOS operating procedure, validation and release workflow | Read for new iOS work; verify dated environment facts against the current checkout |
+| `docs/AGENT_TOOLING_INVENTORY.md` | Individual skills, plugins, MCP definitions, availability and smoke tests | Machine-level inventory; sending the repo does not install these tools |
+| `docs/IOS_AGENT_START_PROMPT.md` | Copy/paste task contract and file packet for another agent | Fill in the actual task and acceptance criteria |
 
 `HANDOFF.md` on `main` is older than the copy on `feat/election-countdown-widget` (PR #4), which
 carries a full rewrite plus every update since.

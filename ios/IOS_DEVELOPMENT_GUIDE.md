@@ -1,5 +1,9 @@
 # iOS Development with Codex: Working Guide
 
+> For the audited Vote4U operating procedure, use [AGENT_DEVELOPMENT_GUIDE.md](AGENT_DEVELOPMENT_GUIDE.md)
+> and [the tooling inventory](../docs/AGENT_TOOLING_INVENTORY.md). This older article summary is
+> historical inspiration; its commands and generic defaults must be checked against the repo rules.
+
 This reference distills the user-supplied article, “Summary of Prompts for iOS App Development with Codex,” into a practical workflow. The source was an AI-translated summary, so verify version-sensitive APIs and platform requirements against current Apple documentation before shipping.
 
 ## Project quick reference
