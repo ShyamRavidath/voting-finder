@@ -5,7 +5,7 @@ struct ElectionCountdownCard: View {
     @ScaledMetric(relativeTo: .largeTitle) private var countdownSize = 60.0
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 3_600)) { context in
+        TimelineView(ElectionCountdownSchedule()) { context in
             let election = ElectionCalendar.next(from: context.date)
 
             ZStack(alignment: .topTrailing) {
@@ -21,7 +21,7 @@ struct ElectionCountdownCard: View {
                         .foregroundStyle(.primary)
 
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
-                        Text("\(election.daysAway)")
+                        Text(election.circularCountdown.value)
                             .font(.system(size: countdownSize, weight: .bold, design: .rounded))
                             .monospacedDigit()
                             .minimumScaleFactor(0.55)
@@ -30,9 +30,11 @@ struct ElectionCountdownCard: View {
                             .animation(reduceMotion ? nil : .snappy, value: election.daysAway)
                             .dynamicTypeSize(...DynamicTypeSize.accessibility2)
 
-                        Text(election.daysAway == 1 ? "day" : "days")
-                            .font(.title2.bold())
-                            .foregroundStyle(.primary)
+                        if let unit = election.circularCountdown.unit {
+                            Text(unit)
+                                .font(.title2.bold())
+                                .foregroundStyle(.primary)
+                        }
                     }
 
                     Text(election.date, format: .dateTime.weekday(.wide).month(.wide).day().year())
@@ -49,7 +51,7 @@ struct ElectionCountdownCard: View {
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(
-                "\(election.kind) in \(election.daysAway) days, \(election.date.formatted(date: .complete, time: .omitted))"
+                election.spokenSummary()
             )
         }
     }

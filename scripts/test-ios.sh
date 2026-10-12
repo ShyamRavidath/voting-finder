@@ -11,8 +11,8 @@
 # simulator, created and destroyed here.
 #
 # Order also matters: the allow test runs before the unit tests, because ReminderScheduler needs
-# authorization before UNUserNotificationCenter will queue anything. Without it those tests skip
-# rather than fail — honest, but not coverage.
+# authorization before UNUserNotificationCenter will queue anything. Without it the queue tests
+# fail loudly rather than silently skipping their assertions.
 set -euo pipefail
 
 DEVICE_TYPE="${DEVICE_TYPE:-iPhone 17}"

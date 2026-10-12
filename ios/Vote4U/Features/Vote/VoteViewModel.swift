@@ -69,19 +69,19 @@ final class VoteViewModel {
         savedPlace = place
         SavedPlaceStore.save(place)
         // Keep the Election Day reminder naming the right place.
-        refreshReminders(place: place)
+        refreshReminders()
     }
 
     func clearSavedPlace() {
         savedPlace = nil
         SavedPlaceStore.save(nil)
-        refreshReminders(place: nil)
+        refreshReminders()
     }
 
-    private func refreshReminders(place: SavedPlace?) {
+    private func refreshReminders() {
         // OS permission can remain granted after the user turns reminders off in the app.
         guard UserDefaults.standard.bool(forKey: "remindersEnabled") else { return }
-        Task { await ReminderScheduler.schedule(place: place) }
+        ReminderPreferences.shared.reconcile()
     }
 
     func isSaved(_ location: PollingLocation) -> Bool {

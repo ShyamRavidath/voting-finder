@@ -10,6 +10,11 @@ import XCTest
 /// granting permission. See HANDOFF's device-testing list.
 final class ReminderSchedulerTests: XCTestCase {
     private var calendar: Calendar { Calendar(identifier: .gregorian) }
+    // Keep actual queued triggers well ahead of the OS clock, even after Election Day 2026.
+    private var futureStart: Date {
+        let year = calendar.component(.year, from: Date()) + 2
+        return date(year, 1, 1)
+    }
     private var center: UNUserNotificationCenter { .current() }
 
     private func date(_ y: Int, _ m: Int, _ d: Int) -> Date {
@@ -23,8 +28,8 @@ final class ReminderSchedulerTests: XCTestCase {
         // the fix. `requestAuthorization` on an already-decided app returns the existing answer
         // without showing an alert, so this is safe to call in a unit test.
         let granted = await ReminderScheduler.authorize()
-        try XCTSkipIf(
-            !granted,
+        XCTAssertTrue(
+            granted,
             """
             Notifications are not authorized on this simulator, so nothing can be queued and \
             these assertions would be vacuous. Run ./scripts/test-ios.sh, which taps Allow in a \
@@ -34,7 +39,7 @@ final class ReminderSchedulerTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        ReminderScheduler.cancelAll()
+        await ReminderScheduler.cancelPending()
         try await super.tearDown()
     }
 
@@ -43,7 +48,7 @@ final class ReminderSchedulerTests: XCTestCase {
     }
 
     func testSchedulesBothRemindersAtTheRightTimes() async throws {
-        await ReminderScheduler.schedule(place: nil, calendar: calendar, now: date(2026, 9, 20))
+        await ReminderScheduler.schedule(place: nil, calendar: calendar, now: futureStart)
 
         let requests = await pending()
         XCTAssertEqual(requests.count, 2)
@@ -52,13 +57,17 @@ final class ReminderSchedulerTests: XCTestCase {
         for (id, trigger) in triggers {
             let components = try XCTUnwrap(trigger?.dateComponents)
             if id.contains("week-before") {
-                // Election Day is Nov 3 2026, so a week earlier lands in October.
-                XCTAssertEqual(components.month, 10)
-                XCTAssertEqual(components.day, 27)
+                let election = ElectionCalendar.next(from: futureStart, calendar: calendar)
+                let expected = calendar.date(byAdding: .day, value: -7, to: election.date)!
+                XCTAssertEqual(components.year, calendar.component(.year, from: expected))
+                XCTAssertEqual(components.month, calendar.component(.month, from: expected))
+                XCTAssertEqual(components.day, calendar.component(.day, from: expected))
                 XCTAssertEqual(components.hour, 9)
             } else {
                 XCTAssertEqual(components.month, 11)
-                XCTAssertEqual(components.day, 3)
+                XCTAssertEqual(
+                    components.day,
+                    calendar.component(.day, from: ElectionCalendar.next(from: futureStart, calendar: calendar).date))
                 XCTAssertEqual(components.hour, 7)
             }
         }
@@ -71,7 +80,7 @@ final class ReminderSchedulerTests: XCTestCase {
                 type: "Likely Polling Place", lat: nil, lng: nil, distance: nil, isEstimated: true
             )
         )
-        await ReminderScheduler.schedule(place: saved, calendar: calendar, now: date(2026, 9, 20))
+        await ReminderScheduler.schedule(place: saved, calendar: calendar, now: futureStart)
 
         let requests = await pending()
         let morning = try XCTUnwrap(requests.first { $0.identifier.contains("morning-of") })
@@ -111,16 +120,42 @@ final class ReminderSchedulerTests: XCTestCase {
         XCTAssertTrue(afterRemoval.isEmpty, "removing must not turn reminders back on")
     }
 
+    @MainActor
+    func testOptOutThenOptInWaitsForRealQueueCleanup() async throws {
+        let suite = "ReminderQueueTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let preferences = ReminderPreferences(
+            defaults: defaults, authorize: { true },
+            schedule: {
+                await ReminderScheduler.schedule(place: nil, calendar: self.calendar, now: self.futureStart)
+            })
+        await preferences.setEnabled(true).value
+        let initiallyQueued = await pending()
+        XCTAssertEqual(initiallyQueued.count, 2)
+        await preferences.setEnabled(false).value
+        let afterOptOut = await pending()
+        XCTAssertTrue(afterOptOut.isEmpty)
+        await preferences.setEnabled(true).value
+        let afterOptIn = await pending()
+        XCTAssertEqual(afterOptIn.count, 2)
+        // Give any incorrectly delayed cancellation a chance to remove the new requests.
+        try await Task.sleep(for: .milliseconds(300))
+        let settled = await pending()
+        XCTAssertEqual(settled.count, 2)
+        await preferences.setEnabled(false).value
+    }
+
     func testReschedulingReplacesRatherThanStacks() async throws {
-        await ReminderScheduler.schedule(place: nil, calendar: calendar, now: date(2026, 9, 20))
-        await ReminderScheduler.schedule(place: nil, calendar: calendar, now: date(2026, 9, 20))
+        await ReminderScheduler.schedule(place: nil, calendar: calendar, now: futureStart)
+        await ReminderScheduler.schedule(place: nil, calendar: calendar, now: futureStart)
 
         let requests = await pending()
         XCTAssertEqual(requests.count, 2, "rescheduling must replace, never stack")
     }
 
     func testCancelAllClearsEverything() async throws {
-        await ReminderScheduler.schedule(place: nil, calendar: calendar, now: date(2026, 9, 20))
+        await ReminderScheduler.schedule(place: nil, calendar: calendar, now: futureStart)
         ReminderScheduler.cancelAll()
 
         // removePendingNotificationRequests is asynchronous inside the daemon.
@@ -132,7 +167,9 @@ final class ReminderSchedulerTests: XCTestCase {
     func testAWeekBeforeInThePastIsNotScheduled() async throws {
         // Six days out: the week-before reminder has already passed and must be skipped, leaving
         // only the morning-of one. Scheduling a trigger in the past would never fire.
-        await ReminderScheduler.schedule(place: nil, calendar: calendar, now: date(2026, 10, 28))
+        let election = ElectionCalendar.next(from: futureStart, calendar: calendar)
+        let sixDaysBefore = calendar.date(byAdding: .day, value: -6, to: election.date)!
+        await ReminderScheduler.schedule(place: nil, calendar: calendar, now: sixDaysBefore)
 
         let requests = await pending()
         XCTAssertEqual(requests.count, 1)
