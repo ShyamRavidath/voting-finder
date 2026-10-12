@@ -1,5 +1,11 @@
 # Vote4U — Handoff
 
+> October 11 countdown/reminder continuation: see [the lifecycle fix ledger](docs/REMINDER_LIFECYCLE_FIXES.md).
+> This batch starts from merged PRs #16/#17 (`d8b8279`) and supersedes the older next-code-batch
+> status below. [PR #18](https://github.com/ShyamRavidath/voting-finder/pull/18) records the final
+> native rerun results and latest hosted checks. This does not establish production deployment,
+> TestFlight validation or submission.
+
 > October 11 release-fix implementation: see [the current fix ledger](docs/RELEASE_TRUST_FIXES.md).
 > The independent review and current branch audit remain in PR #15. Nothing is submitted.
 

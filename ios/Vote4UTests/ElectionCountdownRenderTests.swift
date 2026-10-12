@@ -1,6 +1,7 @@
 import SwiftUI
 import WidgetKit
 import XCTest
+
 @testable import Vote4U
 
 /// Proof that the widget actually *draws*, not merely that it compiles.
@@ -28,22 +29,37 @@ final class ElectionCountdownRenderTests: XCTestCase {
         return ElectionCountdownEntry(date: date, election: ElectionCalendar.next(from: date, calendar: calendar))
     }
 
-    private func render(_ entry: ElectionCountdownEntry, family: WidgetFamily, size: CGSize) -> UIImage? {
+    private func render(_ entry: ElectionCountdownEntry, family: WidgetFamily, size: CGSize) async -> UIImage? {
         // `ElectionCountdownContent`, not `ElectionCountdownWidgetView`: `\.widgetFamily` is a
         // read-only environment key, so the family has to be passed in explicitly.
         let view = ElectionCountdownContent(entry: entry, family: family)
             .frame(width: size.width, height: size.height)
 
-        let renderer = ImageRenderer(content: view)
-        renderer.scale = 2
-        return renderer.uiImage
+        return await renderWhenReady {
+            let renderer = ImageRenderer(content: view)
+            renderer.scale = 2
+            return renderer.uiImage
+        }
     }
 
-    func testEveryFamilyRendersSomethingVisible() throws {
-        let entry = entry(2026, 9, 21) // 43 days out
+    private func renderWhenReady(_ makeImage: () -> UIImage?) async -> UIImage? {
+        var image: UIImage?
+        // A cold simulator can time out the first image provider while compiling its graphics
+        // pipeline. Allow a bounded warm-up; callers still fail if the final image is blank.
+        for attempt in 0..<3 {
+            image = makeImage()
+            if let image, hasVisibleContent(image) { return image }
+            if attempt < 2 { try? await Task.sleep(for: .milliseconds(250)) }
+        }
+        return image
+    }
+
+    func testEveryFamilyRendersSomethingVisible() async throws {
+        let entry = entry(2026, 9, 21)  // 43 days out
 
         for (family, size) in Self.sizes {
-            let image = try XCTUnwrap(render(entry, family: family, size: size), "\(family) produced no image")
+            let rendered = await render(entry, family: family, size: size)
+            let image = try XCTUnwrap(rendered, "\(family) produced no image")
             XCTAssertEqual(image.size.width, size.width, accuracy: 1, "\(family) width")
             XCTAssertEqual(image.size.height, size.height, accuracy: 1, "\(family) height")
             XCTAssertTrue(hasVisibleContent(image), "\(family) rendered a blank image")
@@ -52,11 +68,12 @@ final class ElectionCountdownRenderTests: XCTestCase {
 
     /// Election Day and the day before are the two the phrasing special-cases, and they are also
     /// the widest strings the tiny families have to fit.
-    func testTheEdgeCaseDaysStillRender() throws {
+    func testTheEdgeCaseDaysStillRender() async throws {
         for entry in [entry(2026, 11, 3), entry(2026, 11, 2)] {
             for (family, size) in Self.sizes {
+                let rendered = await render(entry, family: family, size: size)
                 let image = try XCTUnwrap(
-                    render(entry, family: family, size: size),
+                    rendered,
                     "\(family) produced no image for \(entry.election.countdownPhrase)"
                 )
                 XCTAssertTrue(
@@ -67,12 +84,34 @@ final class ElectionCountdownRenderTests: XCTestCase {
         }
     }
 
-    func testAPresidentialYearRendersToo() throws {
+    func testAPresidentialYearRendersToo() async throws {
         let entry = entry(2028, 3, 1)
         XCTAssertEqual(entry.election.shortKind(calendar: calendar), "Presidential")
 
-        let image = try XCTUnwrap(render(entry, family: .systemSmall, size: CGSize(width: 170, height: 170)))
+        let rendered = await render(entry, family: .systemSmall, size: CGSize(width: 170, height: 170))
+        let image = try XCTUnwrap(rendered)
         XCTAssertTrue(hasVisibleContent(image))
+    }
+
+    func testRenderWaitDoesNotAcceptPermanentlyBlankContent() async throws {
+        // Use known pixel bytes, not a SwiftUI transparent view whose provider may still be
+        // resolving its backing image. This isolates the bounded wait and pixel predicate.
+        let provider = try XCTUnwrap(CGDataProvider(data: Data(repeating: 0, count: 16) as CFData))
+        let cgImage = try XCTUnwrap(
+            CGImage(
+                width: 2, height: 2, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: 8,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+        let blank = UIImage(cgImage: cgImage)
+        var attempts = 0
+        let rendered = await renderWhenReady {
+            attempts += 1
+            return blank
+        }
+        let image = try XCTUnwrap(rendered)
+        XCTAssertEqual(attempts, 3, "blank content must exhaust the bounded wait")
+        XCTAssertFalse(hasVisibleContent(image), "the wait must not manufacture visible content")
     }
 
     /// A rendered-but-empty view is the failure this is really looking for, and a size check
@@ -84,21 +123,38 @@ final class ElectionCountdownRenderTests: XCTestCase {
         let height = cgImage.height
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
 
-        guard let context = CGContext(
-            data: &pixels,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: width * 4,
-            space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return false }
-
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-
-        let first = Array(pixels.prefix(4))
-        return stride(from: 0, to: pixels.count, by: 4).contains { offset in
-            Array(pixels[offset..<min(offset + 4, pixels.count)]) != first
+        let drewImage = pixels.withUnsafeMutableBytes { buffer in
+            guard
+                let context = CGContext(
+                    data: buffer.baseAddress,
+                    width: width,
+                    height: height,
+                    bitsPerComponent: 8,
+                    bytesPerRow: width * 4,
+                    space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+                )
+            else { return false }
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
         }
+        guard drewImage, !pixels.isEmpty else { return false }
+
+        // RGB bytes under zero alpha are invisible and must not turn an empty image into a
+        // passing render. Require both a visible pixel and variation from the first pixel.
+        let firstAlpha = pixels[3]
+        var visible = false
+        var varied = false
+        for offset in stride(from: 0, to: pixels.count, by: 4) {
+            let alpha = pixels[offset + 3]
+            visible = visible || alpha > 0
+            varied =
+                varied || alpha != firstAlpha
+                || (alpha > 0
+                    && (pixels[offset] != pixels[0]
+                        || pixels[offset + 1] != pixels[1] || pixels[offset + 2] != pixels[2]))
+            if visible && varied { return true }
+        }
+        return false
     }
 }
