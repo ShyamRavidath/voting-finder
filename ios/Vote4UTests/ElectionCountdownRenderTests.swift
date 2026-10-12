@@ -106,23 +106,38 @@ final class ElectionCountdownRenderTests: XCTestCase {
         let height = cgImage.height
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
 
-        guard
-            let context = CGContext(
-                data: &pixels,
-                width: width,
-                height: height,
-                bitsPerComponent: 8,
-                bytesPerRow: width * 4,
-                space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-            )
-        else { return false }
-
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-
-        let first = Array(pixels.prefix(4))
-        return stride(from: 0, to: pixels.count, by: 4).contains { offset in
-            Array(pixels[offset..<min(offset + 4, pixels.count)]) != first
+        let drewImage = pixels.withUnsafeMutableBytes { buffer in
+            guard
+                let context = CGContext(
+                    data: buffer.baseAddress,
+                    width: width,
+                    height: height,
+                    bitsPerComponent: 8,
+                    bytesPerRow: width * 4,
+                    space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+                )
+            else { return false }
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
         }
+        guard drewImage, !pixels.isEmpty else { return false }
+
+        // RGB bytes under zero alpha are invisible and must not turn an empty image into a
+        // passing render. Require both a visible pixel and variation from the first pixel.
+        let firstAlpha = pixels[3]
+        var visible = false
+        var varied = false
+        for offset in stride(from: 0, to: pixels.count, by: 4) {
+            let alpha = pixels[offset + 3]
+            visible = visible || alpha > 0
+            varied =
+                varied || alpha != firstAlpha
+                || (alpha > 0
+                    && (pixels[offset] != pixels[0]
+                        || pixels[offset + 1] != pixels[1] || pixels[offset + 2] != pixels[2]))
+            if visible && varied { return true }
+        }
+        return false
     }
 }

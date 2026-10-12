@@ -58,6 +58,12 @@ pool listener or reminder revision guards; neither mutation touched the candidat
   to three times with short waits; the same visibility assertions remain, and a separate
   permanently-blank-content test verifies the wait does not manufacture a passing image.
   Consult PR #18 for complete native rerun results for that test-only adjustment.
+- The new blank-content guard then exposed a false positive in the old pixel checker.
+  The checker now keeps its buffer scoped through drawing and requires both visible alpha
+  and pixel variation, ignoring RGB bytes under zero alpha. Direct probes rejected transparent
+  and uniform images, accepted visible variation, and rejected an actual SwiftUI clear render.
+  The already-failed native attempt was stopped before remaining smoke/deny/Release checks.
+  No application code changed during these test-harness corrections.
 
 ## Limits
 
@@ -79,7 +85,9 @@ Claude worktrees were not reset, switched, or committed by this batch.
 - `/private/tmp/vote4u-reminders-ios27-allow-failure.log`
 - `/private/tmp/vote4u-reminders-ios27-retry.log` (render failure)
 - `/private/tmp/vote4u-reminders-ios27-render-failure.log`
-- `/private/tmp/vote4u-reminders-ios27-verified.log`
+- `/private/tmp/vote4u-reminders-ios27-verified.log` (blank-check failure)
+- `/private/tmp/vote4u-reminders-ios27-blank-check-failure.log`
+- `/private/tmp/vote4u-reminders-ios27-complete.log`
 - `/private/tmp/vote4u-reminders-hosted-ios.log` (hosted success at `04f1359`)
 - `/private/tmp/vote4u-ios27-all-attachments/` (first failure's recording and tap events)
 - `/private/tmp/vote4u-reminders-db-mutation.log`
