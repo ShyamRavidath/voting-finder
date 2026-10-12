@@ -22,7 +22,37 @@ const CANDIDATES = [
   { name: 'Tim Scott', match: ['tim scott'], party: 'Republican' },
 ];
 const MAX_ARTICLES = 15;
-const EXCLUDED_DOMAINS = ['biztoc.com', 'freerepublic.com'];
+// Explicit publisher exclusions, not a comprehensive neutrality or bias assessment.
+// Check RSS publisher metadata too: Google News article URLs hide the publisher's host.
+const EXCLUDED_DOMAINS = [
+  'biztoc.com', 'freerepublic.com',
+  'democracyforward.org', 'hrc.org',
+  'democrats.org', 'gop.com', 'dlcc.org', 'rslc.gop',
+  'dccc.org', 'nrcc.org', 'dscc.org', 'nrsc.org',
+];
+const EXCLUDED_SOURCES = new Set([
+  'biztoc', 'free republic', 'democracy forward', 'human rights campaign', 'hrc',
+  'democratic national committee', 'republican national committee', 'dnc', 'rnc',
+  'democratic legislative campaign committee', 'republican state leadership committee',
+  'dlcc', 'rslc', 'dccc', 'nrcc', 'dscc', 'nrsc',
+]);
+
+function httpURL(value) {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+function isExcludedSource(source, ...urls) {
+  if (EXCLUDED_SOURCES.has(source.trim().toLowerCase())) return true;
+  return urls.some((value) => {
+    const host = httpURL(value)?.hostname.toLowerCase();
+    return host && EXCLUDED_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+  });
+}
 
 function findCandidate(title, desc) {
   const text = `${title} ${desc}`.toLowerCase();
@@ -49,6 +79,7 @@ function isElectionRelevant(title, from = new Date()) {
 }
 
 function toArticle({ title, description, url, publishedAt, source, imageUrl }) {
+  if (!httpURL(url) || /\bTCS\s+VVP\b.*\bQ\d+\b/i.test(title)) return null;
   const match = findCandidate(title, description || '');
   const candidate = match?.name || null;
   const party = match?.party || null;
@@ -81,7 +112,6 @@ function dedupeAndSort(articles) {
       seen.add(key);
       return true;
     })
-    .filter((a) => !EXCLUDED_DOMAINS.some((d) => a.url.includes(d)))
     .slice(0, MAX_ARTICLES);
 }
 
@@ -99,16 +129,17 @@ function tag(xml, name) {
   return m ? decodeEntities(m[1]).trim() : '';
 }
 
-// The next federal election year. Federal elections fall on the Tuesday after the first Monday
-// in November of even years — the same arithmetic as `nextFederalElection` in
-// client/src/lib/format.js and its Swift port, kept in step deliberately.
+// Federal elections fall on the Tuesday after the first Monday in November of even years.
+// This shared US feed keeps Election Day until it has ended throughout US time zones,
+// including outlying territories (UTC−12), independent of the server's local time zone.
 function nextFederalElectionYear(from = new Date()) {
-  const today = new Date(from.getFullYear(), from.getMonth(), from.getDate());
-  for (let year = today.getFullYear(); ; year++) {
+  const lastUSDate = new Date(from.getTime() - 12 * 60 * 60 * 1000);
+  const today = Date.UTC(lastUSDate.getUTCFullYear(), lastUSDate.getUTCMonth(), lastUSDate.getUTCDate());
+  for (let year = lastUSDate.getUTCFullYear(); ; year++) {
     if (year % 2 !== 0) continue;
-    const nov1 = new Date(year, 10, 1);
-    const firstMonday = 1 + ((8 - nov1.getDay()) % 7);
-    if (new Date(year, 10, firstMonday + 1) >= today) return year;
+    const nov1 = new Date(Date.UTC(year, 10, 1));
+    const firstMonday = 1 + ((8 - nov1.getUTCDay()) % 7);
+    if (Date.UTC(year, 10, firstMonday + 1) >= today) return year;
   }
 }
 
@@ -158,13 +189,18 @@ async function fetchGoogleNewsArticles() {
   const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
   return items.map((item) => {
     const source = tag(item, 'source');
+    const sourceURL = item.match(/<source\b[^>]*\burl\s*=\s*(["'])(.*?)\1/i)?.[2] || '';
+    const url = tag(item, 'link');
+    const publishedAt = new Date(tag(item, 'pubDate'));
+    // One malformed item must not take down the entire feed.
+    if (!Number.isFinite(publishedAt.getTime()) || isExcludedSource(source, url, decodeEntities(sourceURL))) return null;
     let title = tag(item, 'title');
     if (source && title.endsWith(` - ${source}`)) title = title.slice(0, -(source.length + 3));
     return toArticle({
       title,
       description: null,
-      url: tag(item, 'link'),
-      publishedAt: new Date(tag(item, 'pubDate')).toISOString(),
+      url,
+      publishedAt: publishedAt.toISOString(),
       source,
     });
   });

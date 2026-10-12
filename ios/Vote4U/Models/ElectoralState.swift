@@ -1,34 +1,12 @@
 import Foundation
-import SwiftUI
 
 struct ElectoralState: Codable, Identifiable, Equatable {
     let name: String
     let lat: Double
     let lng: Double
-    let party: Party
     let ev: Int
 
     var id: String { name }
-
-    enum Party: String, Codable, CaseIterable {
-        case blue, gray, red
-
-        var label: String {
-            switch self {
-            case .blue: "Leans Democratic"
-            case .gray: "Toss-up"
-            case .red: "Leans Republican"
-            }
-        }
-
-        var color: Color {
-            switch self {
-            case .blue: Color(red: 0.15, green: 0.39, blue: 0.85)
-            case .gray: Color(red: 0.58, green: 0.62, blue: 0.67)
-            case .red: Color(red: 0.84, green: 0.20, blue: 0.22)
-            }
-        }
-    }
 }
 
 struct StateShape: Codable, Identifiable {
@@ -59,21 +37,14 @@ enum BundledData {
     static let states: [ElectoralState] = load("states.json")
     static let statePaths: StatePaths = load("statePaths.json")
     static let officialLinks: [OfficialLink] = load("officialLinks.json")
-    static let statesByParty = Dictionary(
-        uniqueKeysWithValues: ElectoralState.Party.allCases.map { party in
-            (party, states.filter { $0.party == party }.sorted { $0.ev > $1.ev })
-        }
-    )
+    static let statesAlphabetically = states.sorted { $0.name < $1.name }
 
     static var totalElectoralVotes: Int { states.reduce(0) { $0 + $1.ev } }
 
-    static func tally(for party: ElectoralState.Party) -> Int {
-        states.filter { $0.party == party }.reduce(0) { $0 + $1.ev }
-    }
-
     private static func load<T: Decodable>(_ name: String) -> T {
         guard let url = Bundle.main.url(forResource: name, withExtension: nil),
-              let data = try? Data(contentsOf: url) else {
+            let data = try? Data(contentsOf: url)
+        else {
             // These files are compiled into the app; absence is a build error, not a runtime state.
             fatalError("Missing bundled resource \(name) — run scripts/export-ios-data.mjs")
         }

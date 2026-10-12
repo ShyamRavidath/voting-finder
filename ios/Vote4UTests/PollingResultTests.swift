@@ -86,6 +86,21 @@ final class PollingResultTests: XCTestCase {
         XCTAssertTrue(result.isEmpty)
     }
 
+    func testArticleOnlyOpensWebURLs() throws {
+        for (url, allowed) in [
+            ("https://example.com/election", true),
+            ("http://example.com/election", true),
+            ("javascript:alert(1)", false),
+            ("file:///tmp/article", false),
+            ("https:/missing-host", false),
+            ("/relative", false),
+        ] {
+            let data = try JSONSerialization.data(withJSONObject: ["id": "a", "title": "Election", "url": url])
+            let article = try JSONDecoder().decode(Article.self, from: data)
+            XCTAssertEqual(article.webURL != nil, allowed, url)
+        }
+    }
+
     func testDecodesTheRealArticleShape() throws {
         // Field names must match server/services/newsService.js. They silently did not once
         // already, and because every field is optional it decoded fine and rendered blanks.

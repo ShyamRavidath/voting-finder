@@ -12,9 +12,10 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 // Production + preview deployments of this project on Vercel
-const vercelOrigin = /^https:\/\/(vote4ucyl|voting-finder)[a-z0-9-]*\.vercel\.app$/;
+const vercelOrigin = /^https:\/\/(?:vote4ucyl|voting-finder|voting-finder-[a-z0-9-]+-shyamravidaths-projects)\.vercel\.app$/;
 
 module.exports = cors({
+  methods: ['GET', 'HEAD', 'OPTIONS'],
   origin: (origin, cb) => {
     // Same-origin requests and non-browser clients send no Origin header
     if (!origin) return cb(null, true);

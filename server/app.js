@@ -12,7 +12,7 @@ app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
 app.use(corsMiddleware);
-app.use(express.json());
+// This API has only GET routes; do not parse or retain unsolicited request bodies.
 // The signed daily job must not be blocked by the public per-IP request limiter.
 app.use('/api/internal/cache-maintenance', require('./routes/cacheMaintenance'));
 app.use('/api', rateLimit);
@@ -27,7 +27,7 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
+  console.error('Unhandled API error');
   res.status(500).json({ error: 'Something went wrong. Please try again.' });
 });
 

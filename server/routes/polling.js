@@ -42,7 +42,8 @@ router.get('/', async (req, res) => {
     const lat = Number(latParam);
     const lng = Number(lngParam);
     const valid =
-      latParam !== '' && lngParam !== '' &&
+      typeof latParam === 'string' && typeof lngParam === 'string' &&
+      latParam.trim() !== '' && lngParam.trim() !== '' &&
       Number.isFinite(lat) && Number.isFinite(lng) &&
       Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
     if (!valid) {
@@ -94,7 +95,7 @@ router.get('/', async (req, res) => {
           error: "We couldn't find a ZIP code for your location. Please enter one instead.",
         });
       }
-      console.error('Reverse geocode error:', err);
+      console.error('Reverse geocode failed');
       res.set('Cache-Control', 'no-store');
       return res.status(502).json({ error: 'Location lookup is unavailable right now. Please try again shortly.' });
     }
@@ -108,7 +109,7 @@ router.get('/', async (req, res) => {
       res.set('Cache-Control', 'public, s-maxage=86400');
       return res.status(404).json({ error: `We couldn't find ZIP code ${zipCode}. Please check it and try again.` });
     }
-    console.error('Zip lookup error:', err);
+    console.error('ZIP lookup failed');
     res.set('Cache-Control', 'no-store');
     return res.status(502).json({ error: 'Location lookup is unavailable right now. Please try again shortly.' });
   }
@@ -135,7 +136,7 @@ router.get('/', async (req, res) => {
         dataSource = 'official';
       }
     } catch (err) {
-      console.warn('Civic API failed, trying Nominatim:', err.message);
+      console.warn('Civic API failed; trying Nominatim');
     }
   }
 
@@ -150,7 +151,7 @@ router.get('/', async (req, res) => {
         searchRadiusKm = nearby.searchRadiusKm;
       }
     } catch (err) {
-      console.warn('Nominatim failed:', err.message);
+      console.warn('Nominatim lookup failed');
     }
   }
 

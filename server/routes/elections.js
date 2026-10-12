@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
     res.set('Cache-Control', 'public, max-age=300, s-maxage=21600, stale-while-revalidate=86400');
     res.json({ elections });
   } catch (err) {
-    console.error('Elections route error:', err);
+    console.error('Elections lookup failed');
     res.set('Cache-Control', 'no-store');
     res.status(502).json({ error: 'Election data is unavailable right now.' });
   }

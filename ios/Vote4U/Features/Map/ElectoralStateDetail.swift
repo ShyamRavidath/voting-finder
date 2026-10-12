@@ -7,15 +7,15 @@ struct ElectoralStateDetail: View {
         HStack(spacing: 14) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.title2)
-                .foregroundStyle(state.party.color)
+                .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(state.name)
                     .font(.headline)
-                Text(state.party.label)
+                Text("2024 & 2028 allocation")
                     .font(.subheadline)
-                    .foregroundStyle(state.party.color)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -33,7 +33,7 @@ struct ElectoralStateDetail: View {
         .padding()
         .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(state.name), \(state.ev) electoral votes, \(state.party.label), selected")
+        .accessibilityLabel("\(state.name), \(state.ev) electoral votes, selected")
         .accessibilityAddTraits(.isSelected)
     }
 }

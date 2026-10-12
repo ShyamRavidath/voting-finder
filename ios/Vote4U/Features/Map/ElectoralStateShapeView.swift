@@ -12,7 +12,7 @@ struct ElectoralStateShapeView: View {
 
         Button(action: select) {
             path
-                .fill(state?.party.color ?? .gray)
+                .fill(Color(red: 0.39, green: 0.45, blue: 0.55))
                 .overlay {
                     path.stroke(
                         isSelected ? Color.primary : Color.white.opacity(0.85),

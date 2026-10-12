@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import { timeAgo } from '../lib/format';
 
-const PARTY_CHIP = {
-  Democrat: 'bg-blue-50 text-blue-700',
-  Republican: 'bg-red-50 text-red-700',
-};
-
 export default function NewsCard({ article }) {
   const [imageOk, setImageOk] = useState(Boolean(article.imageUrl));
   const when = timeAgo(article.date);
@@ -15,9 +10,6 @@ export default function NewsCard({ article }) {
       <article className="group relative flex gap-4 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 sm:p-5">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
-            {article.party && (
-              <span className={`rounded-full px-2 py-0.5 font-semibold ${PARTY_CHIP[article.party]}`}>{article.party}</span>
-            )}
             <span className="font-medium text-slate-700">{article.source}</span>
             {when && (
               <>

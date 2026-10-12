@@ -1,5 +1,22 @@
 # Vote4U — Handoff
 
+## Release-preparation continuation — October 11, 2026
+
+The next candidate is on `release/app-store-preparation`, based on merged PR #18
+(`75ad345`). See `docs/STORE_PREPARATION.md` for the reviewed changes, exact test
+results, screenshot evidence and unresolved release gates. That ledger supersedes
+older readiness claims below. `ios/APP_STORE.md` contains the current owner form checklist.
+
+Server: 67 passed. Browser: 99 passed, 9 expected skips. Required native runner:
+83 passed on each of iOS 17.5 and iOS 27, including both permission decisions;
+Release stub and widget-family checks passed. These are simulator results.
+Build settings are 1.0 (3); no new signed archive or Apple upload is established.
+Keep Civic off. Owner merge and deployment verification precede a clean-source archive.
+Final privacy/age declarations, retention evidence and physical TestFlight checks remain.
+
+---
+
+
 > October 11 countdown/reminder continuation: see [the lifecycle fix ledger](docs/REMINDER_LIFECYCLE_FIXES.md).
 > This batch starts from merged PRs #16/#17 (`d8b8279`) and supersedes the older next-code-batch
 > status below. [PR #18](https://github.com/ShyamRavidath/voting-finder/pull/18) records the final

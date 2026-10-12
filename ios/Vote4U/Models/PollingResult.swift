@@ -90,6 +90,16 @@ struct Article: Codable, Identifiable, Equatable {
     let candidate: String?
     let party: String?
     let imageUrl: String?
+
+    // Safari views accept web URLs only; old CDN responses may predate server validation.
+    var webURL: URL? {
+        guard let value = URL(string: url),
+            let scheme = value.scheme?.lowercased(),
+            ["http", "https"].contains(scheme),
+            let host = value.host, !host.isEmpty
+        else { return nil }
+        return value
+    }
 }
 
 struct NewsResponse: Codable {

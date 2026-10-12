@@ -26,7 +26,7 @@ struct ElectoralMapCanvas: View {
         .aspectRatio(paths.viewBox.width / paths.viewBox.height, contentMode: .fit)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
-            "Map of the United States colored by electoral rating. Use the searchable state list below to select a state."
+            "Map of United States electoral vote allocations. Use the searchable state list below to select a state."
         )
     }
 }

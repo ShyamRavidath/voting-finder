@@ -6,6 +6,26 @@ wired into the build. Updated 2026-10-11 for the keyless release candidate. Not 
 Account: `ravidath@gmail.com` (individual). An individual account publishes under your personal
 legal name — that name appears on the store page as the seller.
 
+## Owner form-entry checklist
+
+App record: [Vote4U in App Store Connect](https://appstoreconnect.apple.com/apps/6821803665/distribution).
+The name, subtitle, categories and privacy-policy URL were previously saved; recheck them.
+
+- Version 1.0: paste Description, Promotional text, Keywords and Notes for Review from
+  the fenced blocks below. Enter the Support URL from the identity table.
+- App Review Information: turn off **Sign-in required**. Supply your actual contact
+  first/last name, email and reachable phone number; no demo credentials are needed.
+- Copyright: enter the correct year and rights-holder name. Review content-rights and
+  account declarations yourself; the app links to third-party news.
+- Pricing: Free. Review country/region availability for this US-focused app.
+- Version release: select **Manually release this version** to retain control after review.
+- Screenshots: use the reviewed large and medium files after the preparation PR is ready.
+- Privacy and age ratings: use the drafts below for review, and confirm hosting retention
+  before saving final privacy answers. Accessibility claims need actual device evidence.
+- Build selection, TestFlight and **Add for Review / Submit** remain later release steps.
+
+No terminal commands are needed for these fields.
+
 ## Identity
 
 | Field | Value |
@@ -15,7 +35,7 @@ legal name — that name appears on the store page as the seller.
 | Bundle ID | `com.shyamravidath.Vote4U` |
 | Primary category | Reference |
 | Secondary category | News |
-| Age rating | 4+ (no objectionable content; news links are third-party) |
+| Age rating | Determined by the current App Store Connect questionnaire; see draft answers below |
 | Price | Free |
 | Privacy policy URL | `https://vote4ucyl.vercel.app/privacy` |
 | Support URL | `https://github.com/ShyamRavidath/voting-finder/issues` |
@@ -27,13 +47,10 @@ product; headlines are the fourth tab.
 ## Keywords (100 characters max, comma-separated, no spaces)
 
 ```
-voting,polling place,election,ballot,voter,vote,midterm,electoral,register,precinct,elections
+ballot,voter,midterm,electoral,register,precinct,elections,reminder,countdown,civic,democracy
 ```
 
-That is 93 characters. Notes: do not repeat words already in the app name or subtitle — Apple
-indexes those separately, so "Vote4U", "polling place" and "find" are wasted keyword space, and
-the duplication above of "polling place" should be dropped if you keep the current subtitle.
-Never use a competitor's or organisation's name.
+93 characters. Avoids words already indexed in the name and subtitle.
 
 ## Description
 
@@ -57,8 +74,10 @@ keep their warning when saved or shared. Confirm with your election office
 before making a voting plan.
 
 ELECTORAL MAP
-An interactive map of all 50 states and DC with electoral vote counts and the
-270 line.
+An interactive map of all 50 states and DC with electoral vote counts,
+the 270-vote threshold and a link to the National Archives source.
+Counts reflect the 2020 Census allocation for the 2024 and 2028 presidential
+elections; the map does not forecast winners.
 
 ELECTION NEWS
 Headlines about the current US election from third-party publishers,
@@ -100,6 +119,8 @@ WHERE THE DATA COMES FROM
   in the UI, and the app always links to USA.gov, Vote.gov and the National
   Association of Secretaries of State for the authoritative lookup. The app
   never fabricates an address or a coordinate.
+- Map: neutral state electoral-vote totals from the National Archives, with
+  a note explaining Maine and Nebraska district allocation; no predictions.
 - News: headlines and links only, from Google News. Article text is not
   reproduced; tapping a headline opens the publisher's own page in an in-app
   Safari view.
@@ -137,8 +158,9 @@ and cache findings in OPUS-6/11/12 are fixed. This copy describes the keyless ca
 
 ## Privacy nutrition labels (App Store Connect → App Privacy)
 
-Answer **"Yes, we collect data from this app"**. Use these conservative draft answers until
-the host's actual log retention and linkage are confirmed in App Store Connect:
+Proposed answer: **"Yes, we collect data from this app"**. The following are conservative
+draft disclosures for owner review, not approved or saved App Store Connect answers.
+Confirm actual host retention and linkage before finalizing them:
 
 | Data type | Linked to identity | Used for tracking | Purpose |
 |---|---|---|---|
@@ -169,9 +191,13 @@ configuration before submission; do not paste the old Coarse-Location-only answe
 
 ## Screenshots
 
-Required: **6.9" iPhone** (1320 × 2868 or 1290 × 2796). Apple scales these down for smaller
-devices, so one set is enough for an iPhone-only app. iPad is not required — the target is
-`TARGETED_DEVICE_FAMILY = 1`.
+Apple's current specification requires **iPhone with Dynamic Island (medium display)**:
+1206 × 2622 or 1179 × 2556 portrait pixels. Provide the separate medium set in
+`ios/screenshots/medium/` and the additional large set in `ios/screenshots/`
+(1320 × 2868). Both are opaque JPEGs. iPad is not required because the containing
+app is iPhone-only (`TARGETED_DEVICE_FAMILY = 1`). Confirm the media manager accepts
+both sets before submission. Source checked 2026-10-11:
+[Apple screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/).
 
 ### iPad scope for version 1
 
@@ -188,51 +214,50 @@ has its own device-family requirement**:
 Apple's [App Extension Programming Guide](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/ExtensionCreation.html)
 says extensions must target both iPhone and iPad even when the containing app is iPhone-only.
 
-**Captured 2026-10-10 from build 2 and committed to `ios/screenshots/`** at 1320 × 2868 as opaque JPEGs (no alpha channel). Regenerate with:
+Capture from the final candidate with live production data after the backend changes deploy:
 
-```
+```bash
 ./scripts/capture-screenshots.sh
+DEVICE='iPhone 17' OUT="$PWD/ios/screenshots/medium" ./scripts/capture-screenshots.sh
 ```
 
-That script builds, boots the simulator, pins the status bar to 9:41 with full bars, and uses
-the app's DEBUG-only `-startTab` / `-startZip` launch arguments, so no UI automation is needed.
-Re-run it after any UI change.
+The script sets 9:41/full bars/light appearance and uses DEBUG navigation arguments only.
+It does not use fabricated polling fixtures. Review every image after capture; a fixed
+wait does not prove a successful live request. Four voting-tool images are sufficient:
+results with cautious labels, Home countdown, sourced electoral map and official lookup
+links. News artwork is optional and should be omitted until the filtered backend is deployed
+and every displayed headline/source is reviewed. News remains the last app tab.
 
-The order, voting tools first and news last, mirrors the app's own priorities:
+## Age-rating questionnaire draft
 
-1. Vote tab with results for 90210, map and cards visible.
-2. Home tab countdown with the reminder toggle.
-3. Map tab: tally, national map and the state-ratings list, with the search field visible.
-4. Vote tab empty state showing the official-source links.
-5. News tab.
+Do not paste the historical 4+ assertion. Apple now computes ratings from the current
+questionnaire and displays separate values on older OS versions. The app opens publisher
+pages in Safari view without restricting onward links; conservatively answer **Yes** to
+unrestricted web access. It has no app-owned messaging, user-generated posting, advertising,
+gambling, loot boxes, contests, medical/treatment advice, or parental-control/age-assurance
+feature. Live election news may discuss mature topics, violence, weapons or substance use;
+review the actual questionnaire and publisher-content scope when selecting frequency answers.
+The draft cannot establish that all linked content is suitable for young children.
 
-Use a real search, never a mock-up: screenshots must show the actual app (2.3.3). The committed
-set uses live production data for exactly that reason.
-
-**Two consequences of using live data, both learned the hard way:**
-
-- **Capture only after the server is deployed.** The app points at
-  `https://vote4ucyl.vercel.app` directly, so a capture run reflects whatever production is
-  serving at that moment, not what is on `main`. Shooting before the 2026-09-21 news-scoping
-  deploy would have baked foreign-election headlines into the store set.
-- **Never use `-stubPolling` for these.** The stub's venues are fabricated. They exist for tests
-  and QA and are compiled out of Release; putting them in store marketing is exactly what rule #1
-  forbids. Shoot a real ZIP and re-check it on the day — Nominatim's coverage of any given ZIP
-  comes and goes.
-
-**Screenshot 4 is the weakest** — it is mostly empty space. It earns its place by showing that
-the app sends people to official sources, which is the trust story, but swap it for a second
-Vote-tab shot if you would rather lead with density.
+The local candidate has no content-rating filter and should not claim one. Record the saved
+questionnaire and Apple's resulting rating in the release ledger before submission. Sources:
+[Set an app age rating](https://developer.apple.com/help/app-store-connect/manage-app-information/set-an-app-age-rating/),
+[Apple age-rating definitions](https://developer.apple.com/help/app-store-connect/reference/app-information/age-ratings-values-and-definitions/).
 
 ## Pre-submission checklist
 
-- [ ] Apple Developer account added in Xcode ▸ Settings ▸ Accounts, team set on the target
-- [ ] Bundle ID confirmed (it is fixed once the App Store Connect record exists)
-- [ ] `MARKETING_VERSION` 1.0, `CURRENT_PROJECT_VERSION` bumped for each upload
+- [x] Apple Developer account/team configured; team `M6L74ZB5KS`
+- [x] App record `6821803665` verified with bundle ID `com.shyamravidath.Vote4U`, SKU `vote4u-ios`
+- [x] Candidate build settings are version 1.0 build 3
+- [ ] Build 3 archived from clean integrated source, with provenance recorded
 - [ ] Reminder verified firing on a real device
 - [ ] Airplane-mode and permission-denied paths checked on a real device
 - [x] **NewsAPI removed 2026-09-20** — its development-only free plan was the 5.2.2 risk. Gone;
       news comes from Google News RSS, which is keyless
-- [ ] Privacy policy live at `/privacy` with the app section (done 2026-09-20)
-- [ ] Refresh screenshots after the corrected backend is deployed; the existing build-2 images contain obsolete voting claims
-- [ ] Archive ▸ Distribute ▸ App Store Connect ▸ TestFlight ▸ Submit
+- [x] Privacy route responds 200; source includes native-app disclosures
+- [x] Capture/review both screenshot sizes from current UI and live keyless polling data
+- [ ] Verify screenshot acceptance in App Store Connect and source/deployment parity after merge
+- [ ] Clean committed archive, export and signature/profile verification
+- [ ] TestFlight upload, processing and physical-device critical paths
+- [ ] Final privacy/age-rating answers and review contact information
+- [ ] Owner authorizes App Review submission

@@ -11,8 +11,8 @@ set -euo pipefail
 
 DEVICE="${DEVICE:-iPhone 18 Pro Max}"
 BUNDLE_ID="com.shyamravidath.Vote4U"
-OUT="$(cd "$(dirname "$0")/.." && pwd)/ios/screenshots"
-DERIVED="${TMPDIR:-/tmp}/vote4u-screenshots"
+OUT="${OUT:-$(cd "$(dirname "$0")/.." && pwd)/ios/screenshots}"
+DERIVED="${DERIVED:-${TMPDIR:-/tmp}/vote4u-screenshots}"
 
 echo "Building for ${DEVICE}…"
 xcodebuild -project ios/Vote4U.xcodeproj -scheme Vote4U \
@@ -38,8 +38,9 @@ mkdir -p "$OUT"
 shoot() {
   local name="$1"; shift
   xcrun simctl terminate "$DEVICE" "$BUNDLE_ID" >/dev/null 2>&1 || true
+  sleep 2  # let SpringBoard settle before relaunching into a different tab
   xcrun simctl launch "$DEVICE" "$BUNDLE_ID" "$@" >/dev/null
-  sleep 12  # allow live endpoints to finish a cold serverless start before capturing
+  sleep "${CAPTURE_WAIT_SECONDS:-30}"  # allow cold network loads and simulator chrome to settle
   xcrun simctl io "$DEVICE" screenshot --type=jpeg "$OUT/$name" >/dev/null
   echo "  $name"
 }
@@ -49,6 +50,8 @@ shoot 1-vote-results.jpg     -startTab vote -startZip 90210
 shoot 2-home-countdown.jpg   -startTab home
 shoot 3-electoral-map.jpg    -startTab map
 shoot 4-official-sources.jpg -startTab vote
-shoot 5-news.jpg             -startTab news
+if [[ "${INCLUDE_NEWS:-0}" == "1" ]]; then
+  shoot 5-news.jpg           -startTab news
+fi
 
 echo "Done → $OUT"
