@@ -64,6 +64,11 @@ pool listener or reminder revision guards; neither mutation touched the candidat
   and uniform images, accepted visible variation, and rejected an actual SwiftUI clear render.
   The already-failed native attempt was stopped before remaining smoke/deny/Release checks.
   No application code changed during these test-harness corrections.
+- The SwiftUI `Color.clear` negative fixture remained inconsistent on iOS 27 even with the
+  stricter checker (while the direct macOS probe passed). The guard now supplies an explicitly
+  transparent CGImage bitmap and verifies that all three attempts are exhausted, isolating
+  the wait from SwiftUI's image provider. The real widget tests still render SwiftUI content
+  and still assert visible, varied pixels. The failed fixture attempt was stopped and retained.
 
 ## Limits
 
@@ -87,7 +92,9 @@ Claude worktrees were not reset, switched, or committed by this batch.
 - `/private/tmp/vote4u-reminders-ios27-render-failure.log`
 - `/private/tmp/vote4u-reminders-ios27-verified.log` (blank-check failure)
 - `/private/tmp/vote4u-reminders-ios27-blank-check-failure.log`
-- `/private/tmp/vote4u-reminders-ios27-complete.log`
+- `/private/tmp/vote4u-reminders-ios27-complete.log` (transparent-view fixture failure)
+- `/private/tmp/vote4u-reminders-ios27-transparent-view-failure.log`
+- `/private/tmp/vote4u-reminders-ios27-final-pass.log`
 - `/private/tmp/vote4u-reminders-hosted-ios.log` (hosted success at `04f1359`)
 - `/private/tmp/vote4u-ios27-all-attachments/` (first failure's recording and tap events)
 - `/private/tmp/vote4u-reminders-db-mutation.log`

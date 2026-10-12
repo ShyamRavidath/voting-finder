@@ -35,17 +35,19 @@ final class ElectionCountdownRenderTests: XCTestCase {
         let view = ElectionCountdownContent(entry: entry, family: family)
             .frame(width: size.width, height: size.height)
 
-        return await renderWhenReady(view)
+        return await renderWhenReady {
+            let renderer = ImageRenderer(content: view)
+            renderer.scale = 2
+            return renderer.uiImage
+        }
     }
 
-    private func renderWhenReady<Content: View>(_ content: Content) async -> UIImage? {
+    private func renderWhenReady(_ makeImage: () -> UIImage?) async -> UIImage? {
         var image: UIImage?
         // A cold simulator can time out the first image provider while compiling its graphics
         // pipeline. Allow a bounded warm-up; callers still fail if the final image is blank.
         for attempt in 0..<3 {
-            let renderer = ImageRenderer(content: content)
-            renderer.scale = 2
-            image = renderer.uiImage
+            image = makeImage()
             if let image, hasVisibleContent(image) { return image }
             if attempt < 2 { try? await Task.sleep(for: .milliseconds(250)) }
         }
@@ -92,8 +94,23 @@ final class ElectionCountdownRenderTests: XCTestCase {
     }
 
     func testRenderWaitDoesNotAcceptPermanentlyBlankContent() async throws {
-        let rendered = await renderWhenReady(Color.clear.frame(width: 170, height: 170))
+        // Use known pixel bytes, not a SwiftUI transparent view whose provider may still be
+        // resolving its backing image. This isolates the bounded wait and pixel predicate.
+        let provider = try XCTUnwrap(CGDataProvider(data: Data(repeating: 0, count: 16) as CFData))
+        let cgImage = try XCTUnwrap(
+            CGImage(
+                width: 2, height: 2, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: 8,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+        let blank = UIImage(cgImage: cgImage)
+        var attempts = 0
+        let rendered = await renderWhenReady {
+            attempts += 1
+            return blank
+        }
         let image = try XCTUnwrap(rendered)
+        XCTAssertEqual(attempts, 3, "blank content must exhaust the bounded wait")
         XCTAssertFalse(hasVisibleContent(image), "the wait must not manufacture visible content")
     }
 
