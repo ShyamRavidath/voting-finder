@@ -4,7 +4,8 @@
 #   ./scripts/capture-screenshots.sh
 #
 # Relies on the DEBUG-only -startTab / -startZip launch arguments in the app, so no UI automation
-# is needed. Re-run after any UI change; the output is committed so the listing and the app can
+# is needed. JPEG captures have no alpha channel, as required by App Store Connect.
+# Re-run after any UI change; the output is committed so the listing and the app can
 # be compared.
 set -euo pipefail
 
@@ -39,15 +40,15 @@ shoot() {
   xcrun simctl terminate "$DEVICE" "$BUNDLE_ID" >/dev/null 2>&1 || true
   xcrun simctl launch "$DEVICE" "$BUNDLE_ID" "$@" >/dev/null
   sleep 12  # allow live endpoints to finish a cold serverless start before capturing
-  xcrun simctl io "$DEVICE" screenshot "$OUT/$name" >/dev/null
+  xcrun simctl io "$DEVICE" screenshot --type=jpeg "$OUT/$name" >/dev/null
   echo "  $name"
 }
 
 echo "Capturing…"
-shoot 1-vote-results.png     -startTab vote -startZip 90210
-shoot 2-home-countdown.png   -startTab home
-shoot 3-electoral-map.png    -startTab map
-shoot 4-official-sources.png -startTab vote
-shoot 5-news.png             -startTab news
+shoot 1-vote-results.jpg     -startTab vote -startZip 90210
+shoot 2-home-countdown.jpg   -startTab home
+shoot 3-electoral-map.jpg    -startTab map
+shoot 4-official-sources.jpg -startTab vote
+shoot 5-news.jpg             -startTab news
 
 echo "Done → $OUT"

@@ -179,7 +179,7 @@ has its own device-family requirement**:
 Apple's [App Extension Programming Guide](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/ExtensionCreation.html)
 says extensions must target both iPhone and iPad even when the containing app is iPhone-only.
 
-**Captured 2026-10-10 and committed to `ios/screenshots/`** at 1320 × 2868. Regenerate with:
+**Captured 2026-10-10 from build 2 and committed to `ios/screenshots/`** at 1320 × 2868 as opaque JPEGs (no alpha channel). Regenerate with:
 
 ```
 ./scripts/capture-screenshots.sh

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
+import { isConfirmedLocation } from '../lib/format';
 import 'leaflet/dist/leaflet.css';
 
 function pinIcon(number, official) {
@@ -15,14 +16,19 @@ function pinIcon(number, official) {
 }
 
 // Built from DOM nodes (textContent) so names/addresses from upstream APIs can't inject markup.
-function popupContent({ name, addr }) {
+function popupContent(location) {
+  const { name, addr } = location;
   const el = document.createElement('div');
   const title = document.createElement('strong');
   title.textContent = name;
   const address = document.createElement('div');
   address.textContent = addr;
   address.style.color = '#475569';
-  el.append(title, address);
+  const confirmation = document.createElement('div');
+  confirmation.textContent = isConfirmedLocation(location) ? 'Official · Confirm your assigned polling place' : 'Not confirmed · Check an official source before you go';
+  confirmation.style.color = '#334155';
+  confirmation.style.marginTop = '6px';
+  el.append(title, address, confirmation);
   return el;
 }
 
@@ -35,7 +41,8 @@ export default function PollingMap({ locations, center, selected, onSelect }) {
   onSelectRef.current = onSelect;
 
   useEffect(() => {
-    const map = L.map(containerRef.current, { scrollWheelZoom: false, zoomControl: true });
+    const map = L.map(containerRef.current, { scrollWheelZoom: false, zoomControl: false });
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -43,7 +50,16 @@ export default function PollingMap({ locations, center, selected, onSelect }) {
     layerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
-    const observer = new ResizeObserver(() => map.invalidateSize());
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+      const maxWidth = Math.min(280, Math.max(120, containerRef.current.clientWidth - 80));
+      for (const marker of markersRef.current) {
+        const popup = marker?.getPopup();
+        if (!popup) continue;
+        popup.options.maxWidth = maxWidth;
+        if (popup.isOpen()) popup.update();
+      }
+    });
     observer.observe(containerRef.current);
     return () => {
       observer.disconnect();
@@ -65,12 +81,15 @@ export default function PollingMap({ locations, center, selected, onSelect }) {
         return;
       }
       const marker = L.marker([loc.lat, loc.lng], {
-        icon: pinIcon(i + 1, !loc.isEstimated),
+        icon: pinIcon(i + 1, isConfirmedLocation(loc)),
         title: loc.name,
         alt: loc.name,
         keyboard: true,
       })
-        .bindPopup(popupContent(loc))
+        .bindPopup(popupContent(loc), {
+          maxWidth: Math.min(280, Math.max(120, containerRef.current.clientWidth - 80)),
+          autoPanPadding: [16, 16],
+        })
         .on('click', () => onSelectRef.current?.(i))
         .addTo(layerRef.current);
       markersRef.current.push(marker);
@@ -85,7 +104,9 @@ export default function PollingMap({ locations, center, selected, onSelect }) {
   useEffect(() => {
     const marker = selected != null ? markersRef.current[selected] : null;
     if (!marker || !mapRef.current) return;
-    mapRef.current.setView(marker.getLatLng(), Math.max(mapRef.current.getZoom(), 15));
+    // Finish recentering before popup auto-pan measures its bounds.
+    mapRef.current.stop();
+    mapRef.current.setView(marker.getLatLng(), Math.max(mapRef.current.getZoom(), 15), { animate: false });
     marker.openPopup();
   }, [selected]);
 

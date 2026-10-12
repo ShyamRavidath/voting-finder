@@ -72,7 +72,7 @@ const SOURCE_NOTICE = {
     tone: 'border-amber-200 bg-amber-50 text-amber-900',
     title: 'Likely venues, not confirmed',
     body: () =>
-      "Official polling places aren't published for your area yet. These are nearby public buildings (libraries, community centers, town halls) that are often used as polling places.",
+      "We couldn’t confirm an official polling place for this search. These nearby public buildings may be used for voting, but none is confirmed. Check an official lookup before you go.",
   },
   // The weakest tier the server will return. The wording hedges harder than 'estimated' on
   // purpose: these came from a wider sweep with no match in the immediate area.
@@ -124,42 +124,47 @@ export default function PollingFinder() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Find your polling place</h2>
-        <p className="mt-1 text-slate-600">Enter your ZIP code to see polling and early voting locations near you.</p>
-      </div>
+      <div className={status === 'idle' ? "grid gap-6 lg:grid-cols-2 lg:items-start" : ""}>
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold">Find your polling place</h2>
+            <p className="mt-1 text-slate-600">Start with your ZIP code. No location permission needed. Always confirm your assigned location with an official source.</p>
+          </div>
 
-      <form onSubmit={submit} className="max-w-xl" role="search" aria-label="Polling place search">
-        <label htmlFor={inputId} className="mb-1.5 block text-sm font-semibold text-slate-800">
-          ZIP code
-        </label>
-        <div className="flex gap-2">
-          <input
-            id={inputId}
-            value={zip}
-            onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
-            placeholder="e.g. 90210"
-            inputMode="numeric"
-            autoComplete="postal-code"
-            enterKeyHint="search"
-            pattern="\d{5}"
-            maxLength={5}
-            aria-describedby={`${inputId}-hint`}
-            className="min-h-12 w-full min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 text-base font-medium outline-none placeholder:text-slate-500 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
-          />
-          <button
-            type="submit"
-            disabled={!isZip(zip) || status === 'loading'}
-            className="inline-flex min-h-12 shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-5 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-600/50"
-          >
-            <Icon name="search" className="size-5" />
-            {status === 'loading' ? 'Searching…' : 'Search'}
-          </button>
+          <form onSubmit={submit} className="max-w-xl" role="search" aria-label="Polling place search">
+            <label htmlFor={inputId} className="mb-1.5 block text-sm font-semibold text-slate-800">
+              ZIP code
+            </label>
+            <div className="flex gap-2">
+              <input
+                id={inputId}
+                value={zip}
+                onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                placeholder="e.g. 90210"
+                inputMode="numeric"
+                autoComplete="postal-code"
+                enterKeyHint="search"
+                pattern="\d{5}"
+                maxLength={5}
+                aria-describedby={`${inputId}-hint`}
+                className="min-h-12 w-full min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 text-base font-medium outline-none placeholder:text-slate-500 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
+              />
+              <button
+                type="submit"
+                disabled={!isZip(zip) || status === 'loading'}
+                className="inline-flex min-h-12 shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-5 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-600/50"
+              >
+                <Icon name="search" className="size-5" />
+                {status === 'loading' ? 'Searching…' : 'Search'}
+              </button>
+            </div>
+            <p id={`${inputId}-hint`} className="mt-1.5 text-xs text-slate-600">
+              5-digit U.S. ZIP code. We only use it to look up nearby locations.
+            </p>
+          </form>
         </div>
-        <p id={`${inputId}-hint`} className="mt-1.5 text-xs text-slate-600">
-          5-digit U.S. ZIP code. We only use it to look up nearby locations.
-        </p>
-      </form>
+        {status === 'idle' && <OfficialLinks heading="Confirm with an official source" />}
+      </div>
 
       <div aria-live="polite" className="space-y-6">
         {status === 'loading' && <ResultsSkeleton />}
@@ -174,7 +179,7 @@ export default function PollingFinder() {
                 <button
                   type="button"
                   onClick={() => search(searchedZip)}
-                  className="mt-2 min-h-10 text-sm font-semibold underline underline-offset-2"
+                  className="mt-2 min-h-11 text-sm font-semibold underline underline-offset-2"
                 >
                   Try again
                 </button>
@@ -219,7 +224,7 @@ export default function PollingFinder() {
                     selected={selected === i}
                     onShowOnMap={() => {
                       setSelected(i);
-                      document.getElementById('polling-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      document.getElementById('polling-map')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
                     }}
                   />
                 ))}
@@ -235,7 +240,7 @@ export default function PollingFinder() {
           </div>
         )}
 
-        <OfficialLinks heading={status === 'idle' ? 'Prefer to go straight to the source?' : undefined} />
+        {status !== 'idle' && <OfficialLinks />}
       </div>
     </div>
   );

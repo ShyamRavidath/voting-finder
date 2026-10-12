@@ -71,3 +71,10 @@
 .state-shape {
   transition: opacity 150ms ease-out;
 }
+
+/* Keep map controls clear of the popup and usable on touch screens. */
+.leaflet-container .leaflet-control-zoom a {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+}

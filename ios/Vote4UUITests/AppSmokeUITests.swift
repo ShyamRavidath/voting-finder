@@ -13,6 +13,47 @@ final class AppSmokeUITests: XCTestCase {
         return app
     }
 
+    func testLocationDenialStillAllowsZIPSearch() {
+        let app = launch(["-startTab", "vote", "-stubPolling", "estimated"])
+        app.buttons["Use my location"].tap()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let deny = springboard.buttons["Don’t Allow"]
+        let asciiDeny = springboard.buttons["Don't Allow"]
+        if deny.waitForExistence(timeout: 5) {
+            deny.tap()
+        } else if asciiDeny.exists {
+            asciiDeny.tap()
+        }
+        XCTAssertTrue(app.staticTexts["Search with your ZIP"].waitForExistence(timeout: 10))
+        let field = app.textFields["ZIP code"]
+        field.tap()
+        field.typeText("90210")
+        app.buttons["Search"].tap()
+        XCTAssertTrue(app.staticTexts["Beverly Hills Public Library"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["Not confirmed"].firstMatch.exists)
+    }
+
+    private func capture(_ app: XCUIApplication, name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    func testLargeTextKeepsSavingReachable() {
+        let app = launch([
+            "-startTab", "vote", "-startZip", "90210", "-stubPolling", "estimated",
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+        ])
+        let save = app.buttons["save-location"].firstMatch
+        for _ in 0..<12 {
+            if save.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(save.isHittable, "Save must remain reachable at the largest text size")
+        capture(app, name: "accessibility-result-actions")
+    }
+
     func testAllFourTabsExistInOrder() {
         let app = launch(["-startTab", "home"])
         for tab in ["Home", "Vote", "Map", "News"] {
@@ -23,7 +64,7 @@ final class AppSmokeUITests: XCTestCase {
     func testSavedLocationKeepsItsWarningOnHomeAndAfterRelaunch() {
         let app = launch(["-startTab", "vote", "-startZip", "90210", "-stubPolling", "nearby"])
         XCTAssertTrue(app.staticTexts["Westwood Branch Library"].waitForExistence(timeout: 15))
-        let save = app.buttons["Save"].firstMatch
+        let save = app.buttons["save-location"].firstMatch
         for _ in 0..<6 {
             if save.isHittable { break }
             // Drag in the scroll view's outer margin so MapKit cannot consume the gesture.
@@ -31,6 +72,7 @@ final class AppSmokeUITests: XCTestCase {
                 .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.3)))
         }
         XCTAssertTrue(save.isHittable)
+        capture(app, name: "result-save-action")
         save.tap()
         app.tabBars.buttons["Home"].tap()
         let warning = app.staticTexts["saved-place-confirmation"]
@@ -40,6 +82,7 @@ final class AppSmokeUITests: XCTestCase {
         }
         XCTAssertTrue(warning.label.contains("Not confirmed"))
         XCTAssertTrue(warning.isHittable)
+        capture(app, name: "saved-place-home")
 
         app.terminate()
         app.launchArguments = ["-startTab", "vote"]
@@ -67,7 +110,7 @@ final class AppSmokeUITests: XCTestCase {
         // The rule the codebase is built around must be visible, not just modelled.
         XCTAssertTrue(app.staticTexts["Not confirmed"].firstMatch.exists, "estimated results must be labelled")
         XCTAssertTrue(app.buttons["Directions"].firstMatch.exists)
-        XCTAssertTrue(app.buttons["Save"].firstMatch.exists)
+        XCTAssertTrue(app.buttons["save-location"].firstMatch.exists)
     }
 
     /// The widened tier. When nothing polling-shaped exists nearby the server falls back to

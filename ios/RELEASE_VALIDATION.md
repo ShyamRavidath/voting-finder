@@ -82,3 +82,27 @@ Finish integration of logging PR #10 and formatting PR #9, inspect current real-
 verify production cleanup/log retention and final privacy answers, complete device testing,
 archive with an accepted distribution toolchain, upload and verify processing in TestFlight.
 The owner merges code PRs. No upload, App Store submission or publication is recorded here.
+
+## Visual polish follow-up — 2026-10-10
+
+See `../docs/UI_REVIEW.md` and HANDOFF §14. Owner confirmed widget Home Screen placement.
+The new UI makes Save for offline explicit and handles location denial as a ZIP alternative.
+Final version 1.0 build 2 was signed, installed and launched on the connected iPhone after the
+accessibility refinement. The final iPhone SE/iOS 17.5 runner passed 69 tests and the Release
+stub/device-family checks. Final archive: `/tmp/Vote4U-polished-final.xcarchive`; exported IPA:
+`/tmp/vote4u-polished-final-export/Vote4U.ipa`. Signature and distribution profile checks passed.
+
+Owner retest: search ZIP → Save for offline → force quit → airplane mode → reopen Home.
+The saved address and its confirmation warning should remain. Returning to the existing screen
+without saving is insufficient evidence. Notification delivery and VoiceOver remain device checks.
+App Store upload, processing and submission have not occurred. Owner merge remains required.
+
+Toolchain checked against Apple’s current release notes: installed Xcode 27.0 (27A266a), SDK 27.0.
+Apple lists Xcode 27 uploads for App Store and TestFlight as supported from September 14, 2026.
+This confirms the toolchain family, not acceptance of this particular package. Source:
+[App Store Connect release notes](https://developer.apple.com/help/app-store-connect/release-notes/).
+
+The existing PNG marketing captures had alpha channels. The capture script now writes JPEG
+screenshots directly, satisfying Apple’s no-alpha requirement without generating or repainting UI.
+All five fresh 1320 × 2868 JPEGs were visually inspected and verified to have no alpha channel;
+they replace the earlier PNG set. Results and news use live production data, not test stubs.

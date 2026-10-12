@@ -8,14 +8,14 @@ struct HomeSavedPlaceCard: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Label("Your voting plan", systemImage: "bookmark.fill")
+                    Label("Saved for offline", systemImage: "bookmark.fill")
                         .font(.caption.bold())
                         .foregroundStyle(.tint)
                     Text(place.name)
                         .font(.title3.bold())
                     Text(place.addr)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Vote4UTheme.supportingText)
                 }
 
                 Spacer(minLength: 12)
@@ -46,6 +46,7 @@ struct HomeSavedPlaceCard: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(Vote4UTheme.actionBlue)
 
                 Button(action: onOpenVote) {
                     Label("View", systemImage: "mappin.and.ellipse")

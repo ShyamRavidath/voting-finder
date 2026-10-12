@@ -21,14 +21,14 @@ function NewsSkeleton() {
 }
 
 export default function NewsPage() {
-  usePageTitle('2028 election news');
+  usePageTitle('Election news');
   const { articles, loading, error, refresh, retry } = useNews();
 
   return (
     <div className="fade-in mx-auto max-w-3xl space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">2028 election news</h1>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Election news</h1>
           <p className="mt-1 text-slate-600">Latest headlines on the race and the people in it.</p>
         </div>
         <button

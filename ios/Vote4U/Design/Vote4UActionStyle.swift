@@ -7,8 +7,10 @@ extension View {
     func vote4UPrimaryActionStyle() -> some View {
         if #available(iOS 26, *) {
             buttonStyle(.glassProminent)
+                .tint(Vote4UTheme.actionBlue)
         } else {
             buttonStyle(.borderedProminent)
+                .tint(Vote4UTheme.actionBlue)
         }
     }
 }

@@ -5,8 +5,8 @@ import LogoMark from './LogoMark';
 const NAV_ITEMS = [
   { to: '/', label: 'Home', icon: 'home', end: true },
   { to: '/tools', label: 'Vote', desktopLabel: 'Voting Tools', icon: 'pin' },
-  { to: '/news', label: 'News', icon: 'news' },
   { to: '/about', label: 'About', icon: 'info' },
+  { to: '/news', label: 'News', icon: 'news' },
 ];
 
 export function SiteHeader() {
