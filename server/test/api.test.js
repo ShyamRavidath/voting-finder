@@ -57,7 +57,7 @@ describe('newsService helpers', () => {
   // The old query was `"2028 election" OR "2028 presidential race"`, which let Turkey's April
   // 2028 election and the Philippines' 2028 race lead an American voting app's news tab.
   test('the news query names the next federal election and rolls over the day after it', () => {
-    const on = (iso) => nextFederalElectionYear(new Date(`${iso}T12:00:00`));
+    const on = (iso) => nextFederalElectionYear(new Date(`${iso}T12:00:00Z`));
     assert.equal(on('2026-09-21'), 2026);
     assert.equal(on('2026-11-03'), 2026, 'election day itself still counts');
     assert.equal(on('2026-11-04'), 2028, 'the morning after rolls to the next one');
@@ -65,13 +65,13 @@ describe('newsService helpers', () => {
     assert.equal(on('2028-11-08'), 2030);
 
     // A midterm year leads with the midterms and keeps the presidential race two years out.
-    const midterm = newsQuery(new Date('2026-09-21T12:00:00'));
+    const midterm = newsQuery(new Date('2026-09-21T12:00:00Z'));
     assert.match(midterm, /"2026 midterm elections"/);
     assert.match(midterm, /"2028 presidential race"/);
     assert.match(midterm, /when:14d$/);
 
     // A presidential year drops the midterm terms entirely.
-    const presidential = newsQuery(new Date('2028-03-01T12:00:00'));
+    const presidential = newsQuery(new Date('2028-03-01T12:00:00Z'));
     assert.match(presidential, /"2028 presidential election"/);
     assert.doesNotMatch(presidential, /midterm/);
 
@@ -86,7 +86,7 @@ describe('newsService helpers', () => {
   // The gate used to require the literal "2028" in the title, which threw away every midterm
   // headline the widened query returns. These are real headlines from the live feed.
   test('election relevance follows the vocabulary, not one hardcoded year', () => {
-    const on = new Date('2026-09-21T12:00:00');
+    const on = new Date('2026-09-21T12:00:00Z');
     assert.ok(isElectionRelevant('Early voting begins in U.S. midterm elections', on));
     assert.ok(isElectionRelevant('What to Know About Mail-In Voting for the 2026 Midterms', on));
     assert.ok(isElectionRelevant('2028 Democratic Presidential Primary: Latest Polls', on));
@@ -193,6 +193,40 @@ describe('API routes', () => {
     const evil = await fetch(`${base}/api/health`, { headers: { Origin: 'https://evil.example' } });
     assert.equal(evil.status, 200);
     assert.equal(evil.headers.get('access-control-allow-origin'), null);
+  });
+
+  test('CORS rejects lookalike deployments and advertises read-only methods', async () => {
+    for (const origin of ['https://vote4ucyl-attacker.vercel.app', 'https://voting-finder-attacker.vercel.app']) {
+      const res = await fetch(`${base}/api/health`, { headers: { Origin: origin } });
+      assert.equal(res.headers.get('access-control-allow-origin'), null);
+    }
+    const res = await fetch(`${base}/api/health`, { method: 'OPTIONS', headers: { Origin: 'https://vote4ucyl.vercel.app' } });
+    assert.equal(res.headers.get('access-control-allow-methods'), 'GET,HEAD,OPTIONS');
+  });
+
+  test('unused malformed JSON bodies are not parsed or logged', async () => {
+    const logs = [];
+    const original = console.error;
+    console.error = (...args) => logs.push(args);
+    try {
+      const res = await fetch(`${base}/api/nope`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"private-input":',
+      });
+      assert.equal(res.status, 404);
+      assert.deepEqual(logs, []);
+    } finally { console.error = original; }
+  });
+
+  test('upstream errors cannot disclose request values through application logs', async () => {
+    const logs = [];
+    const original = console.error;
+    console.error = (...args) => logs.push(args);
+    upstream = () => { throw new Error('sensitive-upstream-url-and-location'); };
+    try {
+      const res = await fetch(`${base}/api/polling?zip=19901`);
+      assert.equal(res.status, 502);
+      assert.deepEqual(logs, [['ZIP lookup failed']]);
+    } finally { console.error = original; }
   });
 
   test('polling rejects malformed ZIP codes', async () => {
@@ -302,7 +336,7 @@ describe('API routes', () => {
   });
 
   test('polling rejects malformed coordinates', async () => {
-    for (const q of ['lat=&lng=', 'lat=abc&lng=-75.5', 'lat=39.15', 'lng=-75.5', 'lat=91&lng=0', 'lat=0&lng=181']) {
+    for (const q of ['lat=&lng=', 'lat=abc&lng=-75.5', 'lat=39.15', 'lng=-75.5', 'lat=91&lng=0', 'lat=0&lng=181', 'lat=%20&lng=%20', 'lat=1&lat=2&lng=3']) {
       const res = await fetch(`${base}/api/polling?${q}`);
       assert.equal(res.status, 400, q);
       assert.match((await res.json()).error, /latitude and longitude/);

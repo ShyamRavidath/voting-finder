@@ -81,8 +81,8 @@ export default function ToolsPage() {
         ) : (
           <div className="space-y-4">
             <div>
-              <h2 className="text-2xl font-bold">Electoral College baseline</h2>
-              <p className="mt-1 text-slate-600">How each state's electoral votes lean heading into 2028.</p>
+              <h2 className="text-2xl font-bold">Electoral votes by state</h2>
+              <p className="mt-1 text-slate-600">Explore the 2024 and 2028 Electoral College allocations.</p>
             </div>
             <Suspense fallback={<div className="skeleton aspect-[975/610] w-full rounded-2xl" />}>
               <ElectoralMap />

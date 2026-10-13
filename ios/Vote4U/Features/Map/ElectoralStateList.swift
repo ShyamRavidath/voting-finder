@@ -5,49 +5,29 @@ struct ElectoralStateList: View {
     let selected: ElectoralState?
     let onSelect: (ElectoralState) -> Void
 
-    private var hasResults: Bool {
-        ElectoralState.Party.allCases.contains { !states(for: $0).isEmpty }
+    private var matchingStates: [ElectoralState] {
+        let states = BundledData.statesAlphabetically
+        guard !searchText.isEmpty else { return states }
+        return states.filter { $0.name.localizedStandardContains(searchText) }
     }
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 14) {
-            Label("State ratings", systemImage: "list.bullet")
+            Label("Electoral votes by state", systemImage: "list.bullet")
                 .font(.title3.bold())
 
-            if hasResults {
-                ForEach(ElectoralState.Party.allCases, id: \.self) { party in
-                    let matchingStates = states(for: party)
-                    if !matchingStates.isEmpty {
-                        partySection(party, states: matchingStates)
-                    }
-                }
-            } else {
+            if matchingStates.isEmpty {
                 ContentUnavailableView.search(text: searchText)
+            } else {
+                stateRows
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func states(for party: ElectoralState.Party) -> [ElectoralState] {
-        let states = BundledData.statesByParty[party] ?? []
-        guard !searchText.isEmpty else { return states }
-        return states.filter { $0.name.localizedStandardContains(searchText) }
-    }
-
-    private func partySection(
-        _ party: ElectoralState.Party,
-        states: [ElectoralState]
-    ) -> some View {
+    private var stateRows: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(party.label)
-                .font(.subheadline.bold())
-                .foregroundStyle(party.color)
-                .padding(.horizontal)
-                .padding(.vertical, 12)
-
-            Divider()
-
-            ForEach(states) { state in
+            ForEach(matchingStates) { state in
                 Button {
                     onSelect(state)
                 } label: {
@@ -64,10 +44,10 @@ struct ElectoralStateList: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal)
-                .accessibilityLabel("\(state.name), \(state.ev) electoral votes, \(party.label)")
+                .accessibilityLabel("\(state.name), \(state.ev) electoral votes")
                 .accessibilityAddTraits(selected == state ? .isSelected : [])
 
-                if state.id != states.last?.id {
+                if state.id != matchingStates.last?.id {
                     Divider()
                         .padding(.leading)
                 }

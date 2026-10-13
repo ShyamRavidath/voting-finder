@@ -15,7 +15,7 @@ struct NewsView: View {
                 case .loaded(let articles):
                     List(articles) { article in
                         Button {
-                            reading = URL(string: article.url)
+                            reading = article.webURL
                         } label: {
                             NewsRow(article: article)
                         }
@@ -62,11 +62,6 @@ private struct NewsRow: View {
                     .lineLimit(3)
 
                 HStack(spacing: 6) {
-                    if let party = article.party {
-                        Text(party)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(party == "Democrat" ? .blue : .red)
-                    }
                     if let source = article.source {
                         Text(source)
                     }

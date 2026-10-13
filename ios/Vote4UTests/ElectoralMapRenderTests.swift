@@ -1,5 +1,6 @@
 import SwiftUI
 import XCTest
+
 @testable import Vote4U
 
 /// Proof that the electoral map *draws the United States*, not merely that its path data parses.
@@ -95,10 +96,8 @@ final class ElectoralMapRenderTests: XCTestCase {
         XCTAssertLessThan(maine.y, texas.y, "Maine should be north of Texas")
     }
 
-    /// Each state is painted its own party colour, checked on the rendered bitmap rather than by
-    /// reading the model back. This is the assertion that catches geometry and colour drifting
-    /// apart from each other — a state drawn in its neighbour's place still fails it.
-    func testTheLargestStatesArePaintedTheirPartyColour() throws {
+    /// State fills remain neutral; electoral allocation is not a partisan rating.
+    func testTheLargestStatesArePaintedNeutralSlate() throws {
         let width: CGFloat = 780
         let scale = width / paths.viewBox.width
         let image = try XCTUnwrap(renderMap(width: width))
@@ -106,12 +105,12 @@ final class ElectoralMapRenderTests: XCTestCase {
 
         // Big, convex-enough states, one from each end of the map.
         for name in ["California", "Texas", "Montana", "Florida"] {
-            let state = try XCTUnwrap(statesByName[name], "\(name) missing from states.json")
+            _ = try XCTUnwrap(statesByName[name], "\(name) missing from states.json")
             let path = SVGPath.parse(try shapeData(for: name), scale: CGSize(width: scale, height: scale))
             let point = try XCTUnwrap(interiorPoint(of: path), "found no interior point for \(name)")
 
             let sampled = try XCTUnwrap(pixels.color(atPointInPoints: point, imageScale: 2), "\(name) sample off-image")
-            let expected = components(of: state.party.color)
+            let expected = components(of: Color(red: 0.39, green: 0.45, blue: 0.55))
 
             XCTAssertEqual(sampled.r, expected.r, accuracy: 0.12, "\(name) red channel")
             XCTAssertEqual(sampled.g, expected.g, accuracy: 0.12, "\(name) green channel")
@@ -144,7 +143,10 @@ final class ElectoralMapRenderTests: XCTestCase {
     }
 
     private func components(of color: Color) -> (r: CGFloat, g: CGFloat, b: CGFloat) {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
         UIColor(color).getRed(&r, green: &g, blue: &b, alpha: &a)
         return (r, g, b)
     }
@@ -174,15 +176,17 @@ final class ElectoralMapRenderTests: XCTestCase {
         let height = cgImage.height
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
 
-        guard let context = CGContext(
-            data: &pixels,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: width * 4,
-            space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return nil }
+        guard
+            let context = CGContext(
+                data: &pixels,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        else { return nil }
 
         context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
         return Bitmap(pixels: pixels, width: width, height: height)
