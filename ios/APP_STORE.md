@@ -38,7 +38,7 @@ No terminal commands are needed for these fields.
 | Age rating | Determined by the current App Store Connect questionnaire; see draft answers below |
 | Price | Free |
 | Privacy policy URL | `https://vote4ucyl.vercel.app/privacy` |
-| Support URL | `https://github.com/ShyamRavidath/voting-finder/issues` |
+| Support URL | `https://vote4ucyl.vercel.app/privacy#support` (verify the support email is live after deployment before saving) |
 
 **On the category choice:** Reference, not News. The 4.2.2 risk is being read as a news
 aggregator, and the primary category is part of how Apple reads the app. The voting tools are the

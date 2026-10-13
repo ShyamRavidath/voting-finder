@@ -1,6 +1,6 @@
 import { usePageTitle } from '../hooks/usePageTitle';
 
-const UPDATED = 'October 11, 2026';
+const UPDATED = 'October 12, 2026';
 
 export default function PrivacyPage() {
   usePageTitle('Privacy policy');
@@ -87,9 +87,19 @@ export default function PrivacyPage() {
       <h2 className="pt-2 text-xl font-bold text-slate-900">Children</h2>
       <p>Vote4U doesn't knowingly collect personal information from anyone, including children under 13.</p>
 
-      <h2 className="pt-2 text-xl font-bold text-slate-900">Changes and contact</h2>
+      <h2 id="support" className="scroll-mt-24 pt-2 text-xl font-bold text-slate-900">Vote4U support</h2>
       <p>
-        If this policy changes, we'll update the date above. Questions or concerns? Open an issue on our{' '}
+        For help with the Vote4U app, bug reports, feature requests, or privacy questions, email{' '}
+        <a
+          href="mailto:ravidath@gmail.com"
+          className="font-semibold text-blue-700 underline underline-offset-2"
+        >
+          ravidath@gmail.com
+        </a>
+        . You don't need a GitHub account to contact us.
+      </p>
+      <p>
+        You can also open an issue on our{' '}
         <a
           href="https://github.com/ShyamRavidath/voting-finder/issues"
           target="_blank"
@@ -100,6 +110,7 @@ export default function PrivacyPage() {
         </a>
         .
       </p>
+      <p>If this policy changes, we'll update the date above.</p>
     </article>
   );
 }
