@@ -1,7 +1,7 @@
 # App Store Connect — submission material
 
 Draft copy for the Vote4U App Store listing. Paste into App Store Connect; nothing here is
-wired into the build. Updated 2026-10-11 for the keyless release candidate. Not yet submitted.
+wired into the build. Updated 2026-10-18 for the keyless release without aggregated news. Not yet submitted.
 
 Account: `ravidath@gmail.com` (individual). An individual account publishes under your personal
 legal name — that name appears on the store page as the seller.
@@ -9,17 +9,19 @@ legal name — that name appears on the store page as the seller.
 ## Owner form-entry checklist
 
 App record: [Vote4U in App Store Connect](https://appstoreconnect.apple.com/apps/6821803665/distribution).
-The name, subtitle, categories and privacy-policy URL were previously saved; recheck them.
+Listing text, contact, copyright, free US-only availability, manual release, support URL and
+the earlier screenshots were saved in App Store Connect. This no-news revision needs matching
+text/categories and replacement three-tab screenshots before submission.
 
 - Version 1.0: paste Description, Promotional text, Keywords and Notes for Review from
   the fenced blocks below. Enter the Support URL from the identity table.
 - App Review Information: turn off **Sign-in required**. Supply your actual contact
   first/last name, email and reachable phone number; no demo credentials are needed.
 - Copyright: enter the correct year and rights-holder name. Review content-rights and
-  account declarations yourself; the app links to third-party news.
-- Pricing: Free. Review country/region availability for this US-focused app.
+  account declarations yourself; the app still uses third-party map and geographic data.
+- Pricing: Free; United States only (owner selected).
 - Version release: select **Manually release this version** to retain control after review.
-- Screenshots: use the reviewed large and medium files after the preparation PR is ready.
+- Screenshots: replace the old four-tab images with reviewed three-tab captures from this branch.
 - Privacy and age ratings: use the drafts below for review, and confirm hosting retention
   before saving final privacy answers. Accessibility claims need actual device evidence.
 - Build selection, TestFlight and **Add for Review / Submit** remain later release steps.
@@ -34,15 +36,15 @@ No terminal commands are needed for these fields.
 | Subtitle (30 char max) | `Find where and when to vote` (27) |
 | Bundle ID | `com.shyamravidath.Vote4U` |
 | Primary category | Reference |
-| Secondary category | News |
+| Secondary category | None |
 | Age rating | Determined by the current App Store Connect questionnaire; see draft answers below |
 | Price | Free |
 | Privacy policy URL | `https://vote4ucyl.vercel.app/privacy` |
 | Support URL | `https://vote4ucyl.vercel.app/privacy#support` (verify the support email is live after deployment before saving) |
 
-**On the category choice:** Reference, not News. The 4.2.2 risk is being read as a news
-aggregator, and the primary category is part of how Apple reads the app. The voting tools are the
-product; headlines are the fourth tab.
+**On the category choice:** Reference describes the voting tools. This release has no news feed.
+Its native utility includes local reminders, an Election Countdown widget, offline saved locations,
+and a bundled interactive electoral map. These support the 4.2 utility case; approval is not guaranteed.
 
 ## Keywords (100 characters max, comma-separated, no spaces)
 
@@ -78,10 +80,6 @@ An interactive map of all 50 states and DC with electoral vote counts,
 the 270-vote threshold and a link to the National Archives source.
 Counts reflect the 2020 Census allocation for the 2024 and 2028 presidential
 elections; the map does not forecast winners.
-
-ELECTION NEWS
-Headlines about the current US election from third-party publishers,
-opening on the publisher's own page.
 
 BUILT TO BE TRUSTED
 Vote4U is independent and nonpartisan. It is not affiliated with any government
@@ -121,18 +119,21 @@ WHERE THE DATA COMES FROM
   never fabricates an address or a coordinate.
 - Map: neutral state electoral-vote totals from the National Archives, with
   a note explaining Maine and Nebraska district allocation; no predictions.
-- News: headlines and links only, from Google News. Article text is not
-  reproduced; tapping a headline opens the publisher's own page in an in-app
-  Safari view.
+- This release does not fetch or display aggregated news.
+
+NATIVE UTILITY
+- Election Countdown Home Screen widget (small and medium sizes).
+- Optional local election reminders, without an account or push server.
+- Saved locations available offline, with unconfirmed warnings preserved.
+- Bundled interactive electoral map and searchable state vote counts.
 
 LOCATION
 Location is optional and used to resolve the user's ZIP code and find nearby
 locations, with distances measured from the rounded device position. Coordinates are rounded to roughly 110 metres
 before leaving the device. They are sent to our server and OpenStreetMap for
 ZIP resolution and nearby-building searches, are cached by Vercel and Neon, and
-can appear in Vercel request logs; an optional database cache may retain the
-rounded coordinate pair until daily cleanup (normally within two days, longer
-if cleanup fails). If the user declines the permission, ZIP code entry remains
+can appear in Vercel request logs. Hosting and database retention details
+are being verified before submission. If the user declines the permission, ZIP code entry remains
 fully available — you can test the whole app without granting location.
 
 NOTIFICATIONS
@@ -191,17 +192,17 @@ configuration before submission; do not paste the old Coarse-Location-only answe
 
 ## Screenshots
 
-Apple's current specification requires **iPhone with Dynamic Island (medium display)**:
-1206 × 2622 or 1179 × 2556 portrait pixels. Provide the separate medium set in
-`ios/screenshots/medium/` and the additional large set in `ios/screenshots/`
-(1320 × 2868). Both are opaque JPEGs. iPad is not required because the containing
+The prepared **iPhone with Dynamic Island (medium display)** set uses
+1206 × 2622 portrait pixels. Find the available medium captures in
+`ios/screenshots/medium/` and large captures in `ios/screenshots/`
+(1320 × 2868). The included captures are opaque JPEGs. iPad is not required because the containing
 app is iPhone-only (`TARGETED_DEVICE_FAMILY = 1`). Confirm the media manager accepts
-both sets before submission. Source checked 2026-10-11:
+both sets before submission. Recheck Apple's current specifications and media-manager requirements:
 [Apple screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/).
 
 ### iPad scope for version 1
 
-Keep the containing app iPhone-only for the first submission. The current four-tab layout uses
+Keep the containing app iPhone-only for the first submission. The current three-tab layout uses
 single-column Home and Vote screens, a 220-point polling map, and a full-width electoral map;
 turning on native iPad support would need deliberate wide/landscape layouts, map-and-results
 placement, resizing and accessibility checks, plus iPad screenshots. Adding iPad device support
@@ -225,19 +226,17 @@ The script sets 9:41/full bars/light appearance and uses DEBUG navigation argume
 It does not use fabricated polling fixtures. Review every image after capture; a fixed
 wait does not prove a successful live request. Four voting-tool images are sufficient:
 results with cautious labels, Home countdown, sourced electoral map and official lookup
-links. News artwork is optional and should be omitted until the filtered backend is deployed
-and every displayed headline/source is reviewed. News remains the last app tab.
+links. Replace all previously uploaded images: they show the removed News tab.
+The complete four-view set remains a release gate where simulator capture fails visual review.
 
 ## Age-rating questionnaire draft
 
-Do not paste the historical 4+ assertion. Apple now computes ratings from the current
-questionnaire and displays separate values on older OS versions. The app opens publisher
-pages in Safari view without restricting onward links; conservatively answer **Yes** to
-unrestricted web access. It has no app-owned messaging, user-generated posting, advertising,
-gambling, loot boxes, contests, medical/treatment advice, or parental-control/age-assurance
-feature. Live election news may discuss mature topics, violence, weapons or substance use;
-review the actual questionnaire and publisher-content scope when selecting frequency answers.
-The draft cannot establish that all linked content is suitable for young children.
+Do not assume the historical 4+ answer is still correct. News and the in-app publisher browser
+have been removed. Official lookup, privacy/support and attribution links still open external
+websites. Review the current questionnaire against this final build; do not automatically
+reuse the earlier news-based unrestricted-web-access or content-frequency answers.
+The app has no app-owned messaging, user-generated posting, advertising, gambling, loot boxes,
+contests, medical/treatment advice, or parental-control/age-assurance feature.
 
 The local candidate has no content-rating filter and should not claim one. Record the saved
 questionnaire and Apple's resulting rating in the release ledger before submission. Sources:
@@ -252,10 +251,10 @@ questionnaire and Apple's resulting rating in the release ledger before submissi
 - [ ] Build 3 archived from clean integrated source, with provenance recorded
 - [ ] Reminder verified firing on a real device
 - [ ] Airplane-mode and permission-denied paths checked on a real device
-- [x] **NewsAPI removed 2026-09-20** — its development-only free plan was the 5.2.2 risk. Gone;
-      news comes from Google News RSS, which is keyless
+- [x] Aggregated news removed from the native app, website and serving API for version 1.0
+- [ ] Confirm remaining third-party map/data license and attribution obligations
 - [x] Privacy route responds 200; source includes native-app disclosures
-- [x] Capture/review both screenshot sizes from current UI and live keyless polling data
+- [ ] Recapture/review both screenshot sizes without the News tab, using live keyless polling data
 - [ ] Verify screenshot acceptance in App Store Connect and source/deployment parity after merge
 - [ ] Clean committed archive, export and signature/profile verification
 - [ ] TestFlight upload, processing and physical-device critical paths

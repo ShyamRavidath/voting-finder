@@ -68,11 +68,14 @@ final class AppSmokeUITests: XCTestCase {
             XCUIApplication(bundleIdentifier: "com.apple.mobilesafari").wait(for: .runningForeground, timeout: 10))
     }
 
-    func testAllFourTabsExistInOrder() {
+    func testVotingTabsExistInOrderWithoutNews() {
         let app = launch(["-startTab", "home"])
-        for tab in ["Home", "Vote", "Map", "News"] {
+        for tab in ["Home", "Vote", "Map"] {
             XCTAssertTrue(app.tabBars.buttons[tab].waitForExistence(timeout: 10), "missing \(tab) tab")
         }
+        XCTAssertEqual(
+            app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["Home", "Vote", "Map"])
+        XCTAssertFalse(app.tabBars.buttons["News"].exists)
     }
 
     func testSavedLocationKeepsItsWarningOnHomeAndAfterRelaunch() {
@@ -199,17 +202,11 @@ final class AppSmokeUITests: XCTestCase {
             "DC must be reachable through search even though it is unhittable on the map")
     }
 
-    func testNewsTabLoadsHeadlines() {
-        let app = launch(["-startTab", "news", "-stubNews", "sample"])
-        XCTAssertTrue(app.navigationBars["Election News"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 15), "the stubbed headlines never rendered")
-    }
-
     /// The one test that still talks to production. It deliberately accepts any *terminal* state:
     /// upstream data comes and goes (ZIP 90210 had no venues at all on 2026-09-20), so asserting
     /// a particular venue makes a correct build fail. What must never happen is the app hanging
     /// on a spinner or failing to decode what the API actually sends.
-    func testLiveAPIReachesATerminalStateOnVoteAndNews() {
+    func testLiveAPIReachesATerminalStateOnVote() {
         let app = launch(["-startTab", "vote", "-startZip", "90210"])
 
         // Any venue at all, not a named one — the upstream ranking changes from day to day.
@@ -226,17 +223,5 @@ final class AppSmokeUITests: XCTestCase {
             "the Vote tab never left its loading state against the live API"
         )
 
-        app.tabBars.buttons["News"].tap()
-        let headline = app.cells.firstMatch
-        let noHeadlines = app.staticTexts["No headlines right now"]
-        let newsFailed = app.staticTexts["Couldn't load the news"]
-        let newsDeadline = Date().addingTimeInterval(45)
-        while Date() < newsDeadline && !(headline.exists || noHeadlines.exists || newsFailed.exists) {
-            _ = app.staticTexts.firstMatch.waitForExistence(timeout: 1)
-        }
-        XCTAssertTrue(
-            headline.exists || noHeadlines.exists || newsFailed.exists,
-            "the News tab never left its loading state against the live API"
-        )
     }
 }

@@ -3,7 +3,7 @@
 Read this first. It is short on purpose; the long-form context lives in the files it points to.
 
 Vote4U is a free, nonpartisan US civic-engagement app: a polling-place finder, an Electoral
-College map, and an election news feed. Web app on Vercel, plus a native Swift/SwiftUI iOS app
+College map, reminders and an Election Countdown widget. Aggregated news is removed for v1. Web app on Vercel, plus a native Swift/SwiftUI iOS app
 headed for the App Store.
 
 ## Where the knowledge is
@@ -30,7 +30,8 @@ These are product commitments, not style preferences. `HANDOFF.md` §7 has the f
    greps the Release binary to prove it never ships.
 2. **ZIP entry must always work when location permission is declined** (App Store 5.1.1(iv)).
 3. **Never imply government affiliation or endorsement** (5.2.1 / 5.2.4).
-4. **News stays the last tab** (4.2.2 treats a news aggregator as thin).
+4. **Version 1 has no aggregated news.** If restored with verified rights, News stays the last tab
+   (4.2.2 treats a news aggregator as thin).
 5. **Never commit keys.** The Google Civic key leaked in git history once already.
 6. **Never log a user's location.** See "Logging" below.
 

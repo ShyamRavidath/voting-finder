@@ -31,7 +31,7 @@ final class FormattingTests: XCTestCase {
         XCTAssertEqual(Formatting.timeAgo("not a date", now: now), "")
     }
 
-    func testHandlesFractionalSecondsWhichTheNewsAPISends() {
+    func testHandlesFractionalSeconds() {
         // The API sends "2026-09-20T06:50:00.000Z"; the plain ISO8601 formatter rejects that.
         XCTAssertEqual(ago("2026-09-20T09:00:00.000Z"), "3 hr ago")
     }

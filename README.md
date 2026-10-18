@@ -1,6 +1,6 @@
 # Vote4U
 
-A free, nonpartisan civic-engagement app for U.S. voters, built for the 2028 presidential cycle (and useful for every election before it). Three tools in one place: a polling-place finder, an Electoral College map, and a US election news feed. It's mobile-first and set up to become an iOS app.
+A free, nonpartisan civic-engagement app for U.S. voters, built for the 2028 presidential cycle (and useful for every election before it). Voting lookup tools and an Electoral College map on the web, plus native iPhone reminders, offline saved locations, and an Election Countdown widget.
 
 Live: https://vote4ucyl.vercel.app
 
@@ -15,7 +15,6 @@ Live: https://vote4ucyl.vercel.app
   3. **OpenStreetMap Nominatim, widened search** (`nearby`): the same idea out to 25 km, plus schools and fire stations. These are labeled *Civic Building* rather than *Likely Polling Place* — the labeling gets **more** cautious as the tier gets weaker, never less.
   4. **Nothing found**: an honest empty state. The app never invents locations. Official lookup links (USA.gov, NASS, Vote.gov) are always shown.
 - **Electoral map** (`/tools?tab=map`): an SVG map of all 50 states + DC (no map-tile service needed), a 538-vote tally with the 270 line, and a tappable state list. Data lives in `client/src/data/stateData.js`.
-- **Election news** (`/news`): headlines from Google News RSS (keyless), scoped to the **next federal election** rather than a hardcoded year — the query is built from the same Tuesday-after-the-first-Monday arithmetic the countdown uses, so it follows the calendar (2026 midterms today, the 2028 presidential race after that) instead of going stale the morning after an election. Party labels come only from a watchlist of named candidates.
 
 ## Architecture
 
@@ -25,7 +24,7 @@ voting-finder/
 ├── server/          Express 5 API (also runs standalone for local dev)
 │   ├── app.js        app setup: CORS, rate limit, routes, JSON 404/500
 │   ├── routes/       news.js, polling.js, elections.js
-│   ├── services/     civicService, geocodeService, newsService
+│   ├── services/     civicService, geocodeService
 │   ├── db/           optional Postgres cache (schema.sql, client.js)
 │   └── test/         node:test API tests (upstream APIs stubbed)
 ├── client/          React 19 + Vite + Tailwind v4 SPA
@@ -36,7 +35,7 @@ voting-finder/
 └── vercel.json      builds client, deploys api/ as a function, SPA rewrites, headers
 ```
 
-Frontend and API deploy together on Vercel, so the browser calls same-origin `/api/*`. Responses carry `Cache-Control: s-maxage` headers, so Vercel's CDN absorbs traffic and upstream services (Google News, Nominatim's fair-use policy) see only a trickle.
+Frontend and API deploy together on Vercel, so the browser calls same-origin `/api/*`. Responses carry `Cache-Control: s-maxage` headers, so Vercel's CDN absorbs traffic and upstream services (Nominatim's fair-use policy) see only a trickle.
 
 ## Running locally
 
@@ -51,7 +50,7 @@ npm run dev                   # API on :3001, Vite on :5173 (proxies /api)
 | Variable (server) | Required | Purpose |
 |---|---|---|
 | `GOOGLE_CIVIC_API_KEY` | optional | Official polling locations. Without it, OpenStreetMap venues are used. |
-| `DATABASE_URL` | optional | Postgres polling/news cache. The CDN cache makes this unnecessary on Vercel. If set, run the migration below before deploying a cache-route change. |
+| `DATABASE_URL` | optional | Postgres polling cache. The CDN cache makes this unnecessary on Vercel. If set, run the migration below before deploying a cache-route change. |
 | `CRON_SECRET` | required when using Postgres on Vercel | Authenticates the daily deletion of expired polling-cache rows. Set it in Production project settings; Vercel sends it as a bearer token to its cron endpoint. |
 | `CLIENT_URL` | optional | Extra allowed CORS origin. |
 | `RATE_LIMIT_MAX` | optional | Requests per 15 min per IP (default 100). |
@@ -68,7 +67,7 @@ npm run test:e2e           # builds the client, starts both servers, runs Playwr
 BASE_URL=https://vote4ucyl.vercel.app npx playwright test   # same suite against the live site
 ```
 
-The e2e suite covers every page on three device profiles: no runtime errors, no sideways scrolling, axe WCAG 2.1 AA checks, navigation, search success/empty/error/offline states, the electoral map, and news fallbacks.
+The e2e suite covers every page on three device profiles: no runtime errors, no sideways scrolling, axe WCAG 2.1 AA checks, navigation, search success/empty/error/offline states, the electoral map, and retired-news behavior.
 
 ## Deployment (free)
 
@@ -89,3 +88,8 @@ for ZIP keys). Under normal daily execution, a device row may physically remain 
 days after creation; a failed cron can extend that until a successful run. Monitor cron failures
 and delete overdue rows manually if needed. The request URLs may separately appear in Vercel
 platform logs; database cleanup does not change that retention.
+
+Aggregated news is withdrawn for version 1.0 pending redistribution permission. The legacy
+`/api/news` endpoint returns an empty, non-cacheable response without reading stored headlines
+or contacting a publisher. The old `news_cache` table is left untouched and is never read by the retired endpoint;
+physical deletion of old rows is a separate operational cleanup.

@@ -76,36 +76,6 @@ struct PollingResult: Codable, Equatable {
     }
 }
 
-/// Field names match `server/services/newsService.js` exactly. `party` is non-nil only when the
-/// headline names someone on the candidate watchlist; the Google News RSS fallback leaves it,
-/// `excerpt` and `imageUrl` empty, so every one of them has to be optional.
-struct Article: Codable, Identifiable, Equatable {
-    let id: String
-    let title: String
-    let url: String
-    let source: String?
-    let date: String?
-    let excerpt: String?
-    let category: String?
-    let candidate: String?
-    let party: String?
-    let imageUrl: String?
-
-    // Safari views accept web URLs only; old CDN responses may predate server validation.
-    var webURL: URL? {
-        guard let value = URL(string: url),
-            let scheme = value.scheme?.lowercased(),
-            ["http", "https"].contains(scheme),
-            let host = value.host, !host.isEmpty
-        else { return nil }
-        return value
-    }
-}
-
-struct NewsResponse: Codable {
-    let articles: [Article]
-}
-
 // A result from a nonofficial source cannot become confirmed because of conflicting flags.
 // Keep this in an extension so the memberwise initializer remains available to DEBUG fixtures.
 extension PollingResult {

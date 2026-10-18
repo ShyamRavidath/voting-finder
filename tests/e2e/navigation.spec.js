@@ -20,7 +20,6 @@ test('primary navigation reaches every section', async ({ page }, testInfo) => {
 
   const destinations = [
     { name: mobile ? 'Vote' : 'Voting Tools', url: /\/tools/, h1: 'Voting tools' },
-    { name: 'News', url: /\/news$/, h1: 'Election news' },
     { name: 'About', url: /\/about$/, h1: 'About Vote4U' },
     { name: 'Home', url: /\/$/, h1: /Make your voting plan/ },
   ];

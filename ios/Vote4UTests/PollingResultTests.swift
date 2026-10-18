@@ -86,34 +86,4 @@ final class PollingResultTests: XCTestCase {
         XCTAssertTrue(result.isEmpty)
     }
 
-    func testArticleOnlyOpensWebURLs() throws {
-        for (url, allowed) in [
-            ("https://example.com/election", true),
-            ("http://example.com/election", true),
-            ("javascript:alert(1)", false),
-            ("file:///tmp/article", false),
-            ("https:/missing-host", false),
-            ("/relative", false),
-        ] {
-            let data = try JSONSerialization.data(withJSONObject: ["id": "a", "title": "Election", "url": url])
-            let article = try JSONDecoder().decode(Article.self, from: data)
-            XCTAssertEqual(article.webURL != nil, allowed, url)
-        }
-    }
-
-    func testDecodesTheRealArticleShape() throws {
-        // Field names must match server/services/newsService.js. They silently did not once
-        // already, and because every field is optional it decoded fine and rendered blanks.
-        let json = """
-            {"articles":[{"id":"abc","candidate":"Gavin Newsom","title":"Options in the 2028 race",
-             "excerpt":null,"date":"2026-09-20T06:50:00.000Z","source":"Gazette",
-             "url":"https://example.com/a","category":"election","party":null,"imageUrl":null}]}
-            """.data(using: .utf8)!
-
-        let response = try JSONDecoder().decode(NewsResponse.self, from: json)
-        let article = try XCTUnwrap(response.articles.first)
-        XCTAssertEqual(article.source, "Gazette")
-        XCTAssertEqual(article.date, "2026-09-20T06:50:00.000Z")
-        XCTAssertFalse(Formatting.timeAgo(article.date).isEmpty, "date must actually parse")
-    }
 }

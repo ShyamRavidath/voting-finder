@@ -1,6 +1,6 @@
 import { usePageTitle } from '../hooks/usePageTitle';
 
-const UPDATED = 'October 12, 2026';
+const UPDATED = 'October 18, 2026';
 
 export default function PrivacyPage() {
   usePageTitle('Privacy policy');
@@ -39,11 +39,10 @@ export default function PrivacyPage() {
         <li>Google Civic Information API (when configured; currently disabled)</li>
         <li>Neon PostgreSQL (server-side lookup cache)</li>
         <li>OpenStreetMap Nominatim (nearby buildings)</li>
-        <li>Google News (headlines)</li>
       </ul>
       <p>
-        Your browser loads map images directly from OpenStreetMap and news thumbnails directly from publishers. Links to
-        articles, maps, and official election sites open those sites, which have their own privacy policies.
+        Your browser loads map images directly from OpenStreetMap. Links to maps and official election sites open
+        those sites, which have their own privacy policies.
       </p>
 
       <h2 className="pt-2 text-xl font-bold text-slate-900">The Vote4U iOS app</h2>
@@ -80,8 +79,7 @@ export default function PrivacyPage() {
         >
           Apple&rsquo;s privacy policy
         </a>
-        . Tapping a headline opens the publisher&rsquo;s own page inside the app, where that publisher&rsquo;s privacy
-        policy applies.
+        .
       </p>
 
       <h2 className="pt-2 text-xl font-bold text-slate-900">Children</h2>
