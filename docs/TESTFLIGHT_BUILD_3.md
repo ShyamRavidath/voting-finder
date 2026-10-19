@@ -44,8 +44,12 @@ Xcode 27 exposes the simulator through **Device Hub**, not a separate Simulator 
 Sol selected the booted iPhone 17 in Device Hub, restoring the correct layout/status bar;
 a subsequent simctl capture passed review. No image was composited or retouched.
 
-No TestFlight group/testers are configured yet. Owner confirmation for an invitation to
-`ravidath@gmail.com` is pending; no invitation was sent.
+Owner explicitly authorized the invitation. Internal group **Owner Testing** now contains
+one tester, `ravidath@gmail.com`, with status **Invited**, and one build, **1.0 (3), Ready to Test**.
+Automatic distribution is disabled. The initial group-creation batch was rejected by automatic
+approval review over future automatic delivery; separately disabling/verifying that setting
+before creating the group succeeded. Invitation acceptance and device installation are not yet
+observed. No other testers or review submissions were added.
 No App Review submission or public release is authorized by this evidence record.
 
 ## Physical-device checks still required

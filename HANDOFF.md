@@ -1,5 +1,125 @@
 # Vote4U — Handoff
 
+## Current handoff — October 18, 2026 (TestFlight build 3)
+
+Read this checkpoint first. It supersedes older status, authorization and next-step claims.
+Historical checkpoints and the detailed failure record in §5 are preserved below.
+
+### Goal we are working toward
+
+Ship Vote4U 1.0, a free, independent, nonpartisan US voting-tools app, after testing the actual
+TestFlight build on the owner's iPhone. Preserve ZIP search without location permission,
+cautious labels for unconfirmed buildings, warnings on saved/shared locations, official lookup
+links, and no government-affiliation claims. Keep Google Civic disabled. News was deliberately
+removed for version 1 because publisher redistribution permission was not established.
+Apple requires adequate utility, not a news feed; native reminders, the countdown widget,
+offline saved places and the electoral map remain. Approval is Apple's decision.
+
+The owner authorized App Store metadata edits, a TestFlight upload, and an invitation to
+`ravidath@gmail.com`. They have NOT authorized submitting this build to App Review or releasing
+it. Keep manual release selected. Use **GPT-6.1 Sol, medium reasoning for all computer use**;
+the existing agent is `/root/app_store_form_entry`. Do not change privacy/rights declarations
+without supporting facts. The owner says privacy answers were reviewed already.
+
+### Current state of the code and release
+
+- PR20, PR21 and PR22 are merged. Uploaded source is clean merged main
+  `92952d14ffd08d0068057a8eb3da555d98526f1e` (PR22).
+- Native app has Home, Vote and Map. Native/web news UI, models, fixtures and upstream service
+  were removed. Legacy `/api/news` and `?refresh=true` return empty articles with `no-store`;
+  both production responses were verified. Old database news rows were not deleted.
+- Server: 52 passed. Browser: 83 passed, 7 expected skips. Client lint/build passed.
+  Required `scripts/test-ios.sh`: 80 passed locally on iOS 17.5. PR22 CI passed the full native
+  suite on iOS 26.5/iPhone 17, both permission decisions, Release checks and widget registration.
+  Existing Swift-format findings remain; changed files improved against baseline.
+- Version **1.0 (3)** archived from clean merged source, exported, uploaded, processed by Apple,
+  and selected/saved on the App Store version page. TestFlight showed **Ready to Submit** after
+  processing, with 90-day expiry; this does not mean App Review submission occurred.
+- App/widget signatures and App Store profiles verified; versions match, widget supports both
+  families, app remains iPhone-only/iOS 17+. Privacy manifest parses. Release binary excludes
+  DEBUG fixtures and removed news code. See `docs/TESTFLIGHT_BUILD_3.md` for provenance/hash.
+- App Store no-news description/review notes saved; Reference/None categories; free, US-only;
+  no sign-in; manual release. Review contact Shyam Ravidath, ravidath@gmail.com, +1 916-696-0943.
+  Copyright is 2026 Shyam Ravidath. Father/account-holder identity was left unchanged.
+  Support URL `https://vote4ucyl.vercel.app/privacy#support` is live and saved.
+- All eight new three-tab screenshots uploaded and verified after reload: four medium
+  1206×2622 and four large 1320×2868, ordered results, Home, Map, official sources.
+- PR23 is OPEN: https://github.com/ShyamRavidath/voting-finder/pull/23 . It records build evidence,
+  the two completed medium screenshots and this handoff. It changes no uploaded app code.
+  Merging it does not require rebuilding build 3.
+- TestFlight invitation SENT: internal **Owner Testing** group has exactly one tester,
+  `ravidath@gmail.com`, status **Invited**, and one build, **1.0 (3), Ready to Test**.
+  Automatic distribution is OFF. Delivery/acceptance and installation on the phone are not
+  yet observed. No external testers, Beta Review or App Review submission were added.
+
+### Files actively edited and working copies
+
+- Root `/Users/shyamravidath/voting-finder` is still on stale
+  `docs/ios-agent-development-guide` at `619b5f5`. Do not build/release from it. Its pre-existing
+  dirty `HANDOFF.md` is preserved, with this checkpoint prepended. Do not discard it or the
+  owner's untracked `.github/agents`, `.github/hooks`, `.github/skills`, `.impeccable`,
+  `DESIGN.md`, or `PRODUCT.md`. Another design worktree also exists; leave it untouched.
+- Current documentation worktree: `/private/tmp/vote4u-testflight-main`, branch
+  `docs/testflight-build-3` (PR23), based on merged `92952d1`.
+- Active handoff edits: `HANDOFF.md` in both locations; `docs/TESTFLIGHT_BUILD_3.md` in the PR23
+  worktree. Earlier changes on PR23: `ios/APP_STORE.md` and medium screenshots 3 and 4.
+  No app source is actively being edited. Original no-news worktree remains at
+  `/private/tmp/vote4u-no-news` on `release/remove-news-for-v1`; do not confuse it with main.
+- Temporary signed archive: `/private/tmp/Vote4U-main-92952d1-b3.xcarchive`.
+  Local IPA: `/private/tmp/vote4u-testflight-export/Vote4U.ipa`.
+  Logs: `/private/tmp/vote4u-testflight-{archive,export,upload}.log`.
+  Temporary paths may disappear; the PR contains the durable evidence.
+
+### Everything tried that failed or remained unverified
+
+- Earlier App Store edits were interrupted by active owner browsing. A no-news Description
+  remained unsaved and category/notes unverified. This was subsequently reconciled, saved and
+  reloaded; no pending form edits remain from that attempt.
+- Initial approval review rejected discarding unknown unsaved browser changes and setting free
+  pricing across 175 regions. Owner saved the changes and later explicitly chose free/US-only;
+  both issues were resolved without discarding unrelated edits.
+- TestFlight group creation initially failed automatic approval review because the batch could
+  enable delivery of future builds. The safer sequence explicitly disabled and verified
+  automatic distribution, then created internal group Owner Testing; that sequence succeeded.
+  Only build 3 and the explicitly authorized owner email are in scope.
+- iOS 27 local runner: allow + 66 unit + 12 smoke tests passed, then Xcode diagnostic collection
+  timed out after 600 seconds and the deny runner crashed before bootstrap. Its Release stage
+  never ran. Do not label that run green. The separate iOS 26.5 CI run fully passed.
+- Screenshot terminate/relaunch, 30–45 second waits, per-shot reboot, fresh simulators and
+  extra boot waits were unreliable: black frames, missing status bars and incorrect top layout.
+  Rejected captures were excluded; no images were painted or composited to hide problems.
+  Editing a running shell capture script once caused `tZip: command not found`; use a separate
+  immutable script for a running capture. A PIL metadata check failed because PIL was absent;
+  `sips` verified dimensions/no alpha instead.
+- Binding `Simulator` by name, bundle ID and old Xcode app path failed; Xcode's developer-tool
+  menu had no Simulator item. **Resolved:** Xcode 27 uses **Device Hub** here. Sol selected the
+  booted iPhone 17 there; the status bar/layout became correct, and simctl captured the final
+  accepted medium official-source image. Prefer Device Hub over repeated headless retries.
+- Server tests initially failed with sandbox EPERM on local listener creation; approved
+  execution passed. A deliberate database-access mutation made the retired-news regression
+  fail as intended; this was evidence of test sensitivity, not a remaining product failure.
+- Code ownership alone did not establish rights to third-party news. Removing news resolves
+  that release feature, not every map/data license or privacy obligation.
+- Export/signature success alone did not prove upload/processing; those were subsequently
+  verified independently. Physical TestFlight behavior is still NOT verified: notification
+  queuing tests do not prove banner delivery, and simulator registration does not prove a
+  physical Home Screen widget. Preserve historical §5 below for older failed approaches.
+
+### Next step I would take
+
+Verify the owner receives the TestFlight invitation and can install **1.0 (3)**. On the actual
+phone, check denied/revoked-location ZIP search, real GPS, official links, save → quit →
+airplane-mode → reopen with warnings intact, widget placement/opening, notification delivery,
+large text, dark mode and VoiceOver. Record phone model/iOS, build and observed results.
+Do not ask the owner to rerun automated suites already passed. Resolve any real-device failures
+through a new branch/PR and increment the build number for a replacement upload.
+
+Have the owner merge PR23 for durable screenshots/evidence. After physical checks and truthful
+final privacy/age/content-rights declarations are complete, obtain explicit owner authorization
+for App Review submission. Leave release manual so approval cannot publish the app automatically.
+
+---
+
 ## TestFlight preparation — October 18, 2026
 
 PR22 is merged as `92952d1`; production news endpoints return empty no-store responses.
