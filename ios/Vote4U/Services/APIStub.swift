@@ -3,7 +3,7 @@ import Foundation
 
 /// DEBUG-only canned API responses, selected by launch argument.
 ///
-/// UI tests used to drive the Vote and News tabs through the live production API, which made them
+/// UI tests used to drive the Vote tab through the live production API, which made them
 /// hostage to a third-party geocoder: on 2026-09-20 Nominatim stopped returning any venue for ZIP
 /// 90210 and a correct build failed with "no results from the live API". Worse, the states that
 /// matter most — an empty result set, a server error — could never be provoked on demand.
@@ -16,8 +16,6 @@ import Foundation
 ///     -stubPolling nearby      the widened fallback: civic buildings, hedged harder still
 ///     -stubPolling empty       a successful lookup that found nothing
 ///     -stubPolling error       a server-side failure
-///     -stubNews sample         three fixed headlines
-///     -stubNews error          a server-side failure
 enum APIStub {
     enum Outcome<T> {
         case value(T)
@@ -29,14 +27,6 @@ enum APIStub {
         case "estimated": .value(estimated)
         case "nearby": .value(widened)
         case "empty": .value(empty)
-        case "error": .failure(.server("The stubbed server is unavailable."))
-        default: nil
-        }
-    }
-
-    static func news() -> Outcome<[Article]>? {
-        switch argument(for: "-stubNews") {
-        case "sample": .value(articles)
         case "error": .failure(.server("The stubbed server is unavailable."))
         default: nil
         }
@@ -119,44 +109,5 @@ enum APIStub {
         zip: "90210",
         searchRadiusKm: nil
     )
-
-    private static let articles: [Article] = [
-        Article(
-            id: "stub-1",
-            title: "Stubbed headline: county clerks publish early voting hours",
-            url: "https://example.com/stub-1",
-            source: "Stub Wire",
-            date: "2026-09-20T09:00:00Z",
-            excerpt: nil,
-            category: nil,
-            candidate: nil,
-            party: nil,
-            imageUrl: nil
-        ),
-        Article(
-            id: "stub-2",
-            title: "Stubbed headline: ballot drop boxes open statewide",
-            url: "https://example.com/stub-2",
-            source: "Stub Wire",
-            date: "2026-09-19T17:30:00Z",
-            excerpt: nil,
-            category: nil,
-            candidate: nil,
-            party: nil,
-            imageUrl: nil
-        ),
-        Article(
-            id: "stub-3",
-            title: "Stubbed headline: registration deadline approaches",
-            url: "https://example.com/stub-3",
-            source: "Stub Wire",
-            date: "2026-09-18T12:00:00Z",
-            excerpt: nil,
-            category: nil,
-            candidate: nil,
-            party: nil,
-            imageUrl: nil
-        ),
-    ]
 }
 #endif

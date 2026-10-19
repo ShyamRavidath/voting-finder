@@ -1,5 +1,39 @@
 # Vote4U — Handoff
 
+## Version 1 news removal — October 18, 2026
+
+Current candidate: `release/remove-news-for-v1`, based on merged PR21 (`d04e57f`).
+The owner chose to remove aggregated news because publisher redistribution rights are not
+established. Apple minimum-functionality rules require adequate utility, not a news feed.
+The native reminders, countdown widget, offline saved locations and interactive electoral
+map remain. See `docs/NEWS_REMOVAL.md` for scope and release gates.
+
+Native and web news UI/client code are removed. Legacy `/api/news` returns an empty array
+with `no-store`, without accessing the old database cache or upstream publishers. Old cache
+rows are not deleted. After owner merge, verify deployed responses before archiving.
+
+Validation: server 52 passed; browser 83 passed / 7 expected skips; client lint/build passed.
+The required iOS runner passed all 80 tests on iOS 17.5, including permission allow/deny,
+Release fixture exclusion and widget device-family checks. On iOS 27, allow plus 66 unit
+and 12 smoke tests passed, but diagnostic collection timed out after 600 seconds and the
+final deny runner crashed before test bootstrap. This is NOT a full iOS 27 pass; its Release
+stage did not run. Existing Swift-format findings remain (changed files have fewer than base).
+A deliberate cache-access mutation made the new retired-news regression test fail.
+
+Screenshot capture on iOS 27 was intermittent: some captures lacked the status bar or were
+black despite boot completion. Only visually accepted images are retained; missing views need
+recapture before replacing the full App Store set. The capture script supports a prebuilt app
+and boot/settling delays, but these are not a guaranteed workaround.
+
+App Store: prior metadata, free US-only pricing, manual release and the public support URL
+were saved. The new no-news Description edit is UNSAVED; review notes and secondary category
+still need verification. Sol computer use paused when the owner used Chrome. Do not discard
+pending edits. No build uploaded, no submission or release. Retain truthful remaining
+third-party rights, age and privacy declarations; code ownership alone does not settle map/data
+licenses. A physical TestFlight check remains required after a clean integrated archive.
+
+---
+
 ## Release-preparation continuation — October 11, 2026
 
 The next candidate is on `release/app-store-preparation`, based on merged PR #18

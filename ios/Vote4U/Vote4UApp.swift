@@ -10,11 +10,10 @@ struct Vote4UApp: App {
 }
 
 enum Tab: Hashable {
-    case home, vote, map, news
+    case home, vote, map
 }
 
-// Four tabs mirroring the web app's information architecture. News is deliberately last:
-// App Store guideline 4.2.2 treats a news aggregator as thin, so the voting tools lead.
+// Version 1 focuses on native voting tools; aggregated news is not part of this release.
 struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var selection: Tab = .initialFromLaunchArguments
@@ -30,9 +29,6 @@ struct RootView: View {
             ElectoralMapView()
                 .tabItem { Label("Map", systemImage: "map") }
                 .tag(Tab.map)
-            NewsView()
-                .tabItem { Label("News", systemImage: "newspaper") }
-                .tag(Tab.news)
         }
         .onChange(of: scenePhase, initial: true) {
             if scenePhase == .active {
@@ -54,7 +50,6 @@ extension Tab {
             switch name {
             case "vote": return .vote
             case "map": return .map
-            case "news": return .news
             default: return .home
             }
         #else

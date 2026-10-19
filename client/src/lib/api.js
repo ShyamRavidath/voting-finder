@@ -40,7 +40,6 @@ async function get(path, { signal } = {}) {
 }
 
 export const api = {
-  getNews: (refresh = false, opts) => get(`/api/news${refresh ? '?refresh=true' : ''}`, opts),
   getPolling: (zip, opts) => get(`/api/polling?zip=${encodeURIComponent(zip)}`, opts),
   getElections: (opts) => get('/api/elections', opts),
 };

@@ -52,9 +52,6 @@ export default function HomePage() {
           </section>
         ))}
       </div>
-      <Link to="/news" className="mt-5 inline-flex min-h-11 items-center gap-1 font-semibold text-blue-700 hover:text-blue-800">
-        Read the latest election news <span aria-hidden="true">→</span>
-      </Link>
     </div>
   );
 }

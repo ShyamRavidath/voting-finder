@@ -12,7 +12,6 @@ const SOURCES = [
   ['Polling places', "Official lookup links help you find your assigned polling place. Nearby buildings come from OpenStreetMap and are not voting recommendations. This release does not provide verified polling assignments."],
   ['ZIP code lookup', 'Zippopotam.us'],
   ['Maps', 'U.S. state shapes from the U.S. Census Bureau (via us-atlas); street maps © OpenStreetMap contributors.'],
-  ['News', 'Google News headlines, linked to the original publishers.'],
   ['Electoral votes', 'Electoral College allocation for the 2024 and 2028 elections, based on the 2020 Census.'],
 ];
 

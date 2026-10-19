@@ -51,30 +51,12 @@ struct APIClient {
         ]
     }
 
-    func news() async throws -> [Article] {
-        if let stubbed = try stubbedNews() { return stubbed }
-        let response: NewsResponse = try await get("/api/news", query: [])
-        return response.articles.filter { $0.webURL != nil }
-    }
-
     // Canned responses for UI tests, so the assertions about labelling and error states do not
     // depend on a third-party geocoder being in a good mood. `APIStub` does not exist in Release.
     private func stubbedPolling() throws -> PollingResult? {
         #if DEBUG
             switch APIStub.polling() {
             case .value(let result): return result
-            case .failure(let error): throw error
-            case nil: return nil
-            }
-        #else
-            return nil
-        #endif
-    }
-
-    private func stubbedNews() throws -> [Article]? {
-        #if DEBUG
-            switch APIStub.news() {
-            case .value(let articles): return articles
             case .failure(let error): throw error
             case nil: return nil
             }

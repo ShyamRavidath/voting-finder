@@ -6,7 +6,6 @@ const NAV_ITEMS = [
   { to: '/', label: 'Home', icon: 'home', end: true },
   { to: '/tools', label: 'Vote', desktopLabel: 'Voting Tools', icon: 'pin' },
   { to: '/about', label: 'About', icon: 'info' },
-  { to: '/news', label: 'News', icon: 'news' },
 ];
 
 export function SiteHeader() {
@@ -49,7 +48,7 @@ export function TabBar() {
       aria-label="Main"
       className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-sm sm:hidden"
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-3">
         {NAV_ITEMS.map(({ to, label, icon, end }) => (
           <li key={to}>
             <NavLink
