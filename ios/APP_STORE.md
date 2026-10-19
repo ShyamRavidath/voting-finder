@@ -10,8 +10,9 @@ legal name — that name appears on the store page as the seller.
 
 App record: [Vote4U in App Store Connect](https://appstoreconnect.apple.com/apps/6821803665/distribution).
 Listing text, contact, copyright, free US-only availability, manual release, support URL and
-the earlier screenshots were saved in App Store Connect. This no-news revision needs matching
-text/categories and replacement three-tab screenshots before submission.
+the earlier screenshots were saved in App Store Connect. The no-news description and review
+notes are now saved, and secondary category is None. Build 1.0 (3) uploaded and processed
+successfully; see `../docs/TESTFLIGHT_BUILD_3.md` for evidence and remaining device checks.
 
 - Version 1.0: paste Description, Promotional text, Keywords and Notes for Review from
   the fenced blocks below. Enter the Support URL from the identity table.
@@ -227,7 +228,8 @@ It does not use fabricated polling fixtures. Review every image after capture; a
 wait does not prove a successful live request. Four voting-tool images are sufficient:
 results with cautious labels, Home countdown, sourced electoral map and official lookup
 links. Replace all previously uploaded images: they show the removed News tab.
-The complete four-view set remains a release gate where simulator capture fails visual review.
+The complete set now has four large and four medium views. The final medium capture required
+opening the booted iPhone 17 in Xcode 27 Device Hub before taking the screenshot.
 
 ## Age-rating questionnaire draft
 
@@ -254,9 +256,10 @@ questionnaire and Apple's resulting rating in the release ledger before submissi
 - [x] Aggregated news removed from the native app, website and serving API for version 1.0
 - [ ] Confirm remaining third-party map/data license and attribution obligations
 - [x] Privacy route responds 200; source includes native-app disclosures
-- [ ] Recapture/review both screenshot sizes without the News tab, using live keyless polling data
-- [ ] Verify screenshot acceptance in App Store Connect and source/deployment parity after merge
-- [ ] Clean committed archive, export and signature/profile verification
-- [ ] TestFlight upload, processing and physical-device critical paths
+- [x] Reviewed three-tab screenshots in both sizes: four large and four medium, live keyless data
+- [x] Screenshot uploads accepted; merged source and retired production news endpoint verified
+- [x] Clean committed archive, export and signature/profile verification (merged `92952d1`, build 3)
+- [x] TestFlight upload and processing (version 1.0 build 3)
+- [ ] Physical-device critical paths on the processed TestFlight build
 - [ ] Final privacy/age-rating answers and review contact information
 - [ ] Owner authorizes App Review submission

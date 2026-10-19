@@ -1,5 +1,20 @@
 # Vote4U — Handoff
 
+## TestFlight preparation — October 18, 2026
+
+PR22 is merged as `92952d1`; production news endpoints return empty no-store responses.
+All PR checks passed, including the full mandatory native suite on CI iOS 26.5. The local
+iOS 27 bootstrap failure below remains historical evidence, not a pass.
+A clean merged-main signed archive and App Store export succeeded at version 1.0 build 3.
+See `docs/TESTFLIGHT_BUILD_3.md` for artifact provenance and current upload/device gates.
+No-news description/review notes and secondary category None were saved in App Store Connect.
+Build 1.0 (3) uploaded, processed successfully, and was selected/saved on the version page.
+Manual release remains selected; no review submission. Physical TestFlight checks remain.
+Both screenshot sizes are complete (four each). For Xcode 27 headless screenshot geometry
+failures, open the booted simulator in **Device Hub**; the old Simulator app is absent here.
+
+---
+
 ## Version 1 news removal — October 18, 2026
 
 Current candidate: `release/remove-news-for-v1`, based on merged PR21 (`d04e57f`).
