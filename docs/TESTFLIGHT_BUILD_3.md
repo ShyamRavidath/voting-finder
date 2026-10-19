@@ -37,7 +37,8 @@ Upload succeeded at 17:51:19 PDT on October 18, 2026. Xcode confirmed the packag
 processing. App Store Connect subsequently showed version 1.0 build 3 as Ready to Submit,
 expiring in 90 days, with no processing errors. No testers were invited at this point.
 All old four-tab screenshot references were removed from the listing. Four large and four
-medium three-tab screenshots passed visual review. The medium Map came from a fresh simulator.
+medium three-tab screenshots passed visual review and were uploaded. A final page reload
+verified 4/10 medium and 4/10 large, ordered results, Home, Map, official sources. The medium Map came from a fresh simulator.
 Repeated headless official-source captures lacked the status bar; these were rejected.
 Xcode 27 exposes the simulator through **Device Hub**, not a separate Simulator app here.
 Sol selected the booted iPhone 17 in Device Hub, restoring the correct layout/status bar;
