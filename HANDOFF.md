@@ -1,5 +1,45 @@
 # Vote4U — Handoff
 
+## Confirmed App Review submission — November 2, 2026, 22:54 PDT
+
+**Vote4U 1.0 (4) is Waiting for Review.** App Store Connect confirmed submission
+`91d5c0f0-0b9c-4a71-bb60-0730146525b2` for build4. This supersedes pending checkpoints below.
+Source: merged PR24 main `b067f7753e18f9f17d9f8f26ace89d04fd21657a`. Main/PR native CI passed
+on iOS26.5/iPhone17, local mandatory iOS17.5 runner passed80 tests; web CI passed.
+Both screenshot sizes are uploaded (four each) and processing cleared. App Privacy's four
+manifest-matching disclosures were published after explicit owner approval of Apple's
+accuracy/compliance/update attestation. Manual release remains selected; no public release.
+
+Next: await Apple review; respond to any feedback. Public release needs separate owner
+authorization after approval. The device evidence limits in the November2 report remain:
+build4 not physically tested, full accessibility/reminder delivery checks unconfirmed.
+Evidence: `docs/APP_REVIEW_BUILD_4.md` in `/private/tmp/vote4u-app-review-main`, branch
+`docs/app-review-build-4`. Preserve the unrelated original root-checkout changes.
+
+
+## Release status — November 2, 2026: build 4 prepared, privacy attestation pending
+
+PR24 merged at `b067f7753e18f9f17d9f8f26ace89d04fd21657a`. Build 1.0 (4) archived from
+clean merged main, signed/exported/uploaded, processed to Ready to Submit, selected and saved
+on App Store version 1.0. Owner accepted Apple's updated Program License Agreement.
+Main native CI41589407365 and PR native CI41589117019 passed on iOS26.5/iPhone17; main web
+CI41589407350 passed. Required local iOS17.5 runner passed80 tests. Both screenshot sets
+uploaded and verified after reload (four medium, four large, results/Home/Map/official links).
+
+**Not yet submitted.** Add for Review initially reported screenshot processing and missing
+App Privacy. Filled all four categories matching shipped manifest: precise/coarse location,
+search history, other diagnostics; linked, App Functionality, no tracking. Apple final Publish
+asks for agreement that responses are accurate, comply with law and will be updated. Asked
+owner for action-time confirmation; dialog is open. After approval, Publish, return to version,
+retry Add for Review, submit, and verify Waiting for Review. Existing submission authorization
+persists. Public release remains manual. No new retention verification has been claimed.
+
+Evidence worktree `/private/tmp/vote4u-app-review-main`, branch `docs/app-review-build-4`.
+See `docs/APP_REVIEW_BUILD_4.md` there for archive/hash/device limits and failures. Pending
+changes include six screenshot replacements and review-note cleanup in `ios/APP_STORE.md`.
+Commit/push evidence PR after final submission result. Root unrelated changes are preserved.
+
+
 ## Current handoff — November 2, 2026 (phone feedback and results layout)
 
 This checkpoint supersedes the older authorization and physical-device status below.
