@@ -1,5 +1,36 @@
 # Vote4U — Handoff
 
+## Current handoff — November 2, 2026 (phone feedback and results layout)
+
+This checkpoint supersedes the older authorization and physical-device status below.
+The owner explicitly requested App Review submission after addressing the results layout.
+Manual release remains selected; public release and owner-controlled code merges remain separate.
+
+### Owner observations on TestFlight 1.0 (3)
+
+Device: iPhone 15; iOS 26.6 (owner reported). Installation confirmed.
+- Owner retracted the initial GPS/location complaint after retesting with GPS enabled.
+- Official lookup links work.
+- Saved location survives fully closing the app, enabling airplane mode, and reopening.
+- Home Screen widget was successfully added. Widget tap-to-open was not separately confirmed.
+- Appearance seems to follow system light/dark mode; not a full accessibility pass.
+- Reminder permission/delivery, large text and VoiceOver are not confirmed by the owner's
+  tentative statements. Do not report “everything passed”. ZIP-only search with permission
+  denied/revoked was not unambiguously repeated after the owner's correction.
+- Actionable issue: results sit below a long warning and official-source links, making a
+  successful search look empty. Move cards first while keeping per-card trust labels.
+
+### Work in progress
+
+PR23 is merged; current base is main `9f3fd4d`. Isolated worktree:
+`/private/tmp/vote4u-results-first`, branch `fix/results-before-guidance`.
+The original root checkout and its unrelated edits remain untouched.
+Results now precede the map, detailed warning and official sources; empty-result official
+links and all card/save/share warning text remain. Candidate app/widget build number is 4.
+No replacement upload or App Review submission has occurred yet. Validation is in progress.
+
+---
+
 ## Current handoff — October 18, 2026 (TestFlight build 3)
 
 Read this checkpoint first. It supersedes older status, authorization and next-step claims.

@@ -17,19 +17,8 @@ struct PollingResultsView: View {
                     )
                 )
             } else {
-                resultSummary
-                OfficialSourcesView()
                 Text(result.isOfficial ? "Locations" : "Nearby buildings — not voting recommendations")
                     .font(.headline)
-                if result.locations.contains(where: { $0.lat != nil && $0.lng != nil }) {
-                    DisclosureGroup("View locations on map") {
-                        PollingMapView(locations: result.locations)
-                            .padding(.top, 10)
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .padding()
-                    .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
-                }
 
                 Text("Tap Save for offline to keep a location on Home.")
                     .font(.subheadline)
@@ -42,6 +31,19 @@ struct PollingResultsView: View {
                         onSave: { onSave(location) }
                     )
                 }
+
+                if result.locations.contains(where: { $0.lat != nil && $0.lng != nil }) {
+                    DisclosureGroup("View locations on map") {
+                        PollingMapView(locations: result.locations)
+                            .padding(.top, 10)
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .padding()
+                    .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
+                }
+
+                resultSummary
+                OfficialSourcesView()
             }
 
             if result.isEmpty {

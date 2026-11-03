@@ -124,6 +124,12 @@ final class AppSmokeUITests: XCTestCase {
         let library = app.staticTexts["Beverly Hills Public Library"]
         XCTAssertTrue(library.waitForExistence(timeout: 15), "the stubbed result never rendered")
 
+        XCTAssertTrue(library.isHittable, "the first result must be visible without scrolling past guidance")
+        let notice = app.staticTexts["polling.unofficialNotice"]
+        XCTAssertTrue(notice.exists)
+        XCTAssertLessThan(library.frame.minY, notice.frame.minY, "results must precede the detailed warning")
+        capture(app, name: "results-before-guidance")
+
         // The rule the codebase is built around must be visible, not just modelled.
         XCTAssertTrue(app.staticTexts["Not confirmed"].firstMatch.exists, "estimated results must be labelled")
         XCTAssertTrue(app.buttons["Directions"].firstMatch.exists)
