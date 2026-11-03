@@ -1,5 +1,51 @@
 # Vote4U — Handoff
 
+## Current handoff — November 2, 2026 (phone feedback and results layout)
+
+This checkpoint supersedes the older authorization and physical-device status below.
+The owner explicitly requested App Review submission after addressing the results layout.
+Manual release remains selected; public release and owner-controlled code merges remain separate.
+
+### Owner observations on TestFlight 1.0 (3)
+
+Device: iPhone 15; iOS 26.6 (owner reported). Installation confirmed.
+- Owner retracted the initial GPS/location complaint after retesting with GPS enabled.
+- Official lookup links work.
+- Saved location survives fully closing the app, enabling airplane mode, and reopening.
+- Home Screen widget was successfully added. Widget tap-to-open was not separately confirmed.
+- Appearance seems to follow system light/dark mode; not a full accessibility pass.
+- Reminder permission/delivery, large text and VoiceOver are not confirmed by the owner's
+  tentative statements. Do not report “everything passed”. ZIP-only search with permission
+  denied/revoked was not unambiguously repeated after the owner's correction.
+- Actionable issue: results sit below a long warning and official-source links, making a
+  successful search look empty. Move cards first while keeping per-card trust labels.
+
+### Work in progress
+
+PR23 is merged; current base is main `9f3fd4d`. Isolated worktree:
+`/private/tmp/vote4u-results-first`, branch `fix/results-before-guidance`.
+The original root checkout and its unrelated edits remain untouched.
+Results now precede the map, detailed warning and official sources; empty-result official
+links and all card/save/share warning text remain. Candidate app/widget build number is 4.
+PR24: https://github.com/ShyamRavidath/voting-finder/pull/24 . Owner merge required.
+Required iOS 17.5 runner passed all 80 tests (66 unit, 12 smoke, notification allow/deny),
+zero failures/skips, Release fixture exclusion and widget family checks. New UI assertion
+proves first-result visibility without scrolling and results above the detailed warning.
+Results and largest-text Save screenshots were inspected. Durable QA-only fixture image:
+`docs/ui-review/ios-qa-results-first.png`; never use this as App Store artwork.
+Changed Swift files pass strict formatting using the four-space configuration read from
+`origin/chore/swift-format`; main still has no `ios/.swift-format`. No broad formatting rewrite.
+Local log: `/private/tmp/vote4u-results-tests-175.log`; results under
+`/private/tmp/vote4u-results-tests-175/Logs/Test`. Server and client CI passed; modern native
+and browser CI were still running when this checkpoint was written.
+No replacement upload or App Review submission has occurred yet. Next: wait for PR24 CI,
+owner merge, archive/upload build 4 from merged main, verify processing, refresh affected
+store screenshots from real data, and submit for review under the November 2 authorization.
+Do not reinterpret this as public-release authorization. Remaining physical checks above
+remain unverified; do not invent results.
+
+---
+
 ## Current handoff — October 18, 2026 (TestFlight build 3)
 
 Read this checkpoint first. It supersedes older status, authorization and next-step claims.
