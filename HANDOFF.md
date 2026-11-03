@@ -27,7 +27,22 @@ PR23 is merged; current base is main `9f3fd4d`. Isolated worktree:
 The original root checkout and its unrelated edits remain untouched.
 Results now precede the map, detailed warning and official sources; empty-result official
 links and all card/save/share warning text remain. Candidate app/widget build number is 4.
-No replacement upload or App Review submission has occurred yet. Validation is in progress.
+PR24: https://github.com/ShyamRavidath/voting-finder/pull/24 . Owner merge required.
+Required iOS 17.5 runner passed all 80 tests (66 unit, 12 smoke, notification allow/deny),
+zero failures/skips, Release fixture exclusion and widget family checks. New UI assertion
+proves first-result visibility without scrolling and results above the detailed warning.
+Results and largest-text Save screenshots were inspected. Durable QA-only fixture image:
+`docs/ui-review/ios-qa-results-first.png`; never use this as App Store artwork.
+Changed Swift files pass strict formatting using the four-space configuration read from
+`origin/chore/swift-format`; main still has no `ios/.swift-format`. No broad formatting rewrite.
+Local log: `/private/tmp/vote4u-results-tests-175.log`; results under
+`/private/tmp/vote4u-results-tests-175/Logs/Test`. Server and client CI passed; modern native
+and browser CI were still running when this checkpoint was written.
+No replacement upload or App Review submission has occurred yet. Next: wait for PR24 CI,
+owner merge, archive/upload build 4 from merged main, verify processing, refresh affected
+store screenshots from real data, and submit for review under the November 2 authorization.
+Do not reinterpret this as public-release authorization. Remaining physical checks above
+remain unverified; do not invent results.
 
 ---
 
