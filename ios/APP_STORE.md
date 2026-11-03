@@ -133,8 +133,7 @@ Location is optional and used to resolve the user's ZIP code and find nearby
 locations, with distances measured from the rounded device position. Coordinates are rounded to roughly 110 metres
 before leaving the device. They are sent to our server and OpenStreetMap for
 ZIP resolution and nearby-building searches, are cached by Vercel and Neon, and
-can appear in Vercel request logs. Hosting and database retention details
-are being verified before submission. If the user declines the permission, ZIP code entry remains
+can appear in Vercel request logs. Data handling is described in the linked privacy policy. If the user declines the permission, ZIP code entry remains
 fully available — you can test the whole app without granting location.
 
 NOTIFICATIONS
@@ -160,9 +159,10 @@ and cache findings in OPUS-6/11/12 are fixed. This copy describes the keyless ca
 
 ## Privacy nutrition labels (App Store Connect → App Privacy)
 
-Proposed answer: **"Yes, we collect data from this app"**. The following are conservative
-draft disclosures for owner review, not approved or saved App Store Connect answers.
-Confirm actual host retention and linkage before finalizing them:
+**Published November 2, 2026 with explicit owner approval:** "Yes, we collect data from this app".
+The four disclosures below match the shipped privacy manifest. They conservatively declare
+identity linkage; publication does not establish a new host-retention audit. See
+`docs/APP_REVIEW_BUILD_4.md` for submission evidence:
 
 | Data type | Linked to identity | Used for tracking | Purpose |
 |---|---|---|---|
