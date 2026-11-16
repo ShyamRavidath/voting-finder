@@ -17,6 +17,10 @@ app.use(corsMiddleware);
 app.use('/api/internal/cache-maintenance', require('./routes/cacheMaintenance'));
 app.use('/api', rateLimit);
 
+app.get('/api/local-civic', (_, res) => {
+  res.set('Cache-Control', 'public, max-age=300').json(require('./data/local-civic.json'));
+});
+
 app.use('/api/news', require('./routes/news'));
 app.use('/api/polling', require('./routes/polling'));
 app.use('/api/elections', require('./routes/elections'));
