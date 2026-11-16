@@ -10,10 +10,10 @@ struct Vote4UApp: App {
 }
 
 enum Tab: Hashable {
-    case home, vote, map
+    case home, vote, map, local
 }
 
-// Version 1 focuses on native voting tools; aggregated news is not part of this release.
+// Independent voting tools and a source-backed local decisions pilot.
 struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var selection: Tab = .initialFromLaunchArguments
@@ -29,6 +29,9 @@ struct RootView: View {
             ElectoralMapView()
                 .tabItem { Label("Map", systemImage: "map") }
                 .tag(Tab.map)
+            LocalCivicView()
+                .tabItem { Label("Local", systemImage: "building.2") }
+                .tag(Tab.local)
         }
         .onChange(of: scenePhase, initial: true) {
             if scenePhase == .active {
@@ -50,6 +53,7 @@ extension Tab {
             switch name {
             case "vote": return .vote
             case "map": return .map
+            case "local": return .local
             default: return .home
             }
         #else

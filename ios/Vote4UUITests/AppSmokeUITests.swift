@@ -13,6 +13,92 @@ final class AppSmokeUITests: XCTestCase {
         return app
     }
 
+    func testLocalGuideRequiresCommunityAndPersistsFollowingOffline() {
+        let app = launch(["-startTab", "local", "-resetCivic", "-civicOffline"])
+        XCTAssertTrue(app.buttons["civic.choosePortland"].waitForExistence(timeout: 10))
+        app.buttons["civic.choosePortland"].tap()
+        let topic = app.buttons["civic.topic.street-safety"]
+        for _ in 0..<6 {
+            if topic.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(topic.isHittable)
+        topic.tap()
+        let follow = app.buttons["civic.follow"]
+        XCTAssertTrue(follow.waitForExistence(timeout: 5))
+        XCTAssertEqual(follow.label, "Follow topic")
+        follow.tap()
+        XCTAssertEqual(follow.label, "Unfollow topic")
+        capture(app, name: "local-authority-guide")
+        let decision = app.buttons["civic.related.2026-401"]
+        for _ in 0..<8 {
+            if decision.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(decision.isHittable)
+        decision.tap()
+        XCTAssertTrue(app.navigationBars["Before they vote"].waitForExistence(timeout: 5))
+        capture(app, name: "local-decision-proposal")
+        let calendar = app.buttons["civic.calendar"]
+        for _ in 0..<8 {
+            if calendar.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(calendar.exists)
+        if calendar.isEnabled {
+            calendar.tap()
+            let cancel = app.buttons["Cancel"].firstMatch
+            XCTAssertTrue(cancel.waitForExistence(timeout: 10))
+            capture(app, name: "local-calendar-editor")
+            cancel.tap()
+            let discard = app.buttons["Discard Changes"].firstMatch
+            if discard.waitForExistence(timeout: 3) { discard.tap() }
+            XCTAssertTrue(app.staticTexts["Calendar save cancelled."].waitForExistence(timeout: 5))
+            calendar.tap()
+            let add = app.buttons["Add"].firstMatch
+            XCTAssertTrue(add.waitForExistence(timeout: 10))
+            add.tap()
+            XCTAssertTrue(
+                app.staticTexts["Saved to Calendar. Recheck the official agenda for changes."].waitForExistence(
+                    timeout: 10))
+        }
+        app.terminate()
+        app.launchArguments = ["-startTab", "local", "-civicOffline"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Change community"].waitForExistence(timeout: 10))
+        for _ in 0..<6 {
+            if topic.isHittable { break }
+            app.swipeUp()
+        }
+        topic.tap()
+        XCTAssertTrue(follow.waitForExistence(timeout: 5))
+        XCTAssertEqual(follow.label, "Unfollow topic")
+        follow.tap()
+        XCTAssertEqual(follow.label, "Follow topic")
+    }
+
+    func testLocalGuideLargeTextAndUnmatchedConcern() {
+        let app = launch([
+            "-startTab", "local", "-resetCivic", "-civicOffline",
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+        ])
+        let choose = app.buttons["civic.choosePortland"]
+        XCTAssertTrue(choose.waitForExistence(timeout: 10))
+        choose.tap()
+        let search = app.textFields["civic.search"]
+        for _ in 0..<10 {
+            if search.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(search.isHittable)
+        search.tap()
+        search.typeText("unknown xyz")
+        let empty = app.staticTexts[
+            "No reviewed guide matches. Try another topic or use the official agency directory."]
+        XCTAssertTrue(empty.waitForExistence(timeout: 5))
+        capture(app, name: "local-large-text-empty-search")
+    }
+
     func testLocationDenialStillAllowsZIPSearch() {
         let app = launch(["-startTab", "vote", "-stubPolling", "estimated"])
         app.buttons["Use my location"].tap()
@@ -70,11 +156,11 @@ final class AppSmokeUITests: XCTestCase {
 
     func testVotingTabsExistInOrderWithoutNews() {
         let app = launch(["-startTab", "home"])
-        for tab in ["Home", "Vote", "Map"] {
+        for tab in ["Home", "Vote", "Map", "Local"] {
             XCTAssertTrue(app.tabBars.buttons[tab].waitForExistence(timeout: 10), "missing \(tab) tab")
         }
         XCTAssertEqual(
-            app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["Home", "Vote", "Map"])
+            app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["Home", "Vote", "Map", "Local"])
         XCTAssertFalse(app.tabBars.buttons["News"].exists)
     }
 

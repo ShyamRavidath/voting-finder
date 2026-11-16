@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "publishedAt": "2026-11-16T03:00:00Z",
+  "communityID": "portland-or",
+  "communityName": "Portland, Oregon",
+  "coverage": "Limited pilot: three concern guides and selected City Council items. This is not a complete agenda or an address-based jurisdiction lookup.",
+  "topics": [
+    {
+      "id": "street-safety",
+      "title": "A crossing or street feels unsafe",
+      "keywords": "crosswalk traffic sidewalk bike road pedestrian",
+      "body": "Portland Bureau of Transportation (PBOT)",
+      "authority": "PBOT reviews non-urgent street-safety concerns. Some roads belong to ODOT or Multnomah County; ask the agency to confirm ownership for the exact location.",
+      "process": "Submit the location and concern through PBOT’s safety form. Staff review engineering standards and available funding. Larger projects can require separate Council authorization.",
+      "action": "Report a non-urgent concern to PBOT",
+      "actionURL": "https://www.portland.gov/transportation/823-safe",
+      "checkedAt": "2026-11-16T03:00:00Z",
+      "reviewBy": "2026-12-15T03:00:00Z",
+      "sources": [
+        {
+          "title": "PBOT safety requests",
+          "url": "https://www.portland.gov/transportation/823-safe"
+        },
+        {
+          "title": "Street ownership and safety projects",
+          "url": "https://www.portland.gov/transportation/vision-zero/high-crash-network-streets-and-intersections"
+        }
+      ]
+    },
+    {
+      "id": "housing",
+      "title": "How does the city support affordable housing?",
+      "keywords": "rent affordable nonprofit tax exemption housing",
+      "body": "Portland Housing Bureau and City Council",
+      "authority": "The Housing Bureau administers the nonprofit low-income housing tax exemption. City Council decides changes to the city code that governs it.",
+      "process": "The bureau prepares a proposal; a Council committee can review it and refer it to the full Council. A committee recommendation is not final approval.",
+      "action": "See Council participation options",
+      "actionURL": "https://www.portland.gov/auditor/council-clerk/engage-council",
+      "checkedAt": "2026-11-16T03:00:00Z",
+      "reviewBy": "2026-12-15T03:00:00Z",
+      "sources": [
+        {
+          "title": "Original ordinance • 2026-346",
+          "url": "https://www.portland.gov/council/documents/ordinance/nplte-code-ordinance"
+        },
+        {
+          "title": "Council participation instructions",
+          "url": "https://www.portland.gov/auditor/council-clerk/engage-council"
+        }
+      ]
+    },
+    {
+      "id": "transit",
+      "title": "My TriMet bus service is changing",
+      "keywords": "bus transit route cuts frequency trimet train max",
+      "body": "TriMet staff and Board of Directors",
+      "authority": "TriMet operates regional transit. Its Board sets agency policy; its general manager oversees operations under that policy. Portland City Council does not run TriMet.",
+      "process": "Use TriMet’s public meeting materials to identify the specific proposal and decision maker. Board meetings include public input; confirm the current sign-up instructions before participating.",
+      "action": "Open TriMet board meetings",
+      "actionURL": "https://trimet.org/meetings/board/",
+      "checkedAt": "2026-11-16T03:00:00Z",
+      "reviewBy": "2026-12-15T03:00:00Z",
+      "sources": [
+        {
+          "title": "TriMet governance",
+          "url": "https://trimet.org/about/governance.htm"
+        },
+        {
+          "title": "TriMet Board rules",
+          "url": "https://go.trimet.org/pdfs/code/TriMet_Code_Chapter_2.pdf"
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "id": "2026-401",
+      "topicID": "street-safety",
+      "title": "Property rights for Stark & Washington safety work",
+      "body": "Portland City Council",
+      "proposal": "Allow the city to acquire property rights needed for planned safety improvements along SE Stark and SE Washington.",
+      "change": "The proposal would authorize acquisition, including eminent-domain proceedings if needed. It does not establish that construction is finished. The impact statement says the planned project cannot proceed without the necessary rights.",
+      "meetingAt": "2026-11-19T22:00:00Z",
+      "timeZone": "America/Los_Angeles",
+      "meetingLabel": "Council session starts at 2 p.m. Pacific; item time may change.",
+      "commentDeadline": "2026-11-19T21:00:00Z",
+      "deadlineLabel": "Virtual testimony registration closes one hour before the session. This is not the written-comment deadline.",
+      "participation": "Check whether testimony is available for this item on the official agenda. In-person sign-up is before the item is heard. Written testimony is generally accepted before Council votes; check for item-specific changes.",
+      "status": "scheduled",
+      "outcome": null,
+      "checkedAt": "2026-11-16T03:00:00Z",
+      "reviewBy": "2026-11-20T03:00:00Z",
+      "sources": [
+        {
+          "title": "Original ordinance • 2026-401",
+          "url": "https://www.portland.gov/council/documents/ordinance/stark-washington-safety-project"
+        },
+        {
+          "title": "Council agenda • November 18–19",
+          "url": "https://www.portland.gov/council/agenda/2026/11/18"
+        },
+        {
+          "title": "Council participation instructions",
+          "url": "https://www.portland.gov/auditor/council-clerk/engage-council"
+        }
+      ]
+    },
+    {
+      "id": "2026-346",
+      "topicID": "housing",
+      "title": "Extend a nonprofit housing tax exemption",
+      "body": "Portland City Council",
+      "proposal": "Update the city code for the nonprofit low-income housing property tax exemption.",
+      "change": "The current city code lists a January 1, 2027 sunset. The proposal aligns it with July 1, 2033 and revises program procedures. Eligibility is not determined by this app.",
+      "meetingAt": "2026-11-19T22:00:00Z",
+      "timeZone": "America/Los_Angeles",
+      "meetingLabel": "Council session starts at 2 p.m. Pacific; item time may change.",
+      "commentDeadline": "2026-11-19T21:00:00Z",
+      "deadlineLabel": "Virtual testimony registration closes one hour before the session. This is not the written-comment deadline.",
+      "participation": "Check whether testimony is available for this item on the official agenda. In-person sign-up is before the item is heard. Written testimony is generally accepted before Council votes; check for item-specific changes.",
+      "status": "scheduled",
+      "outcome": null,
+      "checkedAt": "2026-11-16T03:00:00Z",
+      "reviewBy": "2026-11-20T03:00:00Z",
+      "sources": [
+        {
+          "title": "Original ordinance • 2026-346",
+          "url": "https://www.portland.gov/council/documents/ordinance/nplte-code-ordinance"
+        },
+        {
+          "title": "Council agenda • November 18–19",
+          "url": "https://www.portland.gov/council/agenda/2026/11/18"
+        },
+        {
+          "title": "Council participation instructions",
+          "url": "https://www.portland.gov/auditor/council-clerk/engage-council"
+        }
+      ]
+    }
+  ]
+}

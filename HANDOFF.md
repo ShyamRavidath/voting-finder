@@ -1,5 +1,84 @@
 # Vote4U — Handoff
 
+## Current handoff — November 15, 2026: first two civic features implemented
+
+The owner requested implementation of “Who can actually fix this?” and “Before they vote.”
+Work is on `feat/local-civic-decisions` in `/private/tmp/vote4u-local-civic`, created from freshly
+fetched `origin/main` (`b067f77`). The root docs checkout and concurrent redesign work were
+preserved. Portland/native-iOS-first were stated implementation assumptions after optional
+scope questions received no answer; they are not an owner-selected nationwide roadmap.
+
+### What is implemented
+
+- A native **Local** tab, with explicit community choice and three sourced concern guides:
+  street safety, nonprofit affordable-housing tax exemptions, and TriMet service.
+- Responsibility → process → legitimate action → related decisions. No ZIP/GPS inference.
+- Local topic following; upcoming/history and following filters; proposal/change summaries;
+  original documents, review timestamps, participation instructions and separately labeled
+  virtual sign-up deadlines. The initial two real items are Portland 2026-401 and 2026-346.
+- System Calendar editor with save/cancel feedback. Stale, past, cancelled and postponed
+  records cannot produce events. Calendar copies explicitly do not auto-update.
+- Sourced outcome support, without inventing outcomes or treating recommendations as approval.
+- `GET /api/local-civic`, a manually reviewed catalog, bundled offline fallback, last-good
+  persistence, malformed/future/rollback rejection, and source-host/review-window validation.
+  Details resolve the latest catalog record, so an update can invalidate an open calendar editor.
+
+Following is an **in-app update feed, not background notifications**. Coverage is Portland-only
+and deliberately incomplete. No new paid service, third-party dependency, account, location
+collection or request logging. Google Civic and news stay disabled. No App Store release change.
+The endpoint is not on production until the PR is merged/deployed; bundled use works before that.
+
+### Files and maintenance
+
+`ios/Vote4U/Features/Local/`, `ios/Vote4U/Resources/local-civic.json`, `Vote4UApp.swift`,
+`CivicCatalogTests.swift`, `AppSmokeUITests.swift`, `server/app.js`,
+`server/data/local-civic.json`, server API/catalog tests, and `docs/LOCAL_CIVIC_PILOT.md`.
+The latter records the official-source audit, coverage limits, review cadence, update schema,
+privacy boundaries and two inspected simulator screenshots.
+
+The canonical JSON lives in `server/data/`; copy it to the native resource after review.
+Editorial maintenance is **not yet assigned**. Review near-term agendas every business day and
+on meeting day, and authority guides monthly. Never advance review dates without reopening
+sources. The app caps decision review windows at seven days and visibly degrades after expiry.
+Recheck these dated items before any future release. Broader jurisdiction coverage and push
+alerts are not implemented. Physical-device Calendar/account sync, VoiceOver and full dark-mode
+coverage were not verified; this is not a release-readiness claim.
+
+### Verification and actual failures
+
+- Final required `scripts/test-ios.sh`: **88 tests, zero failures/skips** on iOS 17.5 /
+  iPhone 15 Pro (72 unit, 14 smoke, notification allow + deny). Release stub-string and widget
+  device-family checks passed. Final process exit 0.
+- Server: **55 tests passed**, zero failures/skips, including API delivery and byte-identical
+  native/server data. Tests stub upstreams. No web UI changed; web e2e was not rerun.
+- Changed Swift files pass strict `xcrun swift-format` with an explicit four-space config;
+  `git diff --check` passes. No repository-wide reformat.
+- Actual UI evidence: explicit community choice, unmatched concern at largest Dynamic Type,
+  follow/unfollow persistence offline, navigation, Calendar cancellation with system discard
+  confirmation, and **Add → saved confirmation** all passed. Final screenshots inspected.
+- An intermediate strengthened Calendar test failed because it did not handle the system's
+  **Discard Changes** confirmation. The accessibility log showed that exact button; the test
+  now handles it and still asserts cancellation and successful save. No failure was skipped.
+- That failed run stalled in post-test diagnostics. SIGINT did not stop collection; SIGTERM
+  stopped only its identified xcodebuild process before the next sequential full runner.
+- Sandboxing initially blocked Git metadata, Simulator access, localhost test listeners and
+  xcresulttool report-cache writes. Scoped approved escalations resolved these; no auto-review
+  rejection remains. A guessed old TriMet board URL returned 404 during source research; the
+  official governance/meeting URLs replaced it.
+
+Final local receipts: `/private/tmp/vote4u-local-verified-run.log`,
+`/private/tmp/vote4u-local-server-tests.log`, DerivedData `/private/tmp/vote4u-local-tests-175`.
+The final main result bundle is `Test-Vote4U-2026.11.15_19-22-57--0800.xcresult` under its Logs/Test;
+allow and deny are separate bundles. Temporary artifacts may not survive a future session.
+
+### Next step
+
+Review the feature PR, pilot scope and source-maintenance plan. The owner controls merge and
+release. Any expansion should add reviewed jurisdiction data, not infer authority from ZIP.
+Historical release and failure records below remain historical; build 4 was already released.
+
+---
+
 ## Current handoff — November 2, 2026 (phone feedback and results layout)
 
 This checkpoint supersedes the older authorization and physical-device status below.

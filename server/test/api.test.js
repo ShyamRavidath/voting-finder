@@ -385,3 +385,13 @@ describe('building evidence', () => {
     }
   });
 });
+
+test('local civic feed serves reviewed public records without upstream calls', async () => {
+  const response = await fetch(`${base}/api/local-civic`);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('cache-control'), 'public, max-age=300');
+  const body = await response.json();
+  assert.equal(body.communityID, 'portland-or');
+  assert.ok(body.topics.length > 0);
+  assert.ok(body.decisions.every(item => item.sources.length > 0));
+});
