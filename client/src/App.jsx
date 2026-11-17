@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { SiteHeader, TabBar } from './components/NavBar';
 import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './pages/HomePage';
@@ -73,6 +74,7 @@ export default function App() {
         </footer>
         <TabBar />
       </div>
+      <Analytics />
     </BrowserRouter>
   );
 }
