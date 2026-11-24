@@ -60,7 +60,10 @@ final class AppSmokeUITests: XCTestCase {
         // Wait for the editor to finish dismissing before presenting another one.
         XCTAssertTrue(cancel.waitForNonExistence(timeout: 5))
         calendar.tap()
-        let add = app.buttons["Add"].firstMatch
+        // Newer Calendar uses Done for the same save action; scope it to the event toolbar.
+        let add = app.navigationBars["New Event"].buttons.matching(
+            NSPredicate(format: "label == %@ OR label == %@", "Add", "Done")
+        ).firstMatch
         XCTAssertTrue(add.waitForExistence(timeout: 30), app.debugDescription)
         add.tap()
         XCTAssertTrue(app.staticTexts["Saved to Calendar."].waitForExistence(timeout: 10))
@@ -165,7 +168,10 @@ final class AppSmokeUITests: XCTestCase {
     }
 
     private func capture(_ app: XCUIApplication, name: String) {
-        let attachment = XCTAttachment(screenshot: app.screenshot())
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 5))
+        // Capture the settled compositor frame, including system bars, rather than app-layer snapshots.
+        Thread.sleep(forTimeInterval: 0.75)
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)

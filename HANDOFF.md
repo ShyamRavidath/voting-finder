@@ -1,3 +1,5 @@
+# Vote4U — Handoff
+
 ## Current handoff — November 24, 2026: Local overhaul after phone feedback
 
 The owner tested build 5 and found the Local pilot too limited: three searchable examples,
@@ -34,8 +36,9 @@ Deployment/QA boundary: owner merge is still required to deploy `/api/local-feed
 the device build uses its dated bundle and honestly reports refresh failure. No App Store upload,
 merge or public release is authorized here. Simulator success is not physical-device QA.
 
-
-# Vote4U — Handoff
+Review PR: https://github.com/ShyamRavidath/voting-finder/pull/28 (draft).
+Implementation commit: `d427520`. Final Calendar timing check, screen recapture and signed build
+are in progress; see the worktree validation ledger for current evidence.
 
 ## Current handoff — November 15, 2026: first two civic features implemented
 
