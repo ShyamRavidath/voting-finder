@@ -5,11 +5,11 @@ struct HomeVotingPlanCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Make your voting plan", systemImage: "list.clipboard.fill")
+            Label("Where will you vote?", systemImage: "list.clipboard.fill")
                 .font(.title3.bold())
 
             Text(
-                "Search by ZIP, confirm with an official source, then tap Save for offline on a result. Your saved location will appear here."
+                "Search your ZIP code, then confirm your assigned location with the election office. You can save a result here for offline use."
             )
             .font(.subheadline)
             .foregroundStyle(Vote4UTheme.supportingText)
@@ -23,6 +23,6 @@ struct HomeVotingPlanCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
     }
 }

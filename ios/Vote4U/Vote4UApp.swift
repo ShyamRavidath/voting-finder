@@ -33,6 +33,7 @@ struct RootView: View {
                 .tabItem { Label("Local", systemImage: "building.2") }
                 .tag(Tab.local)
         }
+        .tint(Color("AccentColor"))
         .onChange(of: scenePhase, initial: true) {
             if scenePhase == .active {
                 ReminderPreferences.shared.reconcile()

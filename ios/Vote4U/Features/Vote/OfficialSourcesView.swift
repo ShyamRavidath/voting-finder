@@ -9,7 +9,7 @@ struct OfficialSourcesView: View {
 
             Text("Confirm your polling place, registration, and voting rules with an official source.")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Vote4UTheme.supportingText)
 
             VStack(spacing: 0) {
                 ForEach(BundledData.officialLinks) { link in
@@ -23,18 +23,18 @@ struct OfficialSourcesView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(link.label)
                                         .font(.subheadline.bold())
-                                        .foregroundStyle(.primary)
+                                        .foregroundStyle(Color.primary)
                                         .multilineTextAlignment(.leading)
                                     Text(link.source)
                                         .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(Vote4UTheme.supportingText)
                                 }
 
                                 Spacer(minLength: 8)
 
                                 Image(systemName: "arrow.up.right")
                                     .font(.caption.bold())
-                                    .foregroundStyle(.tertiary)
+                                    .foregroundStyle(Color.accentColor)
                                     .accessibilityHidden(true)
                             }
                             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -52,7 +52,7 @@ struct OfficialSourcesView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
     }
 }
 

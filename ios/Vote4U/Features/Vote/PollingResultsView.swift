@@ -39,7 +39,9 @@ struct PollingResultsView: View {
                     }
                     .font(.subheadline.weight(.semibold))
                     .padding()
-                    .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
+                    .background(
+                        Color(.secondarySystemGroupedBackground),
+                        in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
                 }
 
                 resultSummary

@@ -4,7 +4,31 @@ import SwiftUI
 
 /// iOS 17's system editor lets the person save or cancel without granting calendar access.
 struct CivicCalendarEditor: UIViewControllerRepresentable {
-    let decision: CivicDecision
+    let title: String
+    let start: Date
+    let end: Date
+    let sourceURL: URL?
+    let notes: String
+
+    init(decision: CivicDecision, onComplete: @escaping (Bool) -> Void) {
+        title = decision.title
+        start = decision.meetingAt
+        end = decision.meetingAt
+        sourceURL = decision.sources.first?.url
+        notes =
+            "Session start; individual item times may vary. Calendar copies do not update automatically.\n\n\(decision.proposal)"
+        self.onComplete = onComplete
+    }
+
+    init(meeting: CivicMeeting, onComplete: @escaping (Bool) -> Void) {
+        title = meeting.shortTitle
+        start = meeting.startsAt
+        end = meeting.endsAt ?? meeting.startsAt
+        sourceURL = meeting.url
+        notes =
+            "Confirm the official meeting page before attending. Calendar copies do not update automatically.\n\n\(meeting.url.absoluteString)"
+        self.onComplete = onComplete
+    }
     let onComplete: (Bool) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(onComplete: onComplete) }
@@ -15,14 +39,12 @@ struct CivicCalendarEditor: UIViewControllerRepresentable {
         controller.eventStore = store
         controller.editViewDelegate = context.coordinator
         let event = EKEvent(eventStore: store)
-        event.title = "Portland Council session: \(decision.title)"
-        event.startDate = decision.meetingAt
-        // A point-in-time reminder of the session start; the source does not fix the item end.
-        event.endDate = decision.meetingAt
-        event.timeZone = TimeZone(identifier: decision.timeZone)
-        event.url = decision.sources.first?.url
-        event.notes =
-            "Session start, not a guaranteed item time. Check the official agenda before attending. Calendar copies do not update automatically.\n\n\(decision.proposal)\n\nhttps://www.portland.gov/council/agenda"
+        event.title = title
+        event.startDate = start
+        event.endDate = end
+        event.timeZone = TimeZone(identifier: "America/Los_Angeles")
+        event.url = sourceURL
+        event.notes = notes
         controller.event = event
         return controller
     }

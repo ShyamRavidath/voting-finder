@@ -12,9 +12,9 @@ struct VoteSearchForm: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Start with your ZIP code")
+            Text("Enter your ZIP code")
                 .font(.headline)
-            Text("Location access is optional. Always confirm your assigned polling place with an official source.")
+            Text("Find nearby results, then confirm your assigned polling place with your election office.")
                 .font(.subheadline)
                 .foregroundStyle(Vote4UTheme.supportingText)
 
@@ -38,7 +38,7 @@ struct VoteSearchForm: View {
             .disabled(isBusy)
         }
         .padding(18)
-        .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()

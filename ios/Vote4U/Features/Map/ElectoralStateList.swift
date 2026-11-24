@@ -53,6 +53,6 @@ struct ElectoralStateList: View {
                 }
             }
         }
-        .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
     }
 }

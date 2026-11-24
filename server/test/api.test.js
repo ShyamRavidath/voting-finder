@@ -107,6 +107,16 @@ describe('civicService.parseLocations', () => {
 });
 
 describe('API routes', () => {
+  test('GET /api/local-feed returns dated offline evidence when the city is unavailable', async () => {
+    const response = await fetch(`${base}/api/local-feed`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'public, max-age=60, s-maxage=900, stale-while-revalidate=3600');
+    const feed = await response.json();
+    assert.equal(feed.schemaVersion, 1);
+    assert.equal(feed.services.source, 'saved');
+    assert.ok(feed.services.items.some(item => item.id === '/police/drug-complaint'));
+  });
+
   test('GET /api/health', async () => {
     const res = await fetch(`${base}/api/health`);
     assert.equal(res.status, 200);

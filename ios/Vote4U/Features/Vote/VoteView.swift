@@ -32,8 +32,8 @@ struct VoteView: View {
                 Vote4UTheme.pageBackground
                     .ignoresSafeArea()
             }
-            .navigationTitle("Find a place to vote")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Where to vote")
+            .navigationBarTitleDisplayMode(.large)
             .task { await searchFromLaunchArguments() }
         }
     }

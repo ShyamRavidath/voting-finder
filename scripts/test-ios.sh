@@ -86,6 +86,8 @@ xcodebuild build-for-testing -project "$PROJECT" -scheme Vote4U \
   }
 check_widget_device_family "$APP_PATH"
 
+# Optional local override skips slow sysdiagnose collection only; assertions, screenshots,
+# xcresult evidence, permission isolation and Release checks still run unchanged.
 run() {
   local label="$1" udid="$2" status log
   shift 2
@@ -94,7 +96,7 @@ run() {
   echo ""
   echo "▸ $label"
   if xcodebuild test -project "$PROJECT" -scheme Vote4U -destination "id=$udid" \
-       -derivedDataPath "$DERIVED" "$@" >"$log" 2>&1; then
+       -derivedDataPath "$DERIVED" -collect-test-diagnostics "${TEST_DIAGNOSTICS:-on-failure}" "$@" >"$log" 2>&1; then
     status=0
   else
     status=$?
@@ -114,8 +116,13 @@ MAIN="$FRESH_UDID"
 run "Notification permission — allow" "$MAIN" \
   -only-testing:Vote4UUITests/ReminderPermissionUITests/testAllowingNotificationsLeavesTheToggleOn
 
+# Optional focused UI rerun still includes all units, both fresh permission paths and Release.
+# With UI_TEST_TARGET set, report focused evidence rather than a full smoke-suite pass.
+if [ -n "${UI_TEST_TARGET:-}" ]; then
+  echo "  Focused UI target: $UI_TEST_TARGET"
+fi
 run "Unit tests + UI smoke tests" "$MAIN" \
-  -only-testing:Vote4UTests -only-testing:Vote4UUITests/AppSmokeUITests
+  -only-testing:Vote4UTests "-only-testing:${UI_TEST_TARGET:-Vote4UUITests/AppSmokeUITests}"
 
 xcrun simctl shutdown "$MAIN" >/dev/null 2>&1 || true
 
@@ -136,7 +143,9 @@ if xcodebuild build -project "$PROJECT" -scheme Vote4U -configuration Release \
      -derivedDataPath "$RELEASE_DERIVED" >"$DERIVED/release-build.log" 2>&1; then
   BINARY="$RELEASE_DERIVED/Build/Products/Release-iphonesimulator/Vote4U.app/Vote4U"
   check_widget_device_family "$RELEASE_DERIVED/Build/Products/Release-iphonesimulator/Vote4U.app"
-  if strings "$BINARY" | grep -qE "Roxbury Community Center|-stubPolling|-startTab"; then
+  # Avoid grep -q closing a pipe early and hiding a match under pipefail.
+  strings "$BINARY" > "$DERIVED/release-strings.txt"
+  if grep -qE "Roxbury Community Center|-stubPolling|-startTab|DEBUG Civic Calendar Fixture|-civicCalendarTest|-civicDarkAppearance" "$DERIVED/release-strings.txt"; then
     echo "✗ DEBUG-only strings survived into the Release binary" >&2
     exit 1
   fi

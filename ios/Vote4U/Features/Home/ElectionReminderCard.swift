@@ -31,7 +31,7 @@ struct ElectionReminderCard: View {
             }
         }
         .padding()
-        .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
         .sensoryFeedback(.selection, trigger: isEnabled)
     }
 
@@ -40,6 +40,6 @@ struct ElectionReminderCard: View {
     }
 
     private var reminderMessage: String {
-        "One reminder a week before Election Day and another that morning—scheduled only on this device."
+        "A reminder one week before Election Day and another that morning. Scheduled on this device."
     }
 }

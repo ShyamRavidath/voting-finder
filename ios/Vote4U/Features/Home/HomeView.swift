@@ -29,6 +29,27 @@ struct HomeView: View {
                         HomeVotingPlanCard(onFindPollingPlace: openVoteTab)
                     }
 
+                    Button {
+                        selection = .local
+                    } label: {
+                        HStack(spacing: 16) {
+                            Image(systemName: "building.2").font(.title2).foregroundStyle(.tint)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("What’s happening in Portland?").font(.headline).foregroundStyle(.primary)
+                                Text("City services and public meetings").font(.subheadline).foregroundStyle(
+                                    Vote4UTheme.supportingText)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(
+                                Vote4UTheme.supportingText)
+                        }
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("home.local")
+
                     ElectionReminderCard(
                         isEnabled: reminderBinding,
                         permissionDenied: reminders.permissionDenied

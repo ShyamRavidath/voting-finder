@@ -3,6 +3,7 @@ import SwiftUI
 struct CivicTopicView: View {
     let topicID: String
     let store: CivicStore
+    var feedStore: CivicFeedStore? = nil
 
     var body: some View {
         Group {
@@ -28,35 +29,38 @@ struct CivicTopicView: View {
                         .footnote)
                     if context.date >= topic.reviewBy || context.date < topic.checkedAt {
                         Label(
-                            "This guide needs a source recheck. Confirm responsibility with the agency.",
+                            "This guide may be out of date. Open the agency link for current details.",
                             systemImage: "exclamationmark.triangle")
                     }
                     Button(
-                        store.followed.contains(topic.id) ? "Unfollow topic" : "Follow topic",
+                        store.followed.contains(topic.id) ? "Remove saved guide" : "Save guide",
                         systemImage: store.followed.contains(topic.id) ? "bookmark.fill" : "bookmark"
                     ) {
                         store.toggleFollow(topic.id)
                     }
                     .accessibilityIdentifier("civic.follow")
-                    Text("Following collects reviewed decisions in your local feed. No background alerts.").font(
+                    Text("Find saved guides in Following. No notifications are sent.").font(
                         .footnote)
                 }
                 Section("Who is responsible?") {
                     Text(topic.body).font(.headline)
                     Text(topic.authority)
                 }
-                Section("How a decision happens") { Text(topic.process) }
-                Section("Your next step") { Link(topic.action, destination: topic.actionURL) }
+                Section("How it works") { Text(topic.process) }
+                Section("Contact the agency") { Link(topic.action, destination: topic.actionURL) }
                 Section("Related decisions") {
                     let decisions = store.catalog?.decisions.filter { $0.topicID == topic.id } ?? []
                     if decisions.isEmpty {
                         Text(
-                            "No reviewed agenda item is available for this topic. Check the agency’s meeting page for current opportunities."
+                            "No related item in this feed. The agency link has its current meetings."
                         )
                     }
                     ForEach(decisions) { decision in
-                        NavigationLink(decision.title) { CivicDecisionView(decisionID: decision.id, store: store) }
-                            .accessibilityIdentifier("civic.related.\(decision.id)")
+                        if let action = feedStore?.feed?.actions.items.first(where: { $0.id == decision.id }) {
+                            NavigationLink(action.displayTitle) { CivicActionView(action: action) }
+                        } else {
+                            Link(decision.title, destination: decision.sources.first!.url)
+                        }
                     }
                 }
                 CivicSourcesView(

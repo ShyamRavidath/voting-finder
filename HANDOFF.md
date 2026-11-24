@@ -1,3 +1,40 @@
+## Current handoff — November 24, 2026: Local overhaul after phone feedback
+
+The owner tested build 5 and found the Local pilot too limited: three searchable examples,
+stale agenda items, buried official links, unclear refresh/following and generic copy/design.
+They supplied https://github.com/blader/humanizer and chose “less boring, but not too complicated.”
+The owner may unplug the iPhone while simulator/code work continues.
+
+Implementation is isolated at `/private/tmp/vote4u-local-overhaul-20261124`, branch
+`feat/local-civic-overhaul`, based on `origin/main` at `d5f1b6d`. The dirty documentation checkout
+and `/Users/shyamravidath/voting-finder-redesign` are preserved.
+
+- Local now has Get help, Meetings and Following. The official Portland directory supplies
+  567 services; “drugs” finds the actual drug complaint page. Search stays on-device.
+- `/api/local-feed` imports the city directory, upcoming/recent past public meetings and recorded
+  Council actions. Current snapshot: 567 services, 35 meetings, six actions. Fixed official paths,
+  bounded HTML parsing, per-collection cache/fallback dates, no user query/location logging.
+  On new agenda publication, actual previous agenda links preserve recorded outcomes. A second
+  reading is never labeled final approval.
+- Meeting details expose official links, participation guidance, calendar saving when fresh,
+  records and available recordings. Following persists locally, survives relaunch/feed rollover
+  and updates during foreground refresh. It is not push notifications. The three old guides
+  remain secondary; old `/api/local-civic` clients remain supported.
+- Native Home/Vote/Map receive matching clearer copy, semantic surfaces and stronger hierarchy.
+  Existing light/dark accent assets are explicitly resolved for text/control tint; prominent
+  filled controls retain their contrast-safe fixed blue. Polling truth labels and ZIP fallback
+  remain unchanged. No separate web redesign is included.
+
+Implementation/data notes: `docs/local-overhaul/{BRIEF,DATA,VALIDATION,REVIEW}.md`.
+Native design extraction: `ios/DESIGN.md`, `ios/.impeccable/design.json`.
+Update both snapshots with `node scripts/update-local-feed.js`; the import must fully succeed.
+Use `scripts/test-ios.sh`, not a replacement test command.
+
+Deployment/QA boundary: owner merge is still required to deploy `/api/local-feed`. Until then,
+the device build uses its dated bundle and honestly reports refresh failure. No App Store upload,
+merge or public release is authorized here. Simulator success is not physical-device QA.
+
+
 # Vote4U — Handoff
 
 ## Current handoff — November 15, 2026: first two civic features implemented

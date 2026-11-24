@@ -7,7 +7,7 @@ final class CivicStore {
     private(set) var followed: Set<String>
     private(set) var communitySelected: Bool
     private(set) var refreshing = false
-    private(set) var message = "Bundled guide. Pull to refresh for reviewed updates."
+    private(set) var message = "Saved guides. Pull down to check for updates."
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let fetch: () async throws -> Data
 
@@ -31,7 +31,7 @@ final class CivicStore {
             cached.publishedAt <= Date(), cached.publishedAt >= (catalog?.publishedAt ?? .distantPast)
         {
             catalog = cached
-            message = "Saved guide. Pull to refresh for reviewed updates."
+            message = "Saved guides. Pull down to check for updates."
         }
     }
 
@@ -63,12 +63,12 @@ final class CivicStore {
             }
             catalog = updated
             defaults.set(data, forKey: "civic.catalog")
-            message = "Reviewed guide downloaded. Check each record’s source date."
+            message = "Guides updated."
         } catch {
             message =
                 catalog == nil
-                ? "The guide is unavailable. Try again or open the official Council agenda."
-                : "Couldn’t refresh. Showing the saved guide; dates and decisions may have changed."
+                ? "Couldn’t load the guides. Try again or open the city website."
+                : "Couldn’t refresh. Showing saved guides."
         }
     }
 
