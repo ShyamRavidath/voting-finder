@@ -85,7 +85,7 @@ Native semantic colors have no single normative CSS color value. Use these UIKit
 
 **The Two Blue Roles Rule.** Use the adaptive asset tint for inline actions and the fixed action blue for prominent filled controls. Do not substitute one role for the other across the app.
 
-The initial review found insufficient dark-mode caption-link contrast under a fixed tint. The explicit adaptive root tint is implemented; recapture and review acceptance are pending at this extraction. The failed contrast is not a system token or accepted exception.
+The initial review found insufficient dark-mode caption-link contrast under a fixed tint. The explicit adaptive root tint is implemented. The final dark recapture resolves the contrast finding at 6.69:1; the inline scoring pass and its limits are recorded in REVIEW.md. The failed contrast is not a system token or accepted exception.
 
 ## Typography
 

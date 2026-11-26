@@ -37,8 +37,17 @@ the device build uses its dated bundle and honestly reports refresh failure. No 
 merge or public release is authorized here. Simulator success is not physical-device QA.
 
 Review PR: https://github.com/ShyamRavidath/voting-finder/pull/28 (draft).
-Implementation commit: `d427520`. Final Calendar timing check, screen recapture and signed build
-are in progress; see the worktree validation ledger for current evidence.
+Latest code: `235e071` (November 25). Full iOS 17.5 runner passed 96 tests on `bcd5922`;
+64 backend tests and live official import passed. Signed **1.0 (6)** is ready at
+`/private/tmp/vote4u-device-overhaul-20261124/Build/Products/Release-iphoneos/Vote4U.app`,
+not installed or uploaded. Subsequent code only moves DEBUG test reset to app startup.
+The native CI Calendar save/cancel passed, but relaunch exposed repeated test-data resets from
+SwiftUI store initialization; that reset was fixed in `235e071`. Fresh CI and a focused newer
+runtime run are underway. See the worktree validation ledger before claiming all-green CI.
+Final captures resolve the dark-link contrast and missing-bar evidence findings. The independent
+reviewer hit a usage limit, so its final findings were scored inline with that limitation documented.
+Keep PR #28 draft until remaining native checks are resolved. Owner merge/deploy and device QA
+remain separate from simulator validation.
 
 ## Current handoff — November 15, 2026: first two civic features implemented
 
