@@ -9,12 +9,6 @@ struct ElectionCountdownCard: View {
             let election = ElectionCalendar.next(from: context.date)
 
             ZStack(alignment: .topTrailing) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 96))
-                    .foregroundStyle(.tint.opacity(0.08))
-                    .offset(x: 6, y: 4)
-                    .accessibilityHidden(true)
-
                 VStack(alignment: .leading, spacing: 12) {
                     Label(election.kind, systemImage: "calendar.badge.clock")
                         .font(.headline)
@@ -45,10 +39,6 @@ struct ElectionCountdownCard: View {
             }
             .padding(20)
             .background(Vote4UTheme.heroBackground, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
-            .overlay {
-                RoundedRectangle(cornerRadius: Vote4UTheme.cardCornerRadius)
-                    .stroke(Color.accentColor.opacity(0.18), lineWidth: 1)
-            }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(
                 election.spokenSummary()

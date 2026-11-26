@@ -5,7 +5,9 @@ struct ElectoralMapLegend: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("2024 & 2028 electoral votes")
                 .font(.subheadline.bold())
-            Text("Allocations use the 2020 Census. This map shows vote counts, not a forecast or election result.")
+            Text(
+                "Each state’s allocation is based on the 2020 Census. These are electoral vote counts, not election results or a forecast."
+            )
             Text(
                 "Maine and Nebraska each award two votes to the statewide winner and one per congressional district winner. State totals are shown here."
             )
@@ -16,7 +18,7 @@ struct ElectoralMapLegend: View {
             Text("Verified October 11, 2026")
         }
         .font(.caption)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Vote4UTheme.supportingText)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

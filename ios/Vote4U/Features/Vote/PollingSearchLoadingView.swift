@@ -26,7 +26,9 @@ struct PollingSearchLoadingView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
+                .background(
+                    Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius)
+                )
                 .redacted(reason: .placeholder)
             }
         }

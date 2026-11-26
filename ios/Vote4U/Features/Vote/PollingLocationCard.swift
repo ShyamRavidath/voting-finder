@@ -72,7 +72,7 @@ struct PollingLocationCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
         .overlay {
             RoundedRectangle(cornerRadius: Vote4UTheme.cardCornerRadius)
                 .stroke(.secondary.opacity(0.15), lineWidth: 1)

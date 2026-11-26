@@ -31,7 +31,7 @@ struct ElectoralStateDetail: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Vote4UTheme.compactCornerRadius))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(state.name), \(state.ev) electoral votes, selected")
         .accessibilityAddTraits(.isSelected)

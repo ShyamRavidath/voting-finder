@@ -2,6 +2,20 @@ import SwiftUI
 
 @main
 struct Vote4UApp: App {
+    init() {
+        #if DEBUG
+            // Reset once at process startup, never when SwiftUI recreates a view's stores.
+            if ProcessInfo.processInfo.arguments.contains("-resetCivic") {
+                for key in [
+                    "civic.followed", "civic.portlandSelected", "civic.catalog",
+                    "civic.liveFeed", "civic.meetings",
+                ] {
+                    UserDefaults.standard.removeObject(forKey: key)
+                }
+            }
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -33,6 +47,7 @@ struct RootView: View {
                 .tabItem { Label("Local", systemImage: "building.2") }
                 .tag(Tab.local)
         }
+        .tint(Color("AccentColor"))
         .onChange(of: scenePhase, initial: true) {
             if scenePhase == .active {
                 ReminderPreferences.shared.reconcile()

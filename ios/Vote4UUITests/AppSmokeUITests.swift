@@ -13,77 +13,85 @@ final class AppSmokeUITests: XCTestCase {
         return app
     }
 
-    func testLocalGuideRequiresCommunityAndPersistsFollowingOffline() {
+    func testLocalServiceSearchFindsDrugReporting() {
         let app = launch(["-startTab", "local", "-resetCivic", "-civicOffline"])
         XCTAssertTrue(app.buttons["civic.choosePortland"].waitForExistence(timeout: 10))
+        capture(app, name: "local-welcome")
         app.buttons["civic.choosePortland"].tap()
-        let topic = app.buttons["civic.topic.street-safety"]
-        for _ in 0..<6 {
-            if topic.isHittable { break }
-            app.swipeUp()
-        }
-        XCTAssertTrue(topic.isHittable)
-        topic.tap()
-        let follow = app.buttons["civic.follow"]
+        let search = app.textFields["civic.search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        search.typeText("drugs\n")
+        let drug = app.descendants(matching: .any).matching(identifier: "civic.service./police/drug-complaint")
+            .firstMatch
+        XCTAssertTrue(drug.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(drug.isHittable)
+        capture(app, name: "local-drug-search")
+    }
+
+    func testFollowingAndCalendarSaveCancel() {
+        let app = launch(["-startTab", "local", "-resetCivic", "-civicOffline", "-civicCalendarTest"])
+        XCTAssertTrue(app.buttons["civic.choosePortland"].waitForExistence(timeout: 10))
+        app.buttons["civic.choosePortland"].tap()
+        app.segmentedControls.buttons["Meetings"].tap()
+        let meeting = app.buttons["civic.meeting./debug-calendar"]
+        XCTAssertTrue(meeting.waitForExistence(timeout: 5))
+        meeting.tap()
+        let follow = app.buttons["civic.followMeeting"]
         XCTAssertTrue(follow.waitForExistence(timeout: 5))
-        XCTAssertEqual(follow.label, "Follow topic")
         follow.tap()
-        XCTAssertEqual(follow.label, "Unfollow topic")
-        capture(app, name: "local-authority-guide")
-        let decision = app.buttons["civic.related.2026-401"]
-        for _ in 0..<8 {
-            if decision.isHittable { break }
-            app.swipeUp()
-        }
-        XCTAssertTrue(decision.isHittable)
-        decision.tap()
-        XCTAssertTrue(app.navigationBars["Before they vote"].waitForExistence(timeout: 5))
-        capture(app, name: "local-decision-proposal")
+        XCTAssertEqual(follow.label, "Unfollow meeting")
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "civic.meetingLink").firstMatch.exists)
         let calendar = app.buttons["civic.calendar"]
-        for _ in 0..<8 {
+        for _ in 0..<5 {
             if calendar.isHittable { break }
             app.swipeUp()
         }
-        XCTAssertTrue(calendar.exists)
-        if calendar.isEnabled {
-            calendar.tap()
-            let cancel = app.buttons["Cancel"].firstMatch
-            XCTAssertTrue(cancel.waitForExistence(timeout: 10))
-            capture(app, name: "local-calendar-editor")
-            cancel.tap()
-            let discard = app.buttons["Discard Changes"].firstMatch
-            if discard.waitForExistence(timeout: 3) { discard.tap() }
-            XCTAssertTrue(app.staticTexts["Calendar save cancelled."].waitForExistence(timeout: 5))
-            calendar.tap()
-            let add = app.buttons["Add"].firstMatch
-            XCTAssertTrue(add.waitForExistence(timeout: 10))
-            add.tap()
-            XCTAssertTrue(
-                app.staticTexts["Saved to Calendar. Recheck the official agenda for changes."].waitForExistence(
-                    timeout: 10))
-        }
+        XCTAssertTrue(calendar.isEnabled, "The dated DEBUG test meeting must exercise calendar saving")
+        calendar.tap()
+        let cancel = app.buttons["Cancel"].firstMatch
+        // EventKit presents a separate system process; its first launch is slow on cold simulators.
+        XCTAssertTrue(cancel.waitForExistence(timeout: 60), app.debugDescription)
+        capture(app, name: "local-calendar-editor")
+        cancel.tap()
+        let discard = app.buttons["Discard Changes"].firstMatch
+        if discard.waitForExistence(timeout: 3) { discard.tap() }
+        XCTAssertTrue(app.staticTexts["Calendar save cancelled."].waitForExistence(timeout: 5))
+        // Wait for the editor to finish dismissing before presenting another one.
+        XCTAssertTrue(cancel.waitForNonExistence(timeout: 5))
+        calendar.tap()
+        // Newer Calendar uses Done for the same save action; scope it to the event toolbar.
+        let add = app.navigationBars["New Event"].buttons.matching(
+            NSPredicate(format: "label == %@ OR label == %@", "Add", "Done")
+        ).firstMatch
+        XCTAssertTrue(add.waitForExistence(timeout: 30), app.debugDescription)
+        add.tap()
+        XCTAssertTrue(app.staticTexts["Saved to Calendar."].waitForExistence(timeout: 10))
         app.terminate()
         app.launchArguments = ["-startTab", "local", "-civicOffline"]
         app.launch()
-        XCTAssertTrue(app.buttons["Change community"].waitForExistence(timeout: 10))
-        for _ in 0..<6 {
-            if topic.isHittable { break }
-            app.swipeUp()
-        }
-        topic.tap()
+        XCTAssertTrue(app.segmentedControls.buttons["Following"].waitForExistence(timeout: 10))
+        app.segmentedControls.buttons["Following"].tap()
+        XCTAssertTrue(meeting.waitForExistence(timeout: 5))
+        capture(app, name: "local-following")
+        meeting.tap()
         XCTAssertTrue(follow.waitForExistence(timeout: 5))
-        XCTAssertEqual(follow.label, "Unfollow topic")
+        XCTAssertEqual(follow.label, "Unfollow meeting")
         follow.tap()
-        XCTAssertEqual(follow.label, "Follow topic")
+        XCTAssertEqual(follow.label, "Follow meeting")
     }
 
-    func testLocalGuideLargeTextAndUnmatchedConcern() {
+    func testLocalLargeTextAndUnmatchedSearch() {
         let app = launch([
             "-startTab", "local", "-resetCivic", "-civicOffline",
             "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
         ])
         let choose = app.buttons["civic.choosePortland"]
-        XCTAssertTrue(choose.waitForExistence(timeout: 10))
+        for _ in 0..<6 {
+            if choose.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(choose.isHittable)
         choose.tap()
         let search = app.textFields["civic.search"]
         for _ in 0..<10 {
@@ -92,11 +100,51 @@ final class AppSmokeUITests: XCTestCase {
         }
         XCTAssertTrue(search.isHittable)
         search.tap()
-        search.typeText("unknown xyz")
-        let empty = app.staticTexts[
-            "No reviewed guide matches. Try another topic or use the official agency directory."]
-        XCTAssertTrue(empty.waitForExistence(timeout: 5))
+        search.typeText("zzxxyy\n")
+        let empty = app.staticTexts["civic.noResults"]
+        for _ in 0..<6 {
+            if empty.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(empty.isHittable)
         capture(app, name: "local-large-text-empty-search")
+    }
+
+    func testLocalMeetingLinksAndDarkAppearance() {
+        let app = launch(["-startTab", "local", "-resetCivic", "-civicOffline", "-civicDarkAppearance"])
+        XCTAssertTrue(app.buttons["civic.choosePortland"].waitForExistence(timeout: 10))
+        app.buttons["civic.choosePortland"].tap()
+        capture(app, name: "local-dark-services")
+        app.segmentedControls.buttons["Meetings"].tap()
+        capture(app, name: "local-meetings")
+        app.segmentedControls.buttons["Past meetings"].tap()
+        let meeting = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "civic.meeting.")).firstMatch
+        XCTAssertTrue(meeting.waitForExistence(timeout: 5))
+        meeting.tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any).matching(identifier: "civic.meetingLink").firstMatch.waitForExistence(
+                timeout: 5))
+        capture(app, name: "local-past-meeting")
+        let action = app.buttons["Nonprofit housing tax exemption"]
+        XCTAssertTrue(action.waitForExistence(timeout: 5))
+        action.tap()
+        XCTAssertTrue(app.staticTexts["Passed to second reading"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Open this meeting’s agenda"))
+                .firstMatch.exists)
+        capture(app, name: "local-council-action")
+    }
+
+    func testPrimaryScreensKeepClearActions() {
+        let app = launch(["-startTab", "home"])
+        XCTAssertTrue(app.navigationBars["Vote4U"].waitForExistence(timeout: 10))
+        capture(app, name: "redesign-home")
+        app.tabBars.buttons["Vote"].tap()
+        XCTAssertTrue(app.textFields["ZIP code"].waitForExistence(timeout: 5))
+        capture(app, name: "redesign-vote")
+        app.tabBars.buttons["Map"].tap()
+        XCTAssertTrue(app.staticTexts["270 votes to win"].waitForExistence(timeout: 5))
+        capture(app, name: "redesign-map")
     }
 
     func testLocationDenialStillAllowsZIPSearch() {
@@ -120,7 +168,10 @@ final class AppSmokeUITests: XCTestCase {
     }
 
     private func capture(_ app: XCUIApplication, name: String) {
-        let attachment = XCTAttachment(screenshot: app.screenshot())
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 5))
+        // Capture the settled compositor frame, including system bars, rather than app-layer snapshots.
+        Thread.sleep(forTimeInterval: 0.75)
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)

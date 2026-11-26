@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-24T09:08:03.611100+00:00",
+  "title": "Design System: Vote4U native iPhone",
+  "extensions": {
+    "colorMeta": {
+      "action-blue": {
+        "role": "primary",
+        "displayName": "Fixed action blue",
+        "tonalRamp": [
+          "oklch(15% 0.14 260)",
+          "oklch(26% 0.14 260)",
+          "oklch(37% 0.14 260)",
+          "oklch(48% 0.14 260)",
+          "oklch(59% 0.14 260)",
+          "oklch(70% 0.14 260)",
+          "oklch(82% 0.14 260)",
+          "oklch(95% 0.14 260)"
+        ]
+      },
+      "accent-light": {
+        "role": "primary",
+        "displayName": "Light inline accent",
+        "tonalRamp": [
+          "oklch(15% 0.14 260)",
+          "oklch(26% 0.14 260)",
+          "oklch(37% 0.14 260)",
+          "oklch(48% 0.14 260)",
+          "oklch(59% 0.14 260)",
+          "oklch(70% 0.14 260)",
+          "oklch(82% 0.14 260)",
+          "oklch(95% 0.14 260)"
+        ]
+      },
+      "accent-dark": {
+        "role": "primary",
+        "displayName": "Dark inline accent",
+        "tonalRamp": [
+          "oklch(15% 0.11 255)",
+          "oklch(26% 0.11 255)",
+          "oklch(37% 0.11 255)",
+          "oklch(48% 0.11 255)",
+          "oklch(59% 0.11 255)",
+          "oklch(70% 0.11 255)",
+          "oklch(82% 0.11 255)",
+          "oklch(95% 0.11 255)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "countdown": {
+        "displayName": "Scaled rounded countdown",
+        "purpose": "ScaledMetric largeTitle base size; bold SF Pro Rounded, monospaced digits. See DESIGN.md for caps and accessibility label."
+      },
+      "title": {
+        "displayName": "Native titles",
+        "purpose": "SwiftUI title/title2 bold; actual size scales with Dynamic Type."
+      },
+      "headline": {
+        "displayName": "Native headline",
+        "purpose": "SwiftUI headline for titles and important actions."
+      },
+      "body": {
+        "displayName": "Native body",
+        "purpose": "Default SwiftUI body; system-resolved size and line height."
+      },
+      "supporting": {
+        "displayName": "Supporting copy",
+        "purpose": "SwiftUI subheadline/footnote with semantic text treatment."
+      },
+      "caption": {
+        "displayName": "Compact context",
+        "purpose": "SwiftUI caption; retain legibility in both appearances."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "countdown-change",
+        "value": "SwiftUI .snappy, disabled when accessibilityReduceMotion is true",
+        "purpose": "Local numeric countdown transition; no app-wide custom motion token."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Prominent action",
+      "kind": "button",
+      "refersTo": "primary-action",
+      "description": "Illustrative light browser specimen. Native source uses borderedProminent on iOS 17 and glassProminent on iOS 26+. Geometry and states remain OS-owned. Source: Vote4U/Design/Vote4UActionStyle.swift.",
+      "html": "<button class=\"ds-primary\">Find a location</button>",
+      "css": ".ds-primary {font-family:system-ui,-apple-system,sans-serif;background:rgb(14.9% 38.8% 85.1%);color:white;border:0;border-radius:10px;padding:12px 18px;font-size:17px;font-weight:600;} .ds-primary:hover {filter:brightness(.94);} .ds-primary:focus-visible {outline:3px solid #111;outline-offset:3px;} .ds-primary:active {filter:brightness(.87);} .ds-primary:disabled {opacity:.45;}"
+    },
+    {
+      "name": "Inline source link",
+      "kind": "button",
+      "description": "Illustrative light browser specimen; source uses native Link with adaptive root AccentColor tint. The dark browser preview is not contrast acceptance evidence. Source: Vote4U/Vote4UApp.swift and Vote4U/Features/Local/CivicMeetingView.swift.",
+      "html": "<a class=\"ds-link\" href=\"https://www.portland.gov/council/events\">Open meeting page</a>",
+      "css": ".ds-link {font-family:system-ui,-apple-system,sans-serif;color:rgb(14.9% 38.8% 85.1%);font-size:17px;text-decoration:none;} .ds-link:hover {text-decoration:underline;} .ds-link:focus-visible {outline:3px solid #111;outline-offset:3px;} .ds-link:active {opacity:.7;} @media(prefers-color-scheme:dark) {.ds-link {color:rgb(37.6% 64.7% 98%);} .ds-link:focus-visible {outline-color:white;}}"
+    },
+    {
+      "name": "ZIP field",
+      "kind": "input",
+      "refersTo": "zip-field",
+      "description": "Illustrative browser specimen. Native field has a 50-point minimum height, semantic background/secondary stroke, postal content type, number pad and native focus. Source: Vote4U/Features/Vote/VoteSearchForm.swift.",
+      "html": "<label class=\"ds-zip-label\">ZIP code<input class=\"ds-zip\" inputmode=\"numeric\" autocomplete=\"postal-code\" placeholder=\"ZIP code\"></label>",
+      "css": ".ds-zip-label {font-family:system-ui,-apple-system,sans-serif;display:grid;gap:8px;font-size:17px;} .ds-zip {font-family:system-ui,-apple-system,sans-serif;min-height:50px;padding:0 14px;border:1px solid #aaa;border-radius:14px;background:white;color:#111;font-size:17px;} .ds-zip:hover {border-color:#666;} .ds-zip:focus-visible {outline:3px solid #111;outline-offset:3px;}"
+    },
+    {
+      "name": "Content card",
+      "kind": "card",
+      "refersTo": "surface-card",
+      "description": "Illustrative light browser specimen. iOS resolves the actual secondarySystemGroupedBackground and text colors; preview colors are not native tokens. Source: Vote4U/Features/Home/HomeVotingPlanCard.swift.",
+      "html": "<section class=\"ds-card\"><h3>Where will you vote?</h3><p>Search your ZIP code, then confirm your assigned location with the election office.</p></section>",
+      "css": ".ds-card {font-family:system-ui,-apple-system,sans-serif;border-radius:16px;background:white;color:#111;padding:16px;max-width:340px;} .ds-card h3 {margin:0 0 12px;font-size:20px;} .ds-card p {margin:0;font-size:15px;line-height:1.4;opacity:.72;}"
+    },
+    {
+      "name": "Local section control",
+      "kind": "nav",
+      "description": "Illustrative browser specimen only; native code uses segmented Picker and stacked checkmarked buttons at accessibility sizes. This static specimen does not implement native navigation. Source: Vote4U/Features/Local/LocalCivicView.swift.",
+      "html": "<nav class=\"ds-sections\" aria-label=\"Local section\"><button aria-current=\"page\">Get help</button><button>Meetings</button><button>Following</button></nav>",
+      "css": ".ds-sections {font-family:system-ui,-apple-system,sans-serif;display:flex;gap:2px;border-radius:9px;background:#e8e8ed;padding:3px;width:max-content;max-width:100%;} .ds-sections button {font-family:system-ui,-apple-system,sans-serif;border:0;background:transparent;color:#111;padding:8px 10px;font-size:13px;border-radius:7px;} .ds-sections button[aria-current] {background:white;font-weight:600;} .ds-sections button:hover {background:#f7f7f9;} .ds-sections button:focus-visible {outline:3px solid #111;outline-offset:3px;} .ds-sections button:active {background:#ddd;}"
+    },
+    {
+      "name": "Follow meeting action",
+      "kind": "button",
+      "refersTo": "meeting-follow",
+      "description": "Illustrative browser specimen; native implementation uses a borderless Label with SF Symbols bookmark/bookmark.fill and a 44-point minimum height. Accessible labels name the meeting and change to Unfollow. Source: Vote4U/Features/Local/LocalCivicView.swift.",
+      "html": "<button class=\"ds-follow\" aria-label=\"Follow meeting\">Follow</button>",
+      "css": ".ds-follow {font-family:system-ui,-apple-system,sans-serif;min-height:44px;background:transparent;border:0;color:rgb(14.9% 38.8% 85.1%);font-size:15px;font-weight:600;padding:0;} .ds-follow:hover {text-decoration:underline;} .ds-follow:focus-visible {outline:3px solid #111;outline-offset:3px;} .ds-follow:active {opacity:.7;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "A clear civic companion",
+    "overview": "This describes the native implementation in this checkout, extending the existing identity under the owner's direction: “less boring, but not too complicated.” System typography, SF Symbols, standard navigation, blue actions, and grouped surfaces make public information easier to use. The phrase above describes that existing direction; it is not a new brand or approved visual comp.\n\nThe native system owns appearance, text scaling, control states, and navigation behavior. Content supplies the character: a prominent election countdown, useful service titles, dated meetings, and direct action labels. This document applies to the iPhone app with iOS 17 minimum. It does not redesign the web app or widget.",
+    "keyCharacteristics": [
+      "Familiar native navigation and adaptive controls.",
+      "Blue actions on semantic grouped surfaces.",
+      "Strong headings, open section spacing, and concise copy.",
+      "Visible source context and accessible alternatives."
+    ],
+    "rules": [],
+    "dos": [
+      "**Do** use native system fonts, SF Symbols, and standard navigation.",
+      "**Do** resolve inline tint through the existing light/dark AccentColor asset.",
+      "**Do** keep prominent action fills on the fixed action blue.",
+      "**Do** preserve Dynamic Type reflow, clear labels, and native control states.",
+      "**Do** keep source links, dates, and uncertainty visible where they affect an action."
+    ],
+    "donts": [
+      "**Don't** replace semantic system surfaces with fixed screenshot colors.",
+      "**Don't** infer government endorsement from blue styling or official-source links.",
+      "**Don't** hide ZIP entry behind location permission or reduce polling caution for visual simplicity.",
+      "**Don't** imply that following sends notifications or that calendar copies update themselves.",
+      "**Don't** promote the failed dark-link contrast or pending review into an accepted visual rule."
+    ]
+  }
+}

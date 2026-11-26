@@ -21,6 +21,11 @@ app.get('/api/local-civic', (_, res) => {
   res.set('Cache-Control', 'public, max-age=300').json(require('./data/local-civic.json'));
 });
 
+const localFeed = require('./services/localFeedService').createLocalFeedService({ fetcher: (...args) => fetch(...args) });
+app.get('/api/local-feed', async (_, res) => {
+  res.set('Cache-Control', 'public, max-age=60, s-maxage=900, stale-while-revalidate=3600').json(await localFeed());
+});
+
 app.use('/api/news', require('./routes/news'));
 app.use('/api/polling', require('./routes/polling'));
 app.use('/api/elections', require('./routes/elections'));

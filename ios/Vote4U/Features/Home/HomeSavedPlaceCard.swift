@@ -57,7 +57,7 @@ struct HomeSavedPlaceCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
     }
 
     private func openDirections() {

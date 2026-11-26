@@ -2,31 +2,15 @@ import SwiftUI
 
 struct ElectoralTallyView: View {
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(spacing: 3) {
-                Text("Total electoral votes")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("\(BundledData.totalElectoralVotes)")
-                    .font(.title2.bold())
-                    .monospacedDigit()
-            }
-            .frame(maxWidth: .infinity)
-            .accessibilityElement(children: .combine)
-
-            VStack(spacing: 3) {
-                Text("Majority needed")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("270")
-                    .font(.title2.bold())
-                    .monospacedDigit()
-            }
-            .frame(maxWidth: .infinity)
-            .accessibilityElement(children: .combine)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("270 votes to win").font(.title.bold())
+            Text(
+                "\(BundledData.totalElectoralVotes) electoral votes across 50 states and D.C. Tap a state to see its share."
+            )
+            .font(.subheadline).foregroundStyle(Vote4UTheme.supportingText)
         }
-        .multilineTextAlignment(.center)
-        .padding()
-        .background(.regularMaterial, in: .rect(cornerRadius: Vote4UTheme.cardCornerRadius))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 8)
+        .accessibilityElement(children: .combine)
     }
 }
