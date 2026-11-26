@@ -15,13 +15,6 @@ final class CivicStore {
         defaults: UserDefaults = .standard,
         fetch: @escaping () async throws -> Data = { try await CivicStore.fetchCatalog() }
     ) {
-        #if DEBUG
-            if ProcessInfo.processInfo.arguments.contains("-resetCivic") {
-                for key in ["civic.followed", "civic.portlandSelected", "civic.catalog"] {
-                    defaults.removeObject(forKey: key)
-                }
-            }
-        #endif
         self.defaults = defaults
         self.fetch = fetch
         followed = Set(defaults.stringArray(forKey: "civic.followed") ?? [])

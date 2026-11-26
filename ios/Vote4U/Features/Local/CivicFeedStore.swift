@@ -16,12 +16,6 @@ final class CivicFeedStore {
     ) {
         self.defaults = defaults
         self.fetch = fetch
-        #if DEBUG
-            if ProcessInfo.processInfo.arguments.contains("-resetCivic") {
-                defaults.removeObject(forKey: "civic.liveFeed")
-                defaults.removeObject(forKey: "civic.meetings")
-            }
-        #endif
         feed = try? CivicFeed.bundled().savedCopy
         if let data = defaults.data(forKey: "civic.liveFeed"), let cached = try? CivicFeed.decode(data) {
             merge(cached.savedCopy)
