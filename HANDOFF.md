@@ -42,8 +42,9 @@ Latest code: `235e071` (November 25). Full iOS 17.5 runner passed 96 tests on `b
 `/private/tmp/vote4u-device-overhaul-20261124/Build/Products/Release-iphoneos/Vote4U.app`,
 not installed or uploaded. Subsequent code only moves DEBUG test reset to app startup.
 The native CI Calendar save/cancel passed, but relaunch exposed repeated test-data resets from
-SwiftUI store initialization; that reset was fixed in `235e071`. Fresh CI and a focused newer
-runtime run are underway. See the worktree validation ledger before claiming all-green CI.
+SwiftUI store initialization; that reset was fixed in `235e071`. The focused iOS 27 runner now passes 80 tests (all 77 units, Calendar/Following and both
+notification paths) plus Release safeguards. Full native CI remains pending; see the worktree
+validation ledger before claiming all-green CI.
 Final captures resolve the dark-link contrast and missing-bar evidence findings. The independent
 reviewer hit a usage limit, so its final findings were scored inline with that limitation documented.
 Keep PR #28 draft until remaining native checks are resolved. Owner merge/deploy and device QA

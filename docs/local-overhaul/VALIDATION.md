@@ -102,3 +102,25 @@ is retained unchanged. Fresh CI and a focused newer-runtime runner are in progre
 CI evidence: run `45364411766`; main result
 `Test-Vote4U-2026.11.24_09-32-45-+0000.xcresult`. New CI: run `45735038340`.
 No final all-green newer-runtime claim is made at this checkpoint.
+
+
+## November 25 — reset fix verified on iOS 27
+
+Commit `235e071` passed the required runner with a focused UI target on iPhone 17 Pro / iOS 27.0:
+77 unit tests, Calendar/save/cancel/Following relaunch UI, fresh notification allow and deny —
+**80 tests passed**, zero failures/skips. Release DEBUG-string exclusion and widget-family
+checks passed; runner exited 0. This is a focused run, not all 17 smoke cases on iOS 27.
+The unchanged UI regression reached the persisted meeting after relaunch and successfully
+unfollowed the retained record. All reminder unit tests passed on this run.
+
+Command: `TEST_DIAGNOSTICS=never UI_TEST_TARGET='Vote4UUITests/AppSmokeUITests/testFollowingAndCalendarSaveCancel' DEVICE_TYPE='iPhone 17 Pro' RUNTIME=com.apple.CoreSimulator.SimRuntime.iOS-27-0 DERIVED=/private/tmp/vote4u-overhaul-tests27 ./scripts/test-ios.sh`.
+Log: `/private/tmp/vote4u-overhaul-ios27-reset-fix.log`.
+Main result: `Test-Vote4U-2026.11.25_17-22-38--0800.xcresult`.
+Raw attachments: `screenshots/local-following-ios27.png` and
+`screenshots/local-calendar-editor-ios27.png`; both were visually inspected, with DEBUG data
+clearly labeled. The signed device build remains `bcd5922`; subsequent native source changes
+only relocate DEBUG test setup and do not change device features.
+
+At documentation close, full native CI is still running; latest completed web checks passed
+server tests, client lint/build and Playwright. PR remains draft. No physical-device installation,
+production endpoint deployment, merge or App Store upload has occurred in this overhaul.
